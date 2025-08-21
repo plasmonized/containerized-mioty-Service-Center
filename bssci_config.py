@@ -7,7 +7,7 @@ CA_FILE = "certs/ca_cert.pem"
 
 MQTT_BROKER = "192.168.178.45"
 MQTT_PORT = 1883
-BASE_TOPIC = 'bssci/'
+BASE_TOPIC = "bssci/"
 
 SENSOR_CONFIG_FILE = "endpoints.json"
 STATUS_INTERVAL = 60  # seconds

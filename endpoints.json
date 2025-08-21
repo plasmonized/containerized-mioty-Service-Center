@@ -10,5 +10,41 @@
         "nwKey": "FFEEDDCCBBAA99887766554433221100",
         "shortAddr": "0000",
         "bidi": false
+    },
+    {
+        "eui": "74731d0000000089",
+        "nwKey": "b49dfc69de7193c4b3faa36a51d76512",
+        "shortAddr": "0000",
+        "bidi": false
+    },
+    {
+        "eui": "74731d00000000f8",
+        "nwKey": "e516d50d89729e5073c4a6c9be729233",
+        "shortAddr": "0000",
+        "bidi": false
+    },
+    {
+        "eui": "74731d00000000f9",
+        "nwKey": "96c75144ae9cc861c8f2c82248bc103f",
+        "shortAddr": "0000",
+        "bidi": false
+    },
+    {
+        "eui": "74731d0000000001",
+        "nwKey": "00112233445566778899AABBCCDDEEFF",
+        "shortAddr": "0000",
+        "bidi": false
+    },
+    {
+        "eui": "fca84a030000130a",
+        "nwKey": "C43FE1803F1629FEEE67B364DFCDEF53",
+        "shortAddr": "130A",
+        "bidi": false
+    },
+    {
+        "eui": "fca84a010000118f",
+        "nwKey": "9DC473375F52D45A940EF6706B618306",
+        "shortAddr": "118F",
+        "bidi": false
     }
 ]

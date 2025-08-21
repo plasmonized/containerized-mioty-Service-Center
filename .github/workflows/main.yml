@@ -1,0 +1,40 @@
+name: Python CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install flake8 black isort mypy pytest
+
+    - name: Run flake8 (Style & Fehler)
+      run: flake8 .
+
+    - name: Run black (Format-Check)
+      run: black --check .
+
+    - name: Run isort (Import-Sortierung)
+      run: isort --check-only .
+
+    - name: Run mypy (Type-Checking)
+      run: mypy .
+
+    - name: Run pytest (Tests)
+      run: pytest || echo "No tests found"

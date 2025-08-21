@@ -1,0 +1,13 @@
+[tool.black]
+line-length = 88
+
+[tool.mypy]
+strict = true
+
+[[tool.mypy.overrides]]
+module = "msgpack.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "aiomqtt.*"
+ignore_missing_imports = true
