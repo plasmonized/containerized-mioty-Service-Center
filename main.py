@@ -22,7 +22,7 @@ async def main() -> None:
     mqtt_out_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
     
     logger.info("Initializing TLS Server...")
-    server = TLSServer(SENSOR_CONFIG_FILE, mqtt_in_queue, mqtt_out_queue)
+    server = TLSServer(SENSOR_CONFIG_FILE, mqtt_out_queue, mqtt_in_queue)
     
     logger.info("Initializing MQTT Client...")
     mqtt_server = MQTTClient(mqtt_out_queue, mqtt_in_queue)
