@@ -9,5 +9,9 @@ packages = ["borgbackup"]
 run = ["sh", "-c", "py main.py"]
 
 [[ports]]
+localPort = 5000
+externalPort = 5000
+
+[[ports]]
 localPort = 16017
 externalPort = 80
