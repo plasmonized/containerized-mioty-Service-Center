@@ -19,7 +19,7 @@ docker-compose up -d
 echo "Container started!"
 echo ""
 echo "Access points:"
-echo "  Web GUI: http://localhost:5001"
+echo "  Web GUI: http://localhost:5055"
 echo "  TLS Server: localhost:16019"
 echo ""
 echo "To view logs:"

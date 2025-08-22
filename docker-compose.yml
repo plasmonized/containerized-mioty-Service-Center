@@ -7,7 +7,7 @@ services:
     container_name: bssci-service-center
     ports:
       - "16019:16017"  # TLS server port
-      - "5001:5000"    # Web GUI port
+      - "5055:5000"    # Web GUI port
     volumes:
       - ./certs:/app/certs:ro
       - ./endpoints.json:/app/endpoints.json
