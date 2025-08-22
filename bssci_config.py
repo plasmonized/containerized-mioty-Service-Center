@@ -7,8 +7,8 @@ CA_FILE = "certs/ca_cert.pem"
 
 MQTT_BROKER = "akahlig.selfhost.co"
 MQTT_PORT = 1887
-MQTT_USERNAME = "bssci"
-MQTT_PASSWORD = "test=1234"
+MQTT_USERNAME = "your_actual_username"
+MQTT_PASSWORD = "your_actual_password"
 BASE_TOPIC = "bssci/"
 
 SENSOR_CONFIG_FILE = "endpoints.json"
