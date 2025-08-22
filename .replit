@@ -16,9 +16,19 @@ externalPort = 80
 localPort = 16017
 
 [workflows]
+runButton = "Start BSSCI"
 
 [[workflows.workflow]]
 name = "Start BSSCI Web GUI"
+author = 45640243
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python main.py"
+
+[[workflows.workflow]]
+name = "Start BSSCI"
 author = 45640243
 mode = "sequential"
 

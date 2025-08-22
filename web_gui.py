@@ -257,7 +257,7 @@ def run_flask():
     file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
     logging.getLogger().addHandler(file_handler)
     
-    app.run(host='0.0.0.0', port=5000, debug=False)e)
+    app.run(host='0.0.0.0', port=5000, debug=False)
 
 def start_web_gui(tls_srv, mqtt_cli, mqtt_in_q, mqtt_out_q):
     global tls_server, mqtt_client, mqtt_in_queue, mqtt_out_queue
