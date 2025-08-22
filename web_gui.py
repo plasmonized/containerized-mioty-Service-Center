@@ -129,7 +129,7 @@ def add_sensor():
         
         # Load existing sensors
         try:
-        with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
+            with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
                 sensors = json.load(f)
         except:
             sensors = []
