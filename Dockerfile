@@ -16,7 +16,7 @@ COPY endpoints.json ./
 COPY bssci_config.py ./
 
 # Create directories
-RUN mkdir -p certs templates data logs
+RUN mkdir -p certs templates logs
 
 # Copy certificates and templates
 COPY certs/ ./certs/
@@ -30,13 +30,6 @@ RUN chmod -R 644 certs/ || true
 
 # Ensure endpoints.json is writable
 RUN touch endpoints.json && chmod 666 endpoints.json || true
-
-# Copy entrypoint script
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# Set entrypoint
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Run the application with unbuffered output
 CMD ["python", "-u", "main.py"]

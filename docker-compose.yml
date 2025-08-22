@@ -9,7 +9,6 @@ services:
       - "16019:16017"  # TLS server port
       - "5055:5000"    # Web GUI port
     volumes:
-      - ./app_data:/app/data
       - ./certs:/app/certs:ro
       - ./endpoints.json:/app/endpoints.json
       - ./bssci_config.py:/app/bssci_config.py
@@ -18,8 +17,6 @@ services:
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1
-    networks:
-      - bssci-network
     logging:
       driver: "json-file"
       options:
@@ -31,7 +28,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
-networks:
-  bssci-network:
-    driver: bridge
