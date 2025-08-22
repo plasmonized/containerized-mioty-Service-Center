@@ -1,0 +1,143 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1><i class="bi bi-wifi"></i> MQTT Konfiguration</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-gear"></i> MQTT Parameter</h5>
+            </div>
+            <div class="card-body">
+                <form id="mqttForm">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="broker" class="form-label">MQTT Broker URL</label>
+                                <input type="text" class="form-control" id="broker" value="{{ config.broker }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="port" class="form-label">Port</label>
+                                <input type="number" class="form-control" id="port" value="{{ config.port }}" min="1" max="65535" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Benutzername</label>
+                                <input type="text" class="form-control" id="username" value="{{ config.username }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Passwort</label>
+                                <input type="password" class="form-control" id="password" value="{{ config.password }}" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="baseTopic" class="form-label">Base Topic</label>
+                        <input type="text" class="form-control" id="baseTopic" value="{{ config.base_topic }}" required>
+                        <div class="form-text">Das Basis-Topic für alle MQTT Nachrichten (z.B. "bssci/")</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check"></i> Konfiguration speichern
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-info-circle"></i> Information</h5>
+            </div>
+            <div class="card-body">
+                <h6>Topic-Struktur:</h6>
+                <ul class="list-unstyled">
+                    <li><code>{base_topic}/ep/{eui}/config</code> - Sensor-Konfiguration</li>
+                    <li><code>{base_topic}/ep/{eui}/ul</code> - Uplink-Daten</li>
+                    <li><code>{base_topic}/bs/{eui}</code> - Basisstation-Status</li>
+                </ul>
+                
+                <hr>
+                
+                <h6>Beispiel-Konfiguration:</h6>
+                <pre class="bg-light p-2 rounded small">
+{
+  "nwKey": "00112233...",
+  "shortAddr": "1234",
+  "bidi": false
+}</pre>
+                
+                <div class="alert alert-warning mt-3">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Hinweis:</strong> Nach dem Speichern muss die Anwendung neu gestartet werden.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+document.getElementById('mqttForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        broker: document.getElementById('broker').value.trim(),
+        port: parseInt(document.getElementById('port').value),
+        username: document.getElementById('username').value.trim(),
+        password: document.getElementById('password').value.trim(),
+        base_topic: document.getElementById('baseTopic').value.trim()
+    };
+    
+    fetch('/api/mqtt/update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('success', data.message);
+        } else {
+            showAlert('danger', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error updating MQTT config:', error);
+        showAlert('danger', 'Fehler beim Speichern der Konfiguration');
+    });
+});
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.row'));
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+{% endblock %}

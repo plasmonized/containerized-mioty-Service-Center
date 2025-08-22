@@ -1,0 +1,210 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1><i class="bi bi-cpu"></i> Sensor Management</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-plus-circle"></i> Neuen Sensor hinzufügen</h5>
+            </div>
+            <div class="card-body">
+                <form id="addSensorForm">
+                    <div class="mb-3">
+                        <label for="eui" class="form-label">EUI (16 Zeichen)</label>
+                        <input type="text" class="form-control" id="eui" maxlength="16" placeholder="1234567890ABCDEF" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="nwKey" class="form-label">Network Key (32 Zeichen)</label>
+                        <input type="text" class="form-control" id="nwKey" maxlength="32" placeholder="00112233445566778899AABBCCDDEEFF" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="shortAddr" class="form-label">Short Address (4 Zeichen)</label>
+                        <input type="text" class="form-control" id="shortAddr" maxlength="4" placeholder="0000" required>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="bidi">
+                        <label class="form-check-label" for="bidi">Bidirektional</label>
+                    </div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-plus"></i> Sensor hinzufügen
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-list"></i> Konfigurierte Sensoren</h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="loadSensors()">
+                    <i class="bi bi-arrow-clockwise"></i> Aktualisieren
+                </button>
+            </div>
+            <div class="card-body">
+                <div id="sensors-table"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Sensor löschen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Sind Sie sicher, dass Sie diesen Sensor löschen möchten?</p>
+                <p><strong>EUI:</strong> <span id="deleteEui"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Abbrechen</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">Löschen</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+let deleteEui = null;
+
+function loadSensors() {
+    fetch('/api/sensors')
+        .then(response => response.json())
+        .then(sensors => {
+            let tableHtml = '';
+            if (sensors.length > 0) {
+                tableHtml = `
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>EUI</th>
+                                    <th>Network Key</th>
+                                    <th>Short Address</th>
+                                    <th>Bidirektional</th>
+                                    <th>Aktionen</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+                
+                sensors.forEach(sensor => {
+                    tableHtml += `
+                        <tr>
+                            <td><code>${sensor.eui}</code></td>
+                            <td><code>${sensor.nwKey}</code></td>
+                            <td><code>${sensor.shortAddr}</code></td>
+                            <td>${sensor.bidi ? '<i class="bi bi-check text-success"></i>' : '<i class="bi bi-x text-muted"></i>'}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger" onclick="deleteSensor('${sensor.eui}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+                
+                tableHtml += '</tbody></table></div>';
+            } else {
+                tableHtml = '<p class="text-muted text-center">Keine Sensoren konfiguriert</p>';
+            }
+            
+            document.getElementById('sensors-table').innerHTML = tableHtml;
+        })
+        .catch(error => {
+            console.error('Error loading sensors:', error);
+            document.getElementById('sensors-table').innerHTML = '<p class="text-danger">Fehler beim Laden der Sensoren</p>';
+        });
+}
+
+function deleteSensor(eui) {
+    deleteEui = eui;
+    document.getElementById('deleteEui').textContent = eui;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+function confirmDelete() {
+    if (!deleteEui) return;
+    
+    fetch(`/api/sensors/delete/${deleteEui}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            loadSensors();
+            bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+            showAlert('success', data.message);
+        } else {
+            showAlert('danger', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error deleting sensor:', error);
+        showAlert('danger', 'Fehler beim Löschen des Sensors');
+    });
+}
+
+document.getElementById('addSensorForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        eui: document.getElementById('eui').value.trim().toUpperCase(),
+        nwKey: document.getElementById('nwKey').value.trim().toUpperCase(),
+        shortAddr: document.getElementById('shortAddr').value.trim().toUpperCase(),
+        bidi: document.getElementById('bidi').checked
+    };
+    
+    fetch('/api/sensors/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('addSensorForm').reset();
+            loadSensors();
+            showAlert('success', data.message);
+        } else {
+            showAlert('danger', data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error adding sensor:', error);
+        showAlert('danger', 'Fehler beim Hinzufügen des Sensors');
+    });
+});
+
+function showAlert(type, message) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.querySelector('.container').insertBefore(alertDiv, document.querySelector('.row'));
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
+// Load sensors on page load
+loadSensors();
+{% endblock %}
