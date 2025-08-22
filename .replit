@@ -6,7 +6,7 @@ channel = "stable-25_05"
 packages = ["borgbackup"]
 
 [deployment]
-run = ["sh", "-c", "py main.py"]
+run = ["sh", "-c", "python main.py"]
 
 [[ports]]
 localPort = 16017
