@@ -16,7 +16,7 @@ COPY endpoints.json ./
 COPY bssci_config.py ./
 
 # Create directories
-RUN mkdir -p certs templates
+RUN mkdir -p certs templates data logs
 
 # Copy certificates and templates
 COPY certs/ ./certs/

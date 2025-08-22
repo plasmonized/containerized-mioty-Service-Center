@@ -13,6 +13,10 @@ import os
 app = Flask(__name__)
 app.secret_key = 'bssci_secret_key_2024'
 
+# Ensure persistent directories exist
+os.makedirs('/app/data', exist_ok=True)
+os.makedirs('/app/logs', exist_ok=True)
+
 # Global variables to store application state
 tls_server = None
 mqtt_client = None
@@ -248,7 +252,12 @@ def clear_logs():
     return jsonify({'success': True, 'message': 'Logs cleared successfully'})
 
 def run_flask():
-    app.run(host='0.0.0.0', port=5000, debug=False)
+    # Configure file logging to persistent directory
+    file_handler = logging.FileHandler('/app/logs/bssci.log')
+    file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    logging.getLogger().addHandler(file_handler)
+    
+    app.run(host='0.0.0.0', port=5000, debug=False)e)
 
 def start_web_gui(tls_srv, mqtt_cli, mqtt_in_q, mqtt_out_q):
     global tls_server, mqtt_client, mqtt_in_queue, mqtt_out_queue

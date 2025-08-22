@@ -3,6 +3,9 @@
 
 echo "Starting BSSCI Service Center..."
 
+# Create persistent directories
+mkdir -p ./app_data ./logs
+
 # Check if certificates exist
 if [ ! -d "./certs" ] || [ ! -f "./certs/service_center_cert.pem" ]; then
     echo "Warning: SSL certificates not found in ./certs/"
