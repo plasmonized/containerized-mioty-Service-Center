@@ -1,9 +1,12 @@
 import asyncio
 import json
+import logging
 
 from aiomqtt import Client
 
 from bssci_config import BASE_TOPIC, MQTT_BROKER
+
+logger = logging.getLogger(__name__)
 
 
 class MQTTClient:
@@ -22,13 +25,17 @@ class MQTTClient:
         self.mqtt_in_queue = mqtt_in_queue
 
     async def start(self) -> None:
+        logger.info(f"Connecting to MQTT broker at {self.broker_host}")
+        logger.info(f"Config topic: {self.config_topic}")
         async with Client(self.broker_host) as client:
+            logger.info("MQTT client connected successfully")
             await asyncio.gather(
                 self._handle_incoming(client), self._handle_outgoing(client)
             )
 
     async def _handle_incoming(self, client: Client) -> None:
         await client.subscribe(self.config_topic)
+        logger.info(f"Subscribed to MQTT topic: {self.config_topic}")
         async for message in client.messages:
             eui = str(message.topic).split("/")[len(self.base_topic.split("/")) + 1]
             payload = message.payload
@@ -39,15 +46,17 @@ class MQTTClient:
             else:
                 raise TypeError(f"Unsupported payload type: {type(payload)}")
             config["eui"] = eui
-            # print("Konfig erhalten:", config)
+            logger.info(f"Received configuration for endpoint {eui}: {config}")
             await self.mqtt_in_queue.put(config)
 
     async def _handle_outgoing(self, client: Client) -> None:
-        print(type(client))
+        logger.info("MQTT outgoing message handler started")
         while True:
             msg = await self.mqtt_out_queue.get()
-            # print(f"{self.base_topic}/{msg['topic']}:\n\t{msg['payload']}")
-            await client.publish(f"{self.base_topic}/{msg['topic']}", msg["payload"])
+            topic = f"{self.base_topic}/{msg['topic']}"
+            logger.info(f"Publishing to MQTT topic: {topic}")
+            logger.debug(f"Message payload: {msg['payload']}")
+            await client.publish(topic, msg["payload"])
 
 
 if __name__ == "__main__":

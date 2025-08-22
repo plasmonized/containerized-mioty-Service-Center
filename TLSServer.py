@@ -1,11 +1,14 @@
 import asyncio
 import json
+import logging
 import ssl
 from typing import Any, Dict
 
 import bssci_config
 import messages
 from protocol import decode_messages, encode_message
+
+logger = logging.getLogger(__name__)
 
 IDENTIFIER = bytes("MIOTYB01", "utf-8")
 
@@ -30,13 +33,16 @@ class TLSServer:
             self.sensor_config = {}
 
     async def start_server(self) -> None:
+        logger.info("Setting up SSL context...")
         ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         ssl_ctx.load_cert_chain(
             certfile=bssci_config.CERT_FILE, keyfile=bssci_config.KEY_FILE
         )
         ssl_ctx.load_verify_locations(cafile=bssci_config.CA_FILE)
         ssl_ctx.verify_mode = ssl.CERT_REQUIRED
+        logger.info("SSL context configured successfully")
 
+        logger.info(f"Starting TLS server on {bssci_config.LISTEN_HOST}:{bssci_config.LISTEN_PORT}")
         server = await asyncio.start_server(
             self.handle_client,
             bssci_config.LISTEN_HOST,
@@ -44,8 +50,10 @@ class TLSServer:
             ssl=ssl_ctx,
         )
 
+        logger.info("Starting queue watcher task...")
         asyncio.create_task(self.queue_watcher())
 
+        logger.info("TLS Server is ready and listening for connections")
         async with server:
             await server.serve_forever()
 
@@ -58,7 +66,7 @@ class TLSServer:
                 and len(sensor["nwKey"]) == 32
                 and len(sensor["shortAddr"]) == 4
             ):
-                print(f"Sensor: {sensor['eui']} {sensor['shortAddr']}")
+                logger.info(f"Sending attach request for sensor EUI: {sensor['eui']}, Short Address: {sensor['shortAddr']}")
                 msg_pack = encode_message(
                     messages.build_attach_request(sensor, self.opID)
                 )
@@ -68,9 +76,12 @@ class TLSServer:
                     + msg_pack
                 )
                 await writer.drain()
+                logger.debug(f"Attach request sent for sensor {sensor['eui']} with opID {self.opID}")
                 self.opID -= 1
-        except Exception:
-            pass
+            else:
+                logger.warning(f"Invalid sensor configuration for EUI {sensor.get('eui', 'unknown')}")
+        except Exception as e:
+            logger.error(f"Failed to send attach request for sensor {sensor.get('eui', 'unknown')}: {e}")
 
     async def attach_file(self, writer: asyncio.streams.StreamWriter) -> None:
         for sensor in self.sensor_config:
@@ -82,21 +93,26 @@ class TLSServer:
     async def send_status_requests(self) -> None:
         while True:
             await asyncio.sleep(bssci_config.STATUS_INTERVAL)
+            logger.info(f"Sending status requests to {len(self.connected_base_stations)} base stations")
             for writer, bs_eui in self.connected_base_stations.items():
-                msg_pack = encode_message(messages.build_status_request(self.opID))
-                writer.write(
-                    IDENTIFIER
-                    + len(msg_pack).to_bytes(4, byteorder="little")
-                    + msg_pack
-                )
-                await writer.drain()
-                self.opID -= 1
+                try:
+                    msg_pack = encode_message(messages.build_status_request(self.opID))
+                    writer.write(
+                        IDENTIFIER
+                        + len(msg_pack).to_bytes(4, byteorder="little")
+                        + msg_pack
+                    )
+                    await writer.drain()
+                    logger.debug(f"Status request sent to base station {bs_eui} with opID {self.opID}")
+                    self.opID -= 1
+                except Exception as e:
+                    logger.error(f"Failed to send status request to base station {bs_eui}: {e}")
 
     async def handle_client(
         self, reader: asyncio.streams.StreamReader, writer: asyncio.streams.StreamWriter
     ) -> None:
         addr = writer.get_extra_info("peername")
-        print(f"[INFO] Verbindung von {addr} hergestellt.")
+        logger.info(f"New connection established from {addr}")
 
         try:
             while True:
@@ -105,9 +121,8 @@ class TLSServer:
                     break
                 # try:
                 for message in decode_messages(data):
-                    # print(message)
                     msg_type = message.get("command", "")
-                    # print(msg_type)
+                    logger.debug(f"Received message type '{msg_type}' from {addr}")
                     if msg_type == "con":
                         msg = encode_message(
                             messages.build_connection_response(
@@ -118,22 +133,23 @@ class TLSServer:
                             IDENTIFIER + len(msg).to_bytes(4, byteorder="little") + msg
                         )
                         await writer.drain()
-                        self.connecting_base_stations[writer] = (
-                            int(message["bsEui"]).to_bytes(8, byteorder="big").hex()
-                        )
+                        bs_eui = int(message["bsEui"]).to_bytes(8, byteorder="big").hex()
+                        self.connecting_base_stations[writer] = bs_eui
+                        logger.info(f"Base station {bs_eui} initiated connection from {addr}")
                     elif msg_type == "conCmp":
                         if (
                             writer in self.connecting_base_stations
                             and writer not in self.connected_base_stations
                         ):
-                            self.connected_base_stations[writer] = (
-                                self.connecting_base_stations[writer]
-                            )
+                            bs_eui = self.connecting_base_stations[writer]
+                            self.connected_base_stations[writer] = bs_eui
+                            logger.info(f"Base station {bs_eui} connection completed successfully")
+                            logger.info(f"Attaching {len(self.sensor_config)} sensors to base station {bs_eui}")
                             await self.attach_file(writer)
                             asyncio.create_task(self.send_status_requests())
 
                     elif msg_type == "ping":
-                        # print("[PING] Ping-Anfrage empfangen.")
+                        logger.debug(f"Ping request received from {addr}")
                         msg_pack = encode_message(
                             messages.build_ping_response(message.get("opId", ""))
                         )
@@ -145,7 +161,7 @@ class TLSServer:
                         await writer.drain()
 
                     elif msg_type == "pingCmp":
-                        pass
+                        logger.debug(f"Ping complete received from {addr}")
 
                     elif msg_type == "statusRsp":
                         data_dict = {
@@ -185,9 +201,11 @@ class TLSServer:
 
                     elif msg_type == "ulData":
                         eui = int(message["epEui"]).to_bytes(8, byteorder="big").hex()
-                        print(message)
+                        bs_eui = self.connected_base_stations[writer]
+                        logger.info(f"Uplink data received from endpoint {eui} via base station {bs_eui}")
+                        logger.debug(f"Data details - SNR: {message['snr']}, RSSI: {message['rssi']}, Packet count: {message['packetCnt']}")
                         data_dict = {
-                            "bs_eui": self.connected_base_stations[writer],
+                            "bs_eui": bs_eui,
                             "rxTime": message["rxTime"],
                             "snr": message["snr"],
                             "rssi": message["rssi"],
@@ -223,15 +241,23 @@ class TLSServer:
                     #    print(f"[ERROR] Fehler beim Dekodieren der Nachricht: {e}")
 
         except Exception as e:
-            print(f"[ERROR] Fehler bei Verbindung {addr}: {e}")
+            logger.error(f"Error handling connection from {addr}: {e}")
         finally:
-            with open(self.sensor_config_file, "w") as f:
-                json.dump(self.sensor_config, f, indent=4)
-            print(f"[INFO] Verbindung zu {addr} geschlossen.")
+            try:
+                with open(self.sensor_config_file, "w") as f:
+                    json.dump(self.sensor_config, f, indent=4)
+                logger.debug(f"Sensor configuration saved to {self.sensor_config_file}")
+            except Exception as e:
+                logger.error(f"Failed to save sensor configuration: {e}")
+            
+            logger.info(f"Connection to {addr} closed")
             writer.close()
             await writer.wait_closed()
             if writer in self.connected_base_stations:
-                self.connected_base_stations.pop(writer)
+                bs_eui = self.connected_base_stations.pop(writer)
+                logger.info(f"Base station {bs_eui} disconnected")
+            if writer in self.connecting_base_stations:
+                self.connecting_base_stations.pop(writer)
 
     async def queue_watcher(self) -> None:
         try:
