@@ -309,4 +309,3 @@ class TLSServer:
             logger.info(f"Configuration saved to {self.sensor_config_file}")
         except Exception as e:
             logger.error(f"Failed to save configuration: {e}")
-        )
