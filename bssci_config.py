@@ -1,5 +1,8 @@
+import os
+
 LISTEN_HOST = "0.0.0.0"
-LISTEN_PORT = 16017  # Internal container port
+# Use port 5000 for Replit Deployments, fallback to 16017 for local/Docker
+LISTEN_PORT = int(os.getenv("PORT", "5000")) if os.getenv("REPL_DEPLOYMENT") else 16017
 
 CERT_FILE = "certs/service_center_cert.pem"
 KEY_FILE = "certs/service_center_key.pem"
