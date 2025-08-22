@@ -25,7 +25,7 @@ async def main() -> None:
     server = TLSServer(SENSOR_CONFIG_FILE, mqtt_in_queue, mqtt_out_queue)
     
     logger.info("Initializing MQTT Client...")
-    mqtt_server = MQTTClient(mqtt_in_queue, mqtt_out_queue)
+    mqtt_server = MQTTClient(mqtt_out_queue, mqtt_in_queue)
     
     logger.info("Starting services...")
     await asyncio.gather(mqtt_server.start(), server.start_server())
