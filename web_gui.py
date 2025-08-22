@@ -126,18 +126,17 @@ def add_sensor():
             int(short_addr, 16)
         except ValueError:
             return jsonify({'error': 'All fields must contain only hexadecimal characters (0-9, A-F)'}), 400
-    
-    try:
+        
         # Load existing sensors
         try:
-            with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
+        with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
                 sensors = json.load(f)
         except:
             sensors = []
         
         # Check if sensor already exists
         for sensor in sensors:
-            if sensor['eui'].lower() == data['eui'].lower():
+            if sensor['eui'].lower() == eui.lower():
                 return jsonify({'error': 'Sensor with this EUI already exists'}), 400
         
         # Add new sensor
@@ -161,7 +160,7 @@ def add_sensor():
         
         logging.info(f"Sensor added successfully: {eui}")
         return jsonify({'success': True, 'message': 'Sensor erfolgreich hinzugefügt'})
-    
+        
     except Exception as e:
         logging.error(f"Error adding sensor: {e}")
         return jsonify({'error': f'Fehler beim Hinzufügen des Sensors: {str(e)}'}), 500
