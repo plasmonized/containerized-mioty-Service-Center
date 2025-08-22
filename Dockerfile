@@ -12,9 +12,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application files
 COPY *.py ./
-
-# Create data directory with proper permissions
-RUN mkdir -p /app/data && chmod 755 /app/data
+COPY endpoints.json ./
+COPY bssci_config.py ./
 
 # Create certs directory
 RUN mkdir -p certs
@@ -28,14 +27,8 @@ EXPOSE 16017
 # Set proper permissions for certificates
 RUN chmod -R 644 certs/ || true
 
-# Create a non-root user for security
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-
-# Change ownership of app directory to appuser
-RUN chown -R appuser:appuser /app
-
-# Switch to non-root user
-USER appuser
+# Ensure endpoints.json is writable
+RUN touch endpoints.json && chmod 666 endpoints.json || true
 
 # Run the application with unbuffered output
 CMD ["python", "-u", "main.py"]

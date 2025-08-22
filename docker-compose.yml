@@ -2,34 +2,32 @@
 version: '3.8'
 
 services:
-  bssci:
+  bssci-service-center:
     build: .
     container_name: bssci-service-center
-    restart: unless-stopped
     ports:
-      - "16017:16017"  # TLS port for base stations
+      - "16019:16017"
     volumes:
-      - ./data:/app/data  # Persistent storage for endpoints.json
-      - ./certs:/app/certs:ro  # Read-only certificates
+      - ./certs:/app/certs:ro
+      - ./endpoints.json:/app/endpoints.json
+      - ./bssci_config.py:/app/bssci_config.py
+    restart: unless-stopped
     environment:
-      - MQTT_BROKER=akahlig.selfhost.co
-      - MQTT_PORT=1887
-      - MQTT_USERNAME=bssci
-      - MQTT_PASSWORD=test=1234
-      - LISTEN_PORT=16017
-      - LISTEN_HOST=0.0.0.0
       - PYTHONUNBUFFERED=1
     networks:
       - bssci-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
-      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('localhost', 16017), timeout=5).close()"]
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('localhost', 16017), timeout=5)"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
 networks:
-  bssci-network:
-    driver: bridge
   bssci-network:
     driver: bridge

@@ -26,26 +26,11 @@ class TLSServer:
         self.connected_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
         self.connecting_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
         self.sensor_config_file = sensor_config_file
-        
-        # Ensure directory exists for the config file
-        import os
-        config_dir = os.path.dirname(sensor_config_file)
-        if config_dir and not os.path.exists(config_dir):
-            os.makedirs(config_dir, exist_ok=True)
-            
         try:
             with open(sensor_config_file, "r") as f:
                 self.sensor_config = json.load(f)
-            logger.info(f"Loaded {len(self.sensor_config)} existing endpoints from {sensor_config_file}")
-        except FileNotFoundError:
-            self.sensor_config = []
-            # Create empty endpoints file
-            with open(sensor_config_file, "w") as f:
-                json.dump(self.sensor_config, f, indent=4)
-            logger.info(f"Created new endpoints file at {sensor_config_file}")
-        except Exception as e:
-            logger.error(f"Error loading endpoints file: {e}")
-            self.sensor_config = []
+        except Exception:
+            self.sensor_config = {}
 
     async def start_server(self) -> None:
         logger.info("Setting up SSL context...")
@@ -76,24 +61,14 @@ class TLSServer:
         self, writer: asyncio.streams.StreamWriter, sensor: dict[str, Any]
     ) -> None:
         try:
-            # Normalize nwKey to exactly 32 characters
-            nw_key = sensor["nwKey"][:32] if len(sensor["nwKey"]) >= 32 else sensor["nwKey"]
-            
             if (
                 len(sensor["eui"]) == 16
-                and len(nw_key) == 32
+                and len(sensor["nwKey"]) == 32
                 and len(sensor["shortAddr"]) == 4
             ):
                 logger.info(f"Sending attach request for sensor EUI: {sensor['eui']}, Short Address: {sensor['shortAddr']}")
-                # Use normalized sensor data
-                normalized_sensor = {
-                    "eui": sensor["eui"],
-                    "nwKey": nw_key,
-                    "shortAddr": sensor["shortAddr"],
-                    "bidi": sensor.get("bidi", False)
-                }
                 msg_pack = encode_message(
-                    messages.build_attach_request(normalized_sensor, self.opID)
+                    messages.build_attach_request(sensor, self.opID)
                 )
                 writer.write(
                     IDENTIFIER
