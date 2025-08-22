@@ -24,5 +24,11 @@ COPY certs/ ./certs/
 # Expose the TLS port
 EXPOSE 16017
 
-# Run the application
-CMD ["python", "main.py"]
+# Set proper permissions for certificates
+RUN chmod -R 644 certs/ || true
+
+# Ensure endpoints.json is writable
+RUN touch endpoints.json && chmod 666 endpoints.json || true
+
+# Run the application with unbuffered output
+CMD ["python", "-u", "main.py"]
