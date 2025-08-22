@@ -15,20 +15,28 @@ COPY *.py ./
 COPY endpoints.json ./
 COPY bssci_config.py ./
 
-# Create certs directory
-RUN mkdir -p certs
+# Create directories
+RUN mkdir -p certs templates
 
-# Copy certificates if they exist
+# Copy certificates and templates
 COPY certs/ ./certs/
+COPY templates/ ./templates/
 
-# Expose the TLS port
-EXPOSE 16017
+# Expose ports - TLS server and web GUI
+EXPOSE 16017 5000
 
 # Set proper permissions for certificates
 RUN chmod -R 644 certs/ || true
 
 # Ensure endpoints.json is writable
 RUN touch endpoints.json && chmod 666 endpoints.json || true
+
+# Copy entrypoint script
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Set entrypoint
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Run the application with unbuffered output
 CMD ["python", "-u", "main.py"]
