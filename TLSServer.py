@@ -269,26 +269,44 @@ class TLSServer:
                     and "shortAddr" in msg.keys()
                     and "bidi" in msg.keys()
                 ):
-                    for writer, bs_eui in self.connected_base_stations.items():
-                        await self.send_attach_request(writer, msg)
+                    logger.info(f"Processing configuration for endpoint {msg['eui']}")
+                    if self.connected_base_stations:
+                        logger.info(f"Sending attach request to {len(self.connected_base_stations)} connected base stations")
+                        for writer, bs_eui in self.connected_base_stations.items():
+                            logger.info(f"Sending attach request for sensor EUI: {msg['eui']} to base station: {bs_eui}")
+                            await self.send_attach_request(writer, msg)
+                    else:
+                        logger.warning("No base stations connected - attach requests will be sent when base stations connect")
                     self.update_or_add_entry(msg)
         except asyncio.CancelledError:
             pass  # normal beim Client disconnect
 
     def update_or_add_entry(self, msg: dict[str, Any]) -> None:
+        # Update existing entry or add new one
         for sensor in self.sensor_config:
             if sensor["eui"].lower() == msg["eui"].lower():
                 sensor["nwKey"] = msg["nwKey"]
                 sensor["shortAddr"] = msg["shortAddr"]
                 sensor["bidi"] = msg["bidi"]
-                return  # Eintrag wurde aktualisiert
-
-        # Wenn kein Eintrag gefunden wurde → neu hinzufügen
-        self.sensor_config.append(
-            {
-                "eui": msg["eui"],
-                "nwKey": msg["nwKey"],
-                "shortAddr": msg["shortAddr"],
-                "bidi": msg["bidi"],
-            }
+                logger.info(f"Updated configuration for existing endpoint {msg['eui']}")
+                break
+        else:
+            # No existing entry found → add new one
+            self.sensor_config.append(
+                {
+                    "eui": msg["eui"],
+                    "nwKey": msg["nwKey"],
+                    "shortAddr": msg["shortAddr"],
+                    "bidi": msg["bidi"],
+                }
+            )
+            logger.info(f"Added new endpoint configuration for {msg['eui']}")
+        
+        # Save updated configuration to file
+        try:
+            with open(self.sensor_config_file, "w") as f:
+                json.dump(self.sensor_config, f, indent=4)
+            logger.info(f"Configuration saved to {self.sensor_config_file}")
+        except Exception as e:
+            logger.error(f"Failed to save configuration: {e}")
         )
