@@ -6,7 +6,7 @@ services:
     build: .
     container_name: bssci-service-center
     ports:
-      - "16017:16017"
+      - "16019:16017"
     volumes:
       - ./certs:/app/certs:ro
       - ./endpoints.json:/app/endpoints.json
