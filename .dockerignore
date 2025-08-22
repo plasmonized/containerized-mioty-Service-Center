@@ -1,0 +1,14 @@
+
+.git
+.github
+Doc/
+README.md
+LICENSE
+.replit
+pyproject.toml
+setup.cfg
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
