@@ -10,11 +10,10 @@ run = ["sh", "-c", "py main.py"]
 
 [[ports]]
 localPort = 5000
-externalPort = 5000
+externalPort = 80
 
 [[ports]]
 localPort = 16017
-externalPort = 80
 
 [workflows]
 runButton = "Start BSSCI Web GUI"
