@@ -1,11 +1,9 @@
 import asyncio
 import logging
-import os
 
 from bssci_config import SENSOR_CONFIG_FILE, LISTEN_HOST, LISTEN_PORT, MQTT_BROKER, MQTT_PORT
 from mqtt_interface import MQTTClient
 from TLSServer import TLSServer
-from web_gui import start_web_gui
 
 # Configure logging
 logging.basicConfig(
@@ -20,10 +18,6 @@ async def main() -> None:
     logger.info(f"MQTT Broker: {MQTT_BROKER}:{MQTT_PORT}")
     logger.info(f"Sensor config file: {SENSOR_CONFIG_FILE}")
     
-    # Create templates directory if it doesn't exist
-    if not os.path.exists('templates'):
-        os.makedirs('templates')
-    
     mqtt_in_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
     mqtt_out_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
     
@@ -32,9 +26,6 @@ async def main() -> None:
     
     logger.info("Initializing MQTT Client...")
     mqtt_server = MQTTClient(mqtt_out_queue, mqtt_in_queue)
-    
-    logger.info("Starting Web GUI on http://0.0.0.0:5000")
-    start_web_gui(server, mqtt_server, mqtt_in_queue, mqtt_out_queue)
     
     logger.info("Starting services...")
     await asyncio.gather(mqtt_server.start(), server.start_server())

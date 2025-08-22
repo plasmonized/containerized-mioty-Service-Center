@@ -61,14 +61,24 @@ class TLSServer:
         self, writer: asyncio.streams.StreamWriter, sensor: dict[str, Any]
     ) -> None:
         try:
+            # Normalize nwKey to exactly 32 characters
+            nw_key = sensor["nwKey"][:32] if len(sensor["nwKey"]) >= 32 else sensor["nwKey"]
+            
             if (
                 len(sensor["eui"]) == 16
-                and len(sensor["nwKey"]) == 32
+                and len(nw_key) == 32
                 and len(sensor["shortAddr"]) == 4
             ):
                 logger.info(f"Sending attach request for sensor EUI: {sensor['eui']}, Short Address: {sensor['shortAddr']}")
+                # Use normalized sensor data
+                normalized_sensor = {
+                    "eui": sensor["eui"],
+                    "nwKey": nw_key,
+                    "shortAddr": sensor["shortAddr"],
+                    "bidi": sensor.get("bidi", False)
+                }
                 msg_pack = encode_message(
-                    messages.build_attach_request(sensor, self.opID)
+                    messages.build_attach_request(normalized_sensor, self.opID)
                 )
                 writer.write(
                     IDENTIFIER

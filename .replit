@@ -9,29 +9,5 @@ packages = ["borgbackup"]
 run = ["sh", "-c", "py main.py"]
 
 [[ports]]
-localPort = 5000
-externalPort = 80
-
-[[ports]]
 localPort = 16017
-
-[workflows]
-runButton = "Start BSSCI"
-
-[[workflows.workflow]]
-name = "Start BSSCI Web GUI"
-author = 45640243
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
-
-[[workflows.workflow]]
-name = "Start BSSCI"
-author = 45640243
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python main.py"
+externalPort = 80

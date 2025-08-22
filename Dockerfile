@@ -15,15 +15,14 @@ COPY *.py ./
 COPY endpoints.json ./
 COPY bssci_config.py ./
 
-# Create directories
-RUN mkdir -p certs templates logs
+# Create certs directory
+RUN mkdir -p certs
 
-# Copy certificates and templates
+# Copy certificates if they exist
 COPY certs/ ./certs/
-COPY templates/ ./templates/
 
-# Expose ports - TLS server and web GUI
-EXPOSE 16017 5000
+# Expose the TLS port
+EXPOSE 16017
 
 # Set proper permissions for certificates
 RUN chmod -R 644 certs/ || true
