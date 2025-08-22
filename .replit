@@ -1,0 +1,13 @@
+modules = ["python-3.12"]
+run = "python main.py"
+
+[nix]
+channel = "stable-25_05"
+packages = ["borgbackup"]
+
+[deployment]
+run = ["sh", "-c", "py main.py"]
+
+[[ports]]
+localPort = 16017
+externalPort = 80

@@ -1,3 +1,4 @@
 asyncio-mqtt
 msgpack>=1.0.7
 
+aiomqtt
