@@ -26,11 +26,26 @@ class TLSServer:
         self.connected_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
         self.connecting_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
         self.sensor_config_file = sensor_config_file
+        
+        # Ensure directory exists for the config file
+        import os
+        config_dir = os.path.dirname(sensor_config_file)
+        if config_dir and not os.path.exists(config_dir):
+            os.makedirs(config_dir, exist_ok=True)
+            
         try:
             with open(sensor_config_file, "r") as f:
                 self.sensor_config = json.load(f)
-        except Exception:
-            self.sensor_config = {}
+            logger.info(f"Loaded {len(self.sensor_config)} existing endpoints from {sensor_config_file}")
+        except FileNotFoundError:
+            self.sensor_config = []
+            # Create empty endpoints file
+            with open(sensor_config_file, "w") as f:
+                json.dump(self.sensor_config, f, indent=4)
+            logger.info(f"Created new endpoints file at {sensor_config_file}")
+        except Exception as e:
+            logger.error(f"Error loading endpoints file: {e}")
+            self.sensor_config = []
 
     async def start_server(self) -> None:
         logger.info("Setting up SSL context...")
