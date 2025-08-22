@@ -17,16 +17,25 @@
             <div class="card-body">
                 <form id="addSensorForm">
                     <div class="mb-3">
-                        <label for="eui" class="form-label">EUI (16 Zeichen)</label>
-                        <input type="text" class="form-control" id="eui" maxlength="16" placeholder="1234567890ABCDEF" required>
+                        <label for="eui" class="form-label">EUI (16 Hex-Zeichen)</label>
+                        <input type="text" class="form-control" id="eui" maxlength="16" 
+                               placeholder="1234567890ABCDEF" pattern="[0-9A-Fa-f]{16}" 
+                               style="text-transform: uppercase;" required>
+                        <div class="form-text">Nur 0-9 und A-F erlaubt</div>
                     </div>
                     <div class="mb-3">
-                        <label for="nwKey" class="form-label">Network Key (32 Zeichen)</label>
-                        <input type="text" class="form-control" id="nwKey" maxlength="32" placeholder="00112233445566778899AABBCCDDEEFF" required>
+                        <label for="nwKey" class="form-label">Network Key (32 Hex-Zeichen)</label>
+                        <input type="text" class="form-control" id="nwKey" maxlength="32" 
+                               placeholder="00112233445566778899AABBCCDDEEFF" pattern="[0-9A-Fa-f]{32}"
+                               style="text-transform: uppercase;" required>
+                        <div class="form-text">Nur 0-9 und A-F erlaubt</div>
                     </div>
                     <div class="mb-3">
-                        <label for="shortAddr" class="form-label">Short Address (4 Zeichen)</label>
-                        <input type="text" class="form-control" id="shortAddr" maxlength="4" placeholder="0000" required>
+                        <label for="shortAddr" class="form-label">Short Address (4 Hex-Zeichen)</label>
+                        <input type="text" class="form-control" id="shortAddr" maxlength="4" 
+                               placeholder="0000" pattern="[0-9A-Fa-f]{4}"
+                               style="text-transform: uppercase;" required>
+                        <div class="form-text">Nur 0-9 und A-F erlaubt</div>
                     </div>
                     <div class="mb-3 form-check">
                         <input type="checkbox" class="form-check-input" id="bidi">
@@ -160,10 +169,28 @@ function confirmDelete() {
 document.getElementById('addSensorForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
+    const eui = document.getElementById('eui').value.trim().toUpperCase();
+    const nwKey = document.getElementById('nwKey').value.trim().toUpperCase();
+    const shortAddr = document.getElementById('shortAddr').value.trim().toUpperCase();
+    
+    // Client-side validation
+    if (!/^[0-9A-F]{16}$/.test(eui)) {
+        showAlert('danger', 'EUI muss genau 16 Hex-Zeichen enthalten (0-9, A-F)');
+        return;
+    }
+    if (!/^[0-9A-F]{32}$/.test(nwKey)) {
+        showAlert('danger', 'Network Key muss genau 32 Hex-Zeichen enthalten (0-9, A-F)');
+        return;
+    }
+    if (!/^[0-9A-F]{4}$/.test(shortAddr)) {
+        showAlert('danger', 'Short Address muss genau 4 Hex-Zeichen enthalten (0-9, A-F)');
+        return;
+    }
+    
     const formData = {
-        eui: document.getElementById('eui').value.trim().toUpperCase(),
-        nwKey: document.getElementById('nwKey').value.trim().toUpperCase(),
-        shortAddr: document.getElementById('shortAddr').value.trim().toUpperCase(),
+        eui: eui,
+        nwKey: nwKey,
+        shortAddr: shortAddr,
         bidi: document.getElementById('bidi').checked
     };
     

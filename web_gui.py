@@ -95,21 +95,37 @@ def api_sensors():
 
 @app.route('/api/sensors/add', methods=['POST'])
 def add_sensor():
-    data = request.json
-    
-    # Validate input
-    required_fields = ['eui', 'nwKey', 'shortAddr']
-    for field in required_fields:
-        if field not in data or not data[field]:
-            return jsonify({'error': f'Field {field} is required'}), 400
-    
-    # Validate lengths
-    if len(data['eui']) != 16:
-        return jsonify({'error': 'EUI must be 16 characters long'}), 400
-    if len(data['nwKey']) != 32:
-        return jsonify({'error': 'Network Key must be 32 characters long'}), 400
-    if len(data['shortAddr']) != 4:
-        return jsonify({'error': 'Short Address must be 4 characters long'}), 400
+    try:
+        data = request.json
+        if not data:
+            return jsonify({'error': 'No JSON data received'}), 400
+        
+        # Validate input
+        required_fields = ['eui', 'nwKey', 'shortAddr']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({'error': f'Field {field} is required'}), 400
+        
+        # Clean and validate data
+        eui = data['eui'].strip().upper()
+        nw_key = data['nwKey'].strip().upper()
+        short_addr = data['shortAddr'].strip().upper()
+        
+        # Validate lengths and format
+        if len(eui) != 16:
+            return jsonify({'error': 'EUI must be exactly 16 characters long'}), 400
+        if len(nw_key) != 32:
+            return jsonify({'error': 'Network Key must be exactly 32 characters long'}), 400
+        if len(short_addr) != 4:
+            return jsonify({'error': 'Short Address must be exactly 4 characters long'}), 400
+        
+        # Validate hex format
+        try:
+            int(eui, 16)
+            int(nw_key, 16) 
+            int(short_addr, 16)
+        except ValueError:
+            return jsonify({'error': 'All fields must contain only hexadecimal characters (0-9, A-F)'}), 400
     
     try:
         # Load existing sensors
@@ -126,9 +142,9 @@ def add_sensor():
         
         # Add new sensor
         new_sensor = {
-            'eui': data['eui'].upper(),
-            'nwKey': data['nwKey'].upper(),
-            'shortAddr': data['shortAddr'].upper(),
+            'eui': eui,
+            'nwKey': nw_key,
+            'shortAddr': short_addr,
             'bidi': data.get('bidi', False)
         }
         
@@ -141,14 +157,14 @@ def add_sensor():
         # Update TLS server config
         if tls_server:
             tls_server.sensor_config = sensors
-            # Send attach requests to connected base stations
-            for writer in tls_server.connected_base_stations.keys():
-                asyncio.create_task(tls_server.send_attach_request(writer, new_sensor))
+            # Note: TLS server will automatically reload config on next connection
         
-        return jsonify({'success': True, 'message': 'Sensor added successfully'})
+        logging.info(f"Sensor added successfully: {eui}")
+        return jsonify({'success': True, 'message': 'Sensor erfolgreich hinzugefügt'})
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        logging.error(f"Error adding sensor: {e}")
+        return jsonify({'error': f'Fehler beim Hinzufügen des Sensors: {str(e)}'}), 500
 
 @app.route('/api/sensors/delete/<eui>', methods=['DELETE'])
 def delete_sensor(eui):
