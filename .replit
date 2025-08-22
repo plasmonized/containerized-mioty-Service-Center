@@ -16,7 +16,6 @@ externalPort = 80
 localPort = 16017
 
 [workflows]
-runButton = "Start BSSCI Web GUI"
 
 [[workflows.workflow]]
 name = "Start BSSCI Web GUI"
