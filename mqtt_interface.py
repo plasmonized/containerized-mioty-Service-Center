@@ -4,7 +4,7 @@ import logging
 
 from aiomqtt import Client
 
-from bssci_config import BASE_TOPIC, MQTT_BROKER, MQTT_USERNAME, MQTT_PASSWORD
+from bssci_config import BASE_TOPIC, MQTT_BROKER, MQTT_PORT, MQTT_USERNAME, MQTT_PASSWORD
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +25,20 @@ class MQTTClient:
         self.mqtt_in_queue = mqtt_in_queue
 
     async def start(self) -> None:
-        logger.info(f"Connecting to MQTT broker at {self.broker_host}")
+        logger.info(f"Connecting to MQTT broker at {self.broker_host}:{MQTT_PORT}")
+        logger.info(f"Using username: {MQTT_USERNAME}")
         logger.info(f"Config topic: {self.config_topic}")
-        async with Client(self.broker_host, username=MQTT_USERNAME, password=MQTT_PASSWORD) as client:
-            logger.info("MQTT client connected successfully")
-            await asyncio.gather(
-                self._handle_incoming(client), self._handle_outgoing(client)
-            )
+        try:
+            async with Client(self.broker_host, port=MQTT_PORT, username=MQTT_USERNAME, password=MQTT_PASSWORD) as client:
+                logger.info("MQTT client connected successfully")
+                await asyncio.gather(
+                    self._handle_incoming(client), self._handle_outgoing(client)
+                )
+        except Exception as e:
+            logger.error(f"MQTT connection failed: {e}")
+            logger.error(f"Broker: {self.broker_host}:{MQTT_PORT}")
+            logger.error(f"Username: {MQTT_USERNAME}")
+            raise
 
     async def _handle_incoming(self, client: Client) -> None:
         await client.subscribe(self.config_topic)
