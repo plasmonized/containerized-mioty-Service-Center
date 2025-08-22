@@ -54,7 +54,7 @@ def status():
                 'address': str(addr)
             })
     
-    return render_template('status.html', base_stations=connected_bs)
+    return render_template('index.html', base_stations=connected_bs)
 
 @app.route('/api/status')
 def api_status():
