@@ -373,7 +373,7 @@ class TLSServer:
                         logger.info(f"   Message type: {msg_type}")
                         logger.debug(f"   Full message: {message}")
 
-                    if msg_type == "con":
+                        if msg_type == "con":
                         logger.info(f"📨 BSSCI CONNECTION REQUEST received from {addr}")
                         logger.info(f"   Operation ID: {message.get('opId', 'unknown')}")
                         logger.info(f"   Base Station UUID: {message.get('snBsUuid', 'unknown')}")
