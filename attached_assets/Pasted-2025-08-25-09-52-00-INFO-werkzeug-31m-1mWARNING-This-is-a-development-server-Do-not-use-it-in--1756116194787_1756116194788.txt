@@ -1,0 +1,38 @@
+2025-08-25 09:52:00 INFO werkzeug: [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m * Running on all addresses (0.0.0.0) * Running on http://127.0.0.1:5000 * Running on http://172.31.115.226:5000
+2025-08-25 09:52:00 INFO werkzeug: [33mPress CTRL+C to quit[0m
+2025-08-25 09:52:02 WARNING TLSServer: ⚠️ SSL/TLS is DISABLED - server will accept insecure connections
+2025-08-25 09:52:02 WARNING TLSServer: This configuration should ONLY be used for local testing!
+2025-08-25 09:59:21 WARNING TLSServer: ⚠️ Network key too long, truncating: 0011223344556677889AABBCCDDEEFF00 -> 0011223344556677889AABBCCDDEEFF0
+2025-08-25 09:59:21 WARNING TLSServer: ⚠️ Network key truncated from 33 to 32 characters
+2025-08-25 09:59:21 WARNING TLSServer: ⚠️ Network key too long, truncating: 0011223344556677889AABBCCDDEEFF00 -> 0011223344556677889AABBCCDDEEFF0
+2025-08-25 09:59:21 WARNING TLSServer: ⚠️ Network key truncated from 33 to 32 characters
+2025-08-25 09:59:21 WARNING TLSServer: ⚠️ Network key too long, truncating: 0011223344556677889AABBCCDDEEFF00 -> 0011223344556677889AABBCCDDEEFF0
+2025-08-25 09:59:21 WARNING TLSServer: ⚠️ Network key truncated from 33 to 32 characters
+2025-08-25 09:59:22 WARNING TLSServer: ⚠️ Network key too long, truncating: 0011223344556677889AABBCCDDEEFF00 -> 0011223344556677889AABBCCDDEEFF0
+2025-08-25 09:59:22 WARNING TLSServer: ⚠️ Network key truncated from 33 to 32 characters
+2025-08-25 09:59:22 WARNING TLSServer: ⚠️ Network key too long, truncating: 0011223344556677889AABBCCDDEEFF00 -> 0011223344556677889AABBCCDDEEFF0
+2025-08-25 09:59:22 WARNING TLSServer: ⚠️ Network key truncated from 33 to 32 characters
+2025-08-25 09:59:22 WARNING TLSServer: ⚠️ Network key too long, truncating: 0011223344556677889AABBCCDDEEFF00 -> 0011223344556677889AABBCCDDEEFF0
+2025-08-25 09:59:22 WARNING TLSServer: ⚠️ Network key truncated from 33 to 32 characters
+2025-08-25 09:59:22 WARNING TLSServer: Registration Status: ⚠️ NOT REGISTERED
+2025-08-25 09:59:22 WARNING TLSServer: This sensor may not be configured in endpoints.json
+2025-08-25 09:59:34 WARNING TLSServer: Registration Status: ⚠️ NOT REGISTERED
+2025-08-25 09:59:34 WARNING TLSServer: This sensor may not be configured in endpoints.json
+2025-08-25 09:59:46 WARNING TLSServer: Registration Status: ⚠️ NOT REGISTERED
+2025-08-25 09:59:46 WARNING TLSServer: This sensor may not be configured in endpoints.json
+2025-08-25 10:00:03 WARNING TLSServer: Registration Status: ⚠️ NOT REGISTERED
+2025-08-25 10:00:03 WARNING TLSServer: This sensor may not be configured in endpoints.json
+2025-08-25 10:00:09 WARNING TLSServer: Registration Status: ⚠️ NOT REGISTERED
+2025-08-25 10:00:09 WARNING TLSServer: This sensor may not be configured in endpoints.json
+2025-08-25 10:00:33 WARNING TLSServer: Registration Status: ⚠️ NOT REGISTERED
+2025-08-25 10:00:33 WARNING TLSServer: This sensor may not be configured in endpoints.json
+2025-08-25 10:00:45 WARNING TLSServer: Registration Status: ⚠️ NOT REGISTERED
+2025-08-25 10:00:45 WARNING TLSServer: This sensor may not be configured in endpoints.json
+2025-08-25 10:01:04 WARNING TLSServer: Registration Status: ⚠️ NOT REGISTERED
+2025-08-25 10:01:04 WARNING TLSServer: This sensor may not be configured in endpoints.json
+2025-08-25 10:01:27 WARNING TLSServer: Registration Status: ⚠️ NOT REGISTERED
+2025-08-25 10:01:27 WARNING TLSServer: This sensor may not be configured in endpoints.json
+2025-08-25 10:01:36 WARNING TLSServer: Registration Status: ⚠️ NOT REGISTERED
+2025-08-25 10:01:36 WARNING TLSServer: This sensor may not be configured in endpoints.json
+2025-08-25 10:02:28 WARNING TLSServer: Registration Status: ⚠️ NOT REGISTERED
+2025-08-25 10:02:28 WARNING TLSServer: This sensor may not be configured in endpoints.json
