@@ -10,9 +10,9 @@ from TLSServer import TLSServer
 # Configure logging for both container and local environment
 # Ensure logs directory exists
 if os.path.exists('/app'):
-    # Container environment
-    os.makedirs('/app/logs', exist_ok=True)
-    log_file = '/app/logs/bssci.log'
+    # Container environment - logs mounted at /logs
+    os.makedirs('/logs', exist_ok=True)
+    log_file = '/logs/bssci.log'
 else:
     # Local development environment
     os.makedirs('logs', exist_ok=True)

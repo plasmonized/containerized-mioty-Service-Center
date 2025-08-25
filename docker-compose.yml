@@ -11,7 +11,7 @@ services:
       - ./certs:/app/certs:ro
       - ./endpoints.json:/app/endpoints.json
       - ./bssci_config.py:/app/bssci_config.py
-      - ./logs:/app/logs
+      - ./logs:/logs
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1
