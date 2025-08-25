@@ -19,7 +19,7 @@ async def main():
     mqtt_in_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
 
     tls_server = TLSServer(
-        bssci_config.SENSOR_CONFIG_FILE, mqtt_out_queue, mqtt_in_queue
+        bssci_config.SENSOR_CONFIG_FILE, mqtt_in_queue, mqtt_out_queue
     )
     tls_server_instance = tls_server  # Store global reference
     mqtt_client = MQTTClient(mqtt_out_queue, mqtt_in_queue)
