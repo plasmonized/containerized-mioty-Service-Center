@@ -7,16 +7,23 @@ from bssci_config import SENSOR_CONFIG_FILE, LISTEN_HOST, LISTEN_PORT, MQTT_BROK
 from mqtt_interface import MQTTClient
 from TLSServer import TLSServer
 
-# Configure logging for container environment
+# Configure logging for both container and local environment
 # Ensure logs directory exists
-os.makedirs('/app/logs', exist_ok=True)
+if os.path.exists('/app'):
+    # Container environment
+    os.makedirs('/app/logs', exist_ok=True)
+    log_file = '/app/logs/bssci.log'
+else:
+    # Local development environment
+    os.makedirs('logs', exist_ok=True)
+    log_file = 'logs/bssci.log'
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(sys.stdout),
-        logging.FileHandler('/app/logs/bssci.log', mode='a')
+        logging.FileHandler(log_file, mode='a')
     ]
 )
 logger = logging.getLogger(__name__)

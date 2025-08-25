@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import ssl
+import os
 from typing import Any, Dict
 
 import bssci_config
@@ -26,9 +27,6 @@ class TLSServer:
         self.connected_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
         self.connecting_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
         self.sensor_config_file = sensor_config_file
-        
-        # Ensure logs directory exists
-        os.makedirs('/app/logs', exist_ok=True)
         
         try:
             with open(sensor_config_file, "r") as f:
