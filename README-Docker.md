@@ -15,7 +15,7 @@ docker-compose -f docker-compose.prod.yml up --build -d
 
 ## Services
 
-- **TLS Server**: Port 16017 (for mioty base stations)
+- **TLS Server**: Port 16018 (for mioty base stations)
 - **Web UI**: Port 5000 (development) / Port 80 (production)
 
 ## Required Files
@@ -50,18 +50,18 @@ Before starting, ensure you have:
 ## Health Checks
 
 The container includes health checks for both services:
-- TLS Server on port 16017
+- TLS Server on port 16018
 - Web UI on port 5000
 
 ## Accessing the Services
 
 ### Development
 - Web UI: http://localhost:5000
-- TLS Server: localhost:16019 (mapped from 16017)
+- TLS Server: localhost:16019 (mapped from 16018)
 
 ### Production  
 - Web UI: http://localhost (port 80)
-- TLS Server: localhost:16017
+- TLS Server: localhost:16018
 
 ## Logs
 
