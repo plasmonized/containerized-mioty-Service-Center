@@ -30,12 +30,6 @@
         "bidi": false
     },
     {
-        "eui": "74731d0000000001",
-        "nwKey": "00112233445566778899AABBCCDDEEFF",
-        "shortAddr": "0000",
-        "bidi": false
-    },
-    {
         "eui": "fca84a030000130a",
         "nwKey": "C43FE1803F1629FEEE67B364DFCDEF53",
         "shortAddr": "130A",
