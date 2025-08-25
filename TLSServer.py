@@ -33,16 +33,24 @@ class TLSServer:
             self.sensor_config = {}
 
     async def start_server(self) -> None:
-        logger.info("Setting up SSL context...")
+        logger.info("🔐 Setting up SSL/TLS context for BSSCI server...")
+        logger.info(f"   Certificate file: {bssci_config.CERT_FILE}")
+        logger.info(f"   Key file: {bssci_config.KEY_FILE}")
+        logger.info(f"   CA file: {bssci_config.CA_FILE}")
+        
         ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
         ssl_ctx.load_cert_chain(
             certfile=bssci_config.CERT_FILE, keyfile=bssci_config.KEY_FILE
         )
         ssl_ctx.load_verify_locations(cafile=bssci_config.CA_FILE)
         ssl_ctx.verify_mode = ssl.CERT_REQUIRED
-        logger.info("SSL context configured successfully")
+        logger.info("✓ SSL context configured successfully with client certificate verification")
 
-        logger.info(f"Starting TLS server on {bssci_config.LISTEN_HOST}:{bssci_config.LISTEN_PORT}")
+        logger.info(f"🚀 Starting BSSCI TLS server...")
+        logger.info(f"   Listen address: {bssci_config.LISTEN_HOST}:{bssci_config.LISTEN_PORT}")
+        logger.info(f"   Sensor config file: {self.sensor_config_file}")
+        logger.info(f"   Loaded sensors: {len(self.sensor_config)}")
+        
         server = await asyncio.start_server(
             self.handle_client,
             bssci_config.LISTEN_HOST,
@@ -50,10 +58,10 @@ class TLSServer:
             ssl=ssl_ctx,
         )
 
-        logger.info("Starting queue watcher task...")
+        logger.info("📨 Starting MQTT queue watcher task...")
         asyncio.create_task(self.queue_watcher())
 
-        logger.info("TLS Server is ready and listening for connections")
+        logger.info("✓ BSSCI TLS Server is ready and listening for base station connections")
         async with server:
             await server.serve_forever()
 
@@ -122,7 +130,23 @@ class TLSServer:
         self, reader: asyncio.streams.StreamReader, writer: asyncio.streams.StreamWriter
     ) -> None:
         addr = writer.get_extra_info("peername")
-        logger.info(f"New connection established from {addr}")
+        ssl_obj = writer.get_extra_info("ssl_object")
+        
+        logger.info(f"🔗 New BSSCI connection established from {addr}")
+        if ssl_obj:
+            cert = ssl_obj.getpeercert()
+            if cert:
+                subject = cert.get('subject', [])
+                cn = None
+                for field in subject:
+                    for name, value in field:
+                        if name == 'commonName':
+                            cn = value
+                            break
+                logger.info(f"   Client certificate CN: {cn}")
+        
+        connection_start_time = asyncio.get_event_loop().time()
+        messages_processed = 0
 
         try:
             while True:
@@ -132,7 +156,12 @@ class TLSServer:
                 # try:
                 for message in decode_messages(data):
                     msg_type = message.get("command", "")
-                    logger.debug(f"Received message type '{msg_type}' from {addr}")
+                    messages_processed += 1
+                    
+                    logger.info(f"📨 BSSCI message #{messages_processed} received from {addr}")
+                    logger.info(f"   Message type: {msg_type}")
+                    logger.debug(f"   Full message: {message}")
+                    
                     if msg_type == "con":
                         msg = encode_message(
                             messages.build_connection_response(
@@ -153,8 +182,13 @@ class TLSServer:
                         ):
                             bs_eui = self.connecting_base_stations[writer]
                             self.connected_base_stations[writer] = bs_eui
-                            logger.info(f"Base station {bs_eui} connection completed successfully")
-                            logger.info(f"Attaching {len(self.sensor_config)} sensors to base station {bs_eui}")
+                            connection_time = asyncio.get_event_loop().time() - connection_start_time
+                            
+                            logger.info(f"✅ Base station {bs_eui} connection completed successfully")
+                            logger.info(f"   Connection time: {connection_time:.2f} seconds")
+                            logger.info(f"   Total connected base stations: {len(self.connected_base_stations)}")
+                            logger.info(f"🔗 Attaching {len(self.sensor_config)} sensors to base station {bs_eui}")
+                            
                             await self.attach_file(writer)
                             asyncio.create_task(self.send_status_requests())
 
@@ -212,8 +246,15 @@ class TLSServer:
                     elif msg_type == "ulData":
                         eui = int(message["epEui"]).to_bytes(8, byteorder="big").hex()
                         bs_eui = self.connected_base_stations[writer]
-                        logger.info(f"Uplink data received from endpoint {eui} via base station {bs_eui}")
-                        logger.debug(f"Data details - SNR: {message['snr']}, RSSI: {message['rssi']}, Packet count: {message['packetCnt']}")
+                        
+                        logger.info(f"📡 Sensor uplink data received!")
+                        logger.info(f"   Endpoint EUI: {eui}")
+                        logger.info(f"   Via base station: {bs_eui}")
+                        logger.info(f"   Signal quality - SNR: {message['snr']:.2f} dB, RSSI: {message['rssi']:.2f} dBm")
+                        logger.info(f"   Packet count: {message['packetCnt']}")
+                        logger.info(f"   Data payload length: {len(message['userData'])} bytes")
+                        logger.debug(f"   Raw data: {message['userData']}")
+                        
                         data_dict = {
                             "bs_eui": bs_eui,
                             "rxTime": message["rxTime"],
@@ -222,6 +263,8 @@ class TLSServer:
                             "cnt": message["packetCnt"],
                             "data": message["userData"],
                         }
+                        
+                        logger.info(f"📤 Queuing sensor data for MQTT publication to topic: ep/{eui}/ul")
                         await self.mqtt_out_queue.put(
                             {"topic": f"ep/{eui}/ul", "payload": json.dumps(data_dict)}
                         )
@@ -253,6 +296,8 @@ class TLSServer:
         except Exception as e:
             logger.error(f"Error handling connection from {addr}: {e}")
         finally:
+            connection_duration = asyncio.get_event_loop().time() - connection_start_time
+            
             try:
                 with open(self.sensor_config_file, "w") as f:
                     json.dump(self.sensor_config, f, indent=4)
@@ -260,12 +305,17 @@ class TLSServer:
             except Exception as e:
                 logger.error(f"Failed to save sensor configuration: {e}")
             
-            logger.info(f"Connection to {addr} closed")
+            logger.info(f"🔌 Connection to {addr} closed")
+            logger.info(f"   Connection duration: {connection_duration:.2f} seconds")
+            logger.info(f"   Messages processed: {messages_processed}")
+            
             writer.close()
             await writer.wait_closed()
+            
             if writer in self.connected_base_stations:
                 bs_eui = self.connected_base_stations.pop(writer)
-                logger.info(f"Base station {bs_eui} disconnected")
+                logger.info(f"❌ Base station {bs_eui} disconnected")
+                logger.info(f"   Remaining connected base stations: {len(self.connected_base_stations)}")
             if writer in self.connecting_base_stations:
                 self.connecting_base_stations.pop(writer)
 

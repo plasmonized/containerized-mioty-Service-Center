@@ -25,45 +25,89 @@ class MQTTClient:
         self.mqtt_in_queue = mqtt_in_queue
 
     async def start(self) -> None:
-        logger.info(f"Connecting to MQTT broker at {self.broker_host}:{MQTT_PORT}")
-        logger.info(f"Using username: {MQTT_USERNAME}")
-        logger.info(f"Config topic: {self.config_topic}")
+        logger.info(f"Initializing MQTT client connection...")
+        logger.info(f"Broker: {self.broker_host}:{MQTT_PORT}")
+        logger.info(f"Username: {MQTT_USERNAME}")
+        logger.info(f"Base topic: {self.base_topic}")
+        logger.info(f"Config subscription topic: {self.config_topic}")
+        
         try:
+            logger.info("Establishing connection to MQTT broker...")
             async with Client(self.broker_host, port=MQTT_PORT, username=MQTT_USERNAME, password=MQTT_PASSWORD) as client:
-                logger.info("MQTT client connected successfully")
+                logger.info("✓ MQTT client connected successfully")
+                logger.info("Starting MQTT message handlers...")
                 await asyncio.gather(
                     self._handle_incoming(client), self._handle_outgoing(client)
                 )
         except Exception as e:
-            logger.error(f"MQTT connection failed: {e}")
-            logger.error(f"Broker: {self.broker_host}:{MQTT_PORT}")
-            logger.error(f"Username: {MQTT_USERNAME}")
+            logger.error(f"✗ MQTT connection failed: {e}")
+            logger.error(f"Connection details - Broker: {self.broker_host}:{MQTT_PORT}, Username: {MQTT_USERNAME}")
             raise
 
     async def _handle_incoming(self, client: Client) -> None:
+        logger.info(f"Subscribing to MQTT config topic: {self.config_topic}")
         await client.subscribe(self.config_topic)
-        logger.info(f"Subscribed to MQTT topic: {self.config_topic}")
+        logger.info(f"✓ Successfully subscribed to MQTT topic: {self.config_topic}")
+        logger.info("MQTT incoming message handler is now listening for configuration updates...")
+        
         async for message in client.messages:
-            eui = str(message.topic).split("/")[len(self.base_topic.split("/")) + 1]
-            payload = message.payload
-            if isinstance(payload, (bytes, bytearray)):
-                config = json.loads(payload.decode())
-            elif isinstance(payload, str):
-                config = json.loads(payload)
-            else:
-                raise TypeError(f"Unsupported payload type: {type(payload)}")
-            config["eui"] = eui
-            logger.info(f"Received configuration for endpoint {eui}: {config}")
-            await self.mqtt_in_queue.put(config)
+            topic_parts = str(message.topic).split("/")
+            eui = topic_parts[len(self.base_topic.split("/")) + 1]
+            
+            logger.info(f"📥 MQTT message received on topic: {message.topic}")
+            logger.debug(f"Raw payload: {message.payload}")
+            
+            try:
+                payload = message.payload
+                if isinstance(payload, (bytes, bytearray)):
+                    config = json.loads(payload.decode())
+                elif isinstance(payload, str):
+                    config = json.loads(payload)
+                else:
+                    raise TypeError(f"Unsupported payload type: {type(payload)}")
+                
+                config["eui"] = eui
+                logger.info(f"📝 Parsed configuration for endpoint {eui}:")
+                logger.info(f"   - EUI: {config.get('eui', 'N/A')}")
+                logger.info(f"   - Network Key: {config.get('nwKey', 'N/A')[:8]}...")
+                logger.info(f"   - Short Address: {config.get('shortAddr', 'N/A')}")
+                logger.info(f"   - Bidirectional: {config.get('bidi', 'N/A')}")
+                
+                await self.mqtt_in_queue.put(config)
+                logger.info(f"✓ Configuration queued for processing")
+            except Exception as e:
+                logger.error(f"✗ Failed to process MQTT message from topic {message.topic}: {e}")
+                logger.error(f"Raw payload: {message.payload}")
 
     async def _handle_outgoing(self, client: Client) -> None:
-        logger.info("MQTT outgoing message handler started")
+        logger.info("📤 MQTT outgoing message handler started and ready to publish messages")
+        message_count = 0
+        
         while True:
             msg = await self.mqtt_out_queue.get()
+            message_count += 1
             topic = f"{self.base_topic}/{msg['topic']}"
-            logger.info(f"Publishing to MQTT topic: {topic}")
-            logger.debug(f"Message payload: {msg['payload']}")
-            await client.publish(topic, msg["payload"])
+            
+            # Determine message type for better logging
+            msg_type = "Unknown"
+            if "/bs/" in msg['topic']:
+                msg_type = "Base Station Status"
+            elif "/ep/" in msg['topic'] and "/ul" in msg['topic']:
+                msg_type = "Sensor Uplink Data"
+            elif "/ep/" in msg['topic'] and "/config" in msg['topic']:
+                msg_type = "Sensor Configuration"
+            
+            logger.info(f"📤 Publishing MQTT message #{message_count} ({msg_type})")
+            logger.info(f"   Topic: {topic}")
+            logger.debug(f"   Payload: {msg['payload']}")
+            
+            try:
+                await client.publish(topic, msg["payload"])
+                logger.info(f"✓ Message #{message_count} published successfully")
+            except Exception as e:
+                logger.error(f"✗ Failed to publish message #{message_count}: {e}")
+                logger.error(f"   Topic: {topic}")
+                logger.error(f"   Payload: {msg['payload']}")
 
 
 if __name__ == "__main__":
