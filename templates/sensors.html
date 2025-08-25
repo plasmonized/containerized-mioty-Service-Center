@@ -5,10 +5,15 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Sensor Management</h1>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sensorModal" onclick="openSensorModal()">
-        Add New Sensor
-    </button>
-</div>
+    <div>
+        <button class="btn btn-danger me-2" onclick="clearAllSensors()" title="Clear all sensors">
+            Clear All
+        </button>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sensorModal" onclick="openSensorModal()">
+            Add New Sensor
+        </button>
+    </div>
+</div></div>
 
 <div class="card">
     <div class="card-body">
@@ -159,6 +164,23 @@ function deleteSensor(eui) {
         .then(result => {
             if (result.success) {
                 loadSensors();
+            } else {
+                alert('Error: ' + result.message);
+            }
+        });
+    }
+}
+
+function clearAllSensors() {
+    if (confirm('Are you sure you want to delete ALL sensors? This cannot be undone.')) {
+        fetch('/api/sensors/clear', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                loadSensors();
+                alert('All sensors cleared successfully');
             } else {
                 alert('Error: ' + result.message);
             }

@@ -105,6 +105,27 @@ def delete_sensor(eui):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
+@app.route('/api/sensors/clear', methods=['POST'])
+def clear_all_sensors():
+    """Clear all sensor configurations"""
+    try:
+        # Clear the file
+        with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
+            json.dump([], f, indent=4)
+        
+        # Also clear from TLS server if available
+        try:
+            from web_main import get_tls_server
+            tls_server = get_tls_server()
+            if tls_server:
+                tls_server.clear_all_sensors()
+        except:
+            pass  # TLS server not available, that's okay
+        
+        return jsonify({'success': True, 'message': 'All sensors cleared successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
 @app.route('/config')
 def config():
     config_data = {

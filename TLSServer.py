@@ -425,6 +425,16 @@ class TLSServer:
             "total_connecting": len(connecting_stations)
         }
 
+    def clear_all_sensors(self) -> None:
+        """Clear all sensor configurations"""
+        self.sensor_config = []
+        try:
+            with open(self.sensor_config_file, "w") as f:
+                json.dump(self.sensor_config, f, indent=4)
+            logger.info(f"All sensor configurations cleared from {self.sensor_config_file}")
+        except Exception as e:
+            logger.error(f"Failed to clear sensor configurations: {e}")
+
     def update_or_add_entry(self, msg: dict[str, Any]) -> None:
         # Update existing entry or add new one
         for sensor in self.sensor_config:
