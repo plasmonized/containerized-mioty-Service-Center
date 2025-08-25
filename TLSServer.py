@@ -28,6 +28,7 @@ class TLSServer:
         self.connecting_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
         self.sensor_config_file = sensor_config_file
         self.registered_sensors: Dict[str, Dict[str, Any]] = {}  # EUI -> {status, base_station, timestamp}
+        self.pending_attach_requests: Dict[int, Dict[str, Any]] = {}  # opID -> {sensor_eui, timestamp, base_station}
         try:
             with open(sensor_config_file, "r") as f:
                 self.sensor_config = json.load(f)
@@ -180,8 +181,17 @@ class TLSServer:
                 writer.write(full_message)
                 await writer.drain()
 
+                # Track this attach request for correlation with response
+                self.pending_attach_requests[self.opID] = {
+                    'sensor_eui': sensor['eui'],
+                    'timestamp': asyncio.get_event_loop().time(),
+                    'base_station': bs_eui,
+                    'sensor_config': normalized_sensor
+                }
+
                 logger.info(f"✅ BSSCI ATTACH REQUEST TRANSMITTED")
                 logger.info(f"   Operation ID {self.opID} sent to base station {bs_eui}")
+                logger.info(f"   Tracking request for correlation with response")
                 logger.info(f"   Awaiting response from base station...")
                 logger.info(f"   =====================================")
 
@@ -449,167 +459,65 @@ class TLSServer:
                         logger.debug(f"📤 STATUS COMPLETE sent for opID {op_id}")
 
                     elif msg_type == "attPrpRsp":
-                        # Enhanced logging for sensor registration responses
-                        ep_eui = message.get("epEui")
-                        result_code = message.get("resultCode", -1)
+                        # Handle attach response according to BSSCI specification
+                        # Per spec: attPrpRsp only contains command and opId fields
                         op_id = message.get("opId", "unknown")
                         bs_eui = self.connected_base_stations.get(writer, "unknown")
 
                         logger.info(f"📨 BSSCI ATTACH RESPONSE received from base station {bs_eui}")
                         logger.info(f"   =====================================")
                         logger.info(f"   Operation ID: {op_id}")
-                        logger.info(f"   Result Code: {result_code}")
                         logger.info(f"   Raw message: {message}")
+                        logger.info(f"   Note: Per BSSCI spec, attach response contains only command and opId")
 
-                        if ep_eui is not None:
-                            try:
-                                eui_hex = int(ep_eui).to_bytes(8, byteorder="big").hex().upper()
-                                logger.info(f"   Endpoint EUI: {eui_hex}")
+                        # Try to correlate with pending attach request
+                        pending_request = self.pending_attach_requests.get(op_id)
+                        if pending_request:
+                            sensor_eui = pending_request['sensor_eui']
+                            sensor_config = pending_request['sensor_config']
+                            request_time = pending_request['timestamp']
+                            response_time = asyncio.get_event_loop().time()
+                            processing_duration = response_time - request_time
 
-                                # Find the corresponding sensor in configuration for detailed logging
-                                matching_sensor = None
-                                for sensor in self.sensor_config:
-                                    if sensor['eui'].upper() == eui_hex:
-                                        matching_sensor = sensor
-                                        break
+                            logger.info(f"✅ ATTACH RESPONSE CORRELATED with pending request")
+                            logger.info(f"   Sensor EUI: {sensor_eui}")
+                            logger.info(f"   Base station: {bs_eui}")
+                            logger.info(f"   Processing duration: {processing_duration:.3f} seconds")
+                            logger.info(f"   Sensor Configuration:")
+                            logger.info(f"     EUI: {sensor_config['eui']}")
+                            logger.info(f"     Network Key: {sensor_config['nwKey'][:8]}...{sensor_config['nwKey'][-8:]}")
+                            logger.info(f"     Short Address: {sensor_config['shortAddr']}")
+                            logger.info(f"     Bidirectional: {sensor_config['bidi']}")
 
-                                if matching_sensor:
-                                    logger.info(f"   Sensor Configuration Found:")
-                                    logger.info(f"     EUI: {matching_sensor['eui']}")
-                                    logger.info(f"     Network Key: {matching_sensor['nwKey'][:8]}...{matching_sensor['nwKey'][-8:]}")
-                                    logger.info(f"     Short Address: {matching_sensor['shortAddr']}")
-                                    logger.info(f"     Bidirectional: {matching_sensor['bidi']}")
-                                else:
-                                    logger.warning(f"   ⚠️  No matching sensor configuration found for EUI {eui_hex}")
-
-                                if result_code == 0:  # Success
-                                    self.registered_sensors[eui_hex.lower()] = {
-                                        'status': 'registered',
-                                        'base_station': bs_eui,
-                                        'timestamp': asyncio.get_event_loop().time(),
-                                        'result_code': result_code,
-                                        'registration_time': datetime.now().isoformat(),
-                                        'op_id': op_id
-                                    }
-                                    logger.info(f"✅ SENSOR REGISTRATION SUCCESSFUL")
-                                    logger.info(f"   Sensor {eui_hex} is now REGISTERED to base station {bs_eui}")
-                                    logger.info(f"   Registration completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
-                                    logger.info(f"   Total registered sensors: {len(self.registered_sensors)}")
-                                    logger.info(f"   Active registrations: {list(self.registered_sensors.keys())}")
-                                else:
-                                    # Enhanced error logging with specific failure analysis
-                                    error_descriptions = {
-                                        -1: "General failure/Unknown error",
-                                        1: "Invalid EUI format or value",
-                                        2: "Invalid network key format or value",
-                                        3: "Invalid short address format or value",
-                                        4: "Sensor already registered to this or another base station",
-                                        5: "Maximum number of sensors reached on base station",
-                                        6: "Registration timeout - base station did not respond in time",
-                                        7: "Base station internal error during registration",
-                                        8: "Sensor authentication failed",
-                                        9: "Network key mismatch",
-                                        10: "Duplicate short address conflict"
-                                    }
-                                    error_desc = error_descriptions.get(result_code, f"Undefined error code ({result_code})")
-
-                                    logger.error(f"❌ SENSOR REGISTRATION FAILED")
-                                    logger.error(f"   Sensor EUI: {eui_hex}")
-                                    logger.error(f"   Base Station: {bs_eui}")
-                                    logger.error(f"   Error Code: {result_code}")
-                                    logger.error(f"   Error Description: {error_desc}")
-                                    logger.error(f"   Operation ID: {op_id}")
-                                    logger.error(f"   Failed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
-
-                                    # Store failure information for tracking
-                                    failure_key = f"{eui_hex.lower()}_failure"
-                                    self.registered_sensors[failure_key] = {
-                                        'status': 'failed',
-                                        'base_station': bs_eui,
-                                        'timestamp': asyncio.get_event_loop().time(),
-                                        'result_code': result_code,
-                                        'error_description': error_desc,
-                                        'failure_time': datetime.now().isoformat(),
-                                        'op_id': op_id
-                                    }
-
-                                    # Additional debugging for common failure codes
-                                    if result_code == -1:
-                                        logger.error(f"   🔍 DEBUGGING INFO for result code -1:")
-                                        if matching_sensor:
-                                            logger.error(f"     Checking sensor configuration validity...")
-                                            if len(matching_sensor['eui']) != 16:
-                                                logger.error(f"     ❌ EUI length invalid: {len(matching_sensor['eui'])} (expected 16)")
-                                            if len(matching_sensor['nwKey']) != 32:
-                                                logger.error(f"     ❌ Network key length invalid: {len(matching_sensor['nwKey'])} (expected 32)")
-                                            if len(matching_sensor['shortAddr']) != 4:
-                                                logger.error(f"     ❌ Short address length invalid: {len(matching_sensor['shortAddr'])} (expected 4)")
-
-                                            # Check for valid hex characters
-                                            try:
-                                                int(matching_sensor['eui'], 16)
-                                            except ValueError:
-                                                logger.error(f"     ❌ EUI contains invalid hex characters: {matching_sensor['eui']}")
-
-                                            try:
-                                                int(matching_sensor['nwKey'], 16)
-                                            except ValueError:
-                                                logger.error(f"     ❌ Network key contains invalid hex characters: {matching_sensor['nwKey']}")
-
-                                            try:
-                                                int(matching_sensor['shortAddr'], 16)
-                                            except ValueError:
-                                                logger.error(f"     ❌ Short address contains invalid hex characters: {matching_sensor['shortAddr']}")
-                                        else:
-                                            logger.error(f"     ❌ No sensor configuration found for this EUI")
-
-                                    elif result_code == 4:
-                                        logger.error(f"   🔍 This sensor may already be registered. Check base station status.")
-                                    elif result_code == 5:
-                                        logger.error(f"   🔍 Base station {bs_eui} may have reached maximum sensor capacity.")
-
-                                logger.info(f"   =====================================")
-
-                            except Exception as conv_error:
-                                logger.error(f"❌ ERROR processing attach response for EUI conversion:")
-                                logger.error(f"   Raw epEui value: {ep_eui} (type: {type(ep_eui)})")
-                                logger.error(f"   Conversion error: {conv_error}")
-                                logger.error(f"   Full message: {message}")
-                        else:
-                            # Critical issue: Base station not returning epEui in attach response
-                            logger.error(f"❌ CRITICAL: ATTACH RESPONSE MISSING ENDPOINT EUI")
-                            logger.error(f"   =====================================")
-                            logger.error(f"   Base station: {bs_eui}")
-                            logger.error(f"   Operation ID: {op_id}")
-                            logger.error(f"   Result Code: {result_code}")
-                            logger.error(f"   Full message received: {message}")
-                            logger.error(f"   ❌ This indicates a PROTOCOL VIOLATION by the base station!")
-                            logger.error(f"   ❌ Base station should return 'epEui' field to identify which sensor failed!")
-                            logger.error(f"   ❌ Without epEui, cannot determine which sensor registration failed!")
-                            logger.error(f"   ❌ This will prevent sensors from registering and receiving data!")
-                            logger.error(f"   ⚠️  RECOMMENDED ACTIONS:")
-                            logger.error(f"     1. Check base station firmware version")
-                            logger.error(f"     2. Verify base station BSSCI protocol implementation")
-                            logger.error(f"     3. Check attach request format being sent to base station")
-                            logger.error(f"     4. Review base station logs for error details")
-                            logger.error(f"   =====================================")
-
-                            # Try to correlate with recent attach requests based on operation ID
-                            logger.warning(f"🔍 ATTEMPTING TO CORRELATE with recent attach requests...")
-                            logger.warning(f"   Looking for sensors that might have caused opID {op_id}")
-
-                            # Since we can't identify the exact sensor, mark this as a critical system issue
-                            critical_failure_key = f"missing_eui_opid_{abs(int(op_id))}"
-                            self.registered_sensors[critical_failure_key] = {
-                                'status': 'critical_protocol_error',
+                            # According to BSSCI specification, receiving attach response indicates success
+                            # Store successful registration
+                            self.registered_sensors[sensor_eui.lower()] = {
+                                'status': 'registered',
                                 'base_station': bs_eui,
-                                'timestamp': asyncio.get_event_loop().time(),
-                                'result_code': result_code,
-                                'error_description': 'Base station attach response missing epEui field - protocol violation',
-                                'failure_time': datetime.now().isoformat(),
+                                'timestamp': response_time,
+                                'registration_time': datetime.now().isoformat(),
                                 'op_id': op_id,
-                                'issue_type': 'missing_eui_in_attach_response'
+                                'processing_duration': processing_duration
                             }
+
+                            logger.info(f"✅ SENSOR REGISTRATION SUCCESSFUL")
+                            logger.info(f"   Sensor {sensor_eui} is now REGISTERED to base station {bs_eui}")
+                            logger.info(f"   Registration completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+                            logger.info(f"   Total registered sensors: {len([k for k in self.registered_sensors.keys() if not k.endswith('_failure')])}")
+
+                            # Remove from pending requests
+                            del self.pending_attach_requests[op_id]
+
+                        else:
+                            logger.warning(f"⚠️  ATTACH RESPONSE for unknown operation ID")
+                            logger.warning(f"   Operation ID {op_id} not found in pending requests")
+                            logger.warning(f"   This could indicate:")
+                            logger.warning(f"     - Response arrived after timeout")
+                            logger.warning(f"     - Duplicate response")
+                            logger.warning(f"     - Base station sent unsolicited response")
+
+                        logger.info(f"   Response received at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+                        logger.info(f"   =====================================")
 
                         msg_pack = encode_message(
                             messages.build_attach_complete(message.get("opId", ""))
