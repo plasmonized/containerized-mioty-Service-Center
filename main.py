@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+import bssci_config
 from bssci_config import SENSOR_CONFIG_FILE, LISTEN_HOST, LISTEN_PORT, MQTT_BROKER, MQTT_PORT
 from mqtt_interface import MQTTClient
 from TLSServer import TLSServer
@@ -21,7 +22,7 @@ async def main():
         bssci_config.SENSOR_CONFIG_FILE, mqtt_out_queue, mqtt_in_queue
     )
     tls_server_instance = tls_server  # Store global reference
-    mqtt_client = MqttInterface(mqtt_out_queue, mqtt_in_queue)
+    mqtt_client = MQTTClient(mqtt_out_queue, mqtt_in_queue)
 
     # Create tasks for both services
     tls_task = asyncio.create_task(tls_server.start_server())
