@@ -1,11 +1,11 @@
 import asyncio
 import json
 import logging
-from datetime import datetime
+from aiomqtt import Client, MqttError
+import paho.mqtt.client
 
-from aiomqtt import Client
-
-from bssci_config import BASE_TOPIC, MQTT_BROKER, MQTT_PORT, MQTT_USERNAME, MQTT_PASSWORD
+import bssci_config
+from bssci_config import MQTT_BROKER, MQTT_PORT, MQTT_USERNAME, MQTT_PASSWORD, BASE_TOPIC
 
 logger = logging.getLogger(__name__)
 
@@ -26,44 +26,37 @@ class MQTTClient:
         self.mqtt_in_queue = mqtt_in_queue
 
     async def start(self) -> None:
-        logger.info(f"Initializing MQTT client connection...")
-        logger.info(f"Broker: {self.broker_host}:{MQTT_PORT}")
-        logger.info(f"Username: {MQTT_USERNAME}")
-        logger.info(f"Password: {'*' * len(MQTT_PASSWORD) if MQTT_PASSWORD else 'NOT SET'}")
-        logger.info(f"Base topic: {self.base_topic}")
-        logger.info(f"Config subscription topic: {self.config_topic}")
-        
-        # Continuous reconnection loop
-        retry_delay = 5
-        
+        """Start MQTT client with retry logic"""
+        retry_delay = 5.0
+        max_delay = 60.0
+
         while True:
             try:
-                logger.info(f"Attempting MQTT broker connection...")
+                logger.info("Attempting MQTT broker connection...")
                 logger.info(f"Connecting to {self.broker_host}:{MQTT_PORT}")
-                
+
+                # Use MQTT v3.1.1 and remove v5-only parameters
                 async with Client(
                     hostname=self.broker_host, 
                     port=MQTT_PORT, 
                     username=MQTT_USERNAME, 
                     password=MQTT_PASSWORD,
-                    keepalive=60,
-                    timeout=15,
-                    clean_start=True
+                    protocol=paho.mqtt.client.MQTTv311
                 ) as client:
                     logger.info("✓ MQTT client connected successfully")
                     logger.info("✓ Authentication successful")
                     logger.info("Starting MQTT message handlers...")
-                    
+
                     # Reset retry delay on successful connection
-                    retry_delay = 5
-                    
+                    retry_delay = 5.0
+
                     # Run both handlers concurrently
                     await asyncio.gather(
                         self._handle_incoming(client), 
                         self._handle_outgoing(client),
                         return_exceptions=True
                     )
-                    
+
             except Exception as e:
                 logger.error(f"✗ MQTT connection failed: {e}")
                 logger.error(f"Error type: {type(e).__name__}")
@@ -71,21 +64,21 @@ class MQTTClient:
                 logger.error(f"Username: {MQTT_USERNAME}")
                 logger.info(f"Retrying MQTT connection in {retry_delay} seconds...")
                 await asyncio.sleep(retry_delay)
-                retry_delay = min(retry_delay * 1.5, 60)  # Exponential backoff with max 60s
+                retry_delay = min(retry_delay * 1.5, max_delay)  # Exponential backoff with max 60s
 
     async def _handle_incoming(self, client: Client) -> None:
         logger.info(f"Subscribing to MQTT config topic: {self.config_topic}")
         await client.subscribe(self.config_topic)
         logger.info(f"✓ Successfully subscribed to MQTT topic: {self.config_topic}")
         logger.info("MQTT incoming message handler is now listening for configuration updates...")
-        
+
         async for message in client.messages:
             topic_parts = str(message.topic).split("/")
             eui = topic_parts[len(self.base_topic.split("/")) + 1]
-            
+
             logger.info(f"📥 MQTT message received on topic: {message.topic}")
             logger.debug(f"Raw payload: {message.payload}")
-            
+
             try:
                 payload = message.payload
                 if isinstance(payload, (bytes, bytearray)):
@@ -94,14 +87,14 @@ class MQTTClient:
                     config = json.loads(payload)
                 else:
                     raise TypeError(f"Unsupported payload type: {type(payload)}")
-                
+
                 config["eui"] = eui
                 logger.info(f"📝 Parsed configuration for endpoint {eui}:")
                 logger.info(f"   - EUI: {config.get('eui', 'N/A')}")
                 logger.info(f"   - Network Key: {config.get('nwKey', 'N/A')[:8]}...")
                 logger.info(f"   - Short Address: {config.get('shortAddr', 'N/A')}")
                 logger.info(f"   - Bidirectional: {config.get('bidi', 'N/A')}")
-                
+
                 await self.mqtt_in_queue.put(config)
                 logger.info(f"✓ Configuration queued for processing")
             except Exception as e:
@@ -111,14 +104,14 @@ class MQTTClient:
     async def _handle_outgoing(self, client: Client) -> None:
         logger.info("📤 MQTT outgoing message handler started and ready to publish messages")
         message_count = 0
-        
+
         try:
             while True:
                 try:
                     msg = await self.mqtt_out_queue.get()
                     message_count += 1
                     topic = f"{self.base_topic}/{msg['topic']}"
-                    
+
                     # Determine message type for better logging
                     msg_type = "Unknown"
                     if "/bs/" in msg['topic']:
@@ -127,13 +120,13 @@ class MQTTClient:
                         msg_type = "Sensor Uplink Data"
                     elif "/ep/" in msg['topic'] and "/config" in msg['topic']:
                         msg_type = "Sensor Configuration"
-                    
+
                     logger.info(f"📤 MQTT OUTGOING MESSAGE #{message_count}")
                     logger.info(f"   ===================================")
                     logger.info(f"   Message Type: {msg_type}")
                     logger.info(f"   Full Topic: {topic}")
                     logger.info(f"   Payload Size: {len(msg['payload'])} bytes")
-                    
+
                     # Log payload preview for status messages
                     if msg_type == "Base Station Status":
                         try:
@@ -147,19 +140,19 @@ class MQTTClient:
                             logger.info(f"   Sensor Preview: EUI from topic, BS={payload_data.get('bs_eui', 'N/A')}, Count={payload_data.get('cnt', 'N/A')}")
                         except:
                             logger.info(f"   Payload Preview: {msg['payload'][:100]}...")
-                    
+
                     logger.info(f"   📡 Publishing to MQTT broker {self.broker_host}:{MQTT_PORT}...")
-                    
+
                     # Publish with timeout
                     await asyncio.wait_for(
                         client.publish(topic, msg["payload"], qos=1),
                         timeout=10
                     )
-                    
+
                     logger.info(f"✅ MQTT MESSAGE #{message_count} PUBLISHED SUCCESSFULLY")
                     logger.info(f"   Topic: {topic}")
                     logger.info(f"   ===================================")
-                    
+
                 except asyncio.TimeoutError:
                     logger.error(f"❌ MQTT publish timeout for message #{message_count}")
                     logger.error(f"   Topic: {topic if 'topic' in locals() else 'unknown'}")
@@ -167,12 +160,12 @@ class MQTTClient:
                     if 'msg' in locals():
                         await self.mqtt_out_queue.put(msg)
                     raise ConnectionError("Publish timeout - connection may be unstable")
-                    
+
                 except Exception as e:
                     logger.error(f"❌ MQTT PUBLISH ERROR for message #{message_count}")
                     logger.error(f"   Error Type: {type(e).__name__}")
                     logger.error(f"   Error Message: {str(e)}")
-                    
+
                     # For connection errors, re-raise to trigger reconnection
                     if isinstance(e, (ConnectionError, OSError)) or "connection" in str(e).lower():
                         logger.error("   Connection error detected - triggering reconnection")
@@ -180,10 +173,10 @@ class MQTTClient:
                         if 'msg' in locals():
                             await self.mqtt_out_queue.put(msg)
                         raise
-                    
+
                     # For other errors, log and continue
                     logger.error(f"   Skipping message due to non-connection error")
-                    
+
         except Exception as e:
             logger.error(f"❌ MQTT outgoing handler failed: {e}")
             raise
