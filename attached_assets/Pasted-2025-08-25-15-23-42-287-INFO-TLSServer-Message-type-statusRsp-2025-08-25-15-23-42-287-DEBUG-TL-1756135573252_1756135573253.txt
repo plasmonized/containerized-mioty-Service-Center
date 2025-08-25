@@ -1,0 +1,1000 @@
+2025-08-25 15:23:42.287 INFO TLSServer
+   Message type: statusRsp
+2025-08-25 15:23:42.287 DEBUG TLSServer
+   Full message: {'code': 0, 'command': 'statusRsp', 'cpuLoad': 0.3113333284854889, 'dutyCycle': 0.0, 'geoLocation': [0.0, 0.0, 0.0], 'memLoad': 0.4717312455177307, 'message': 'ok', 'opId': -14, 'time': 1756135420789966630, 'uptime': 13052665}
+2025-08-25 15:23:42.287 INFO TLSServer
+📊 BASE STATION STATUS RESPONSE received from 9c65f9fffe6be145
+2025-08-25 15:23:42.287 INFO TLSServer
+   Operation ID: -14
+2025-08-25 15:23:42.287 INFO TLSServer
+   Status Code: 0
+2025-08-25 15:23:42.288 INFO TLSServer
+   Memory Load: 47.2%
+2025-08-25 15:23:42.288 INFO TLSServer
+   CPU Load: 31.1%
+2025-08-25 15:23:42.288 INFO TLSServer
+   Duty Cycle: 0.0%
+2025-08-25 15:23:42.288 INFO TLSServer
+   Uptime: 3625:44:25 (13052665s)
+2025-08-25 15:23:42.288 INFO TLSServer
+   Base Station Time: 2025-08-25 15:23:40.789
+2025-08-25 15:23:42.288 INFO TLSServer
+📤 MQTT PUBLICATION - BASE STATION STATUS
+2025-08-25 15:23:42.288 INFO TLSServer
+   Topic: bssci/bs/9c65f9fffe6be145
+2025-08-25 15:23:42.289 INFO TLSServer
+   Base Station EUI: 9c65f9fffe6be145
+2025-08-25 15:23:42.289 INFO TLSServer
+   Payload size: 140 bytes
+2025-08-25 15:23:42.289 INFO TLSServer
+   Status data: Code=0, CPU=31.1%, Memory=47.2%
+2025-08-25 15:23:42.289 INFO TLSServer
+✅ Base station status queued for MQTT publication
+2025-08-25 15:23:42.289 DEBUG TLSServer
+📤 STATUS COMPLETE sent for opID -14
+2025-08-25 15:23:47.289 INFO TLSServer
+📨 BSSCI message #98 received from ('192.168.64.1', 54294)
+2025-08-25 15:23:47.289 INFO TLSServer
+   Message type: ping
+2025-08-25 15:23:47.289 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 45}
+2025-08-25 15:23:47.289 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:23:47.291 INFO TLSServer
+📨 BSSCI message #99 received from ('192.168.64.1', 54294)
+2025-08-25 15:23:47.291 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:23:47.291 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 45}
+2025-08-25 15:23:47.292 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:23:47.301 INFO TLSServer
+📨 BSSCI message #98 received from ('192.168.64.1', 54298)
+2025-08-25 15:23:47.301 INFO TLSServer
+   Message type: ping
+2025-08-25 15:23:47.302 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 45}
+2025-08-25 15:23:47.302 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:23:47.305 INFO TLSServer
+📨 BSSCI message #99 received from ('192.168.64.1', 54298)
+2025-08-25 15:23:47.305 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:23:47.305 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 45}
+2025-08-25 15:23:47.306 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:23:52.305 INFO TLSServer
+📨 BSSCI message #100 received from ('192.168.64.1', 54294)
+2025-08-25 15:23:52.305 INFO TLSServer
+   Message type: ping
+2025-08-25 15:23:52.305 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 46}
+2025-08-25 15:23:52.305 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:23:52.307 INFO TLSServer
+📨 BSSCI message #101 received from ('192.168.64.1', 54294)
+2025-08-25 15:23:52.307 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:23:52.307 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 46}
+2025-08-25 15:23:52.307 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:23:52.317 INFO TLSServer
+📨 BSSCI message #100 received from ('192.168.64.1', 54298)
+2025-08-25 15:23:52.318 INFO TLSServer
+   Message type: ping
+2025-08-25 15:23:52.318 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 46}
+2025-08-25 15:23:52.318 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:23:52.321 INFO TLSServer
+📨 BSSCI message #101 received from ('192.168.64.1', 54298)
+2025-08-25 15:23:52.321 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:23:52.321 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 46}
+2025-08-25 15:23:52.322 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:23:57.321 INFO TLSServer
+📨 BSSCI message #102 received from ('192.168.64.1', 54294)
+2025-08-25 15:23:57.321 INFO TLSServer
+   Message type: ping
+2025-08-25 15:23:57.321 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 47}
+2025-08-25 15:23:57.321 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:23:57.323 INFO TLSServer
+📨 BSSCI message #103 received from ('192.168.64.1', 54294)
+2025-08-25 15:23:57.323 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:23:57.323 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 47}
+2025-08-25 15:23:57.323 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:23:57.335 INFO TLSServer
+📨 BSSCI message #102 received from ('192.168.64.1', 54298)
+2025-08-25 15:23:57.336 INFO TLSServer
+   Message type: ping
+2025-08-25 15:23:57.336 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 47}
+2025-08-25 15:23:57.336 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:23:57.338 INFO TLSServer
+📨 BSSCI message #103 received from ('192.168.64.1', 54298)
+2025-08-25 15:23:57.339 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:23:57.339 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 47}
+2025-08-25 15:23:57.339 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:24:02.337 INFO TLSServer
+📨 BSSCI message #104 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:02.337 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:02.338 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 48}
+2025-08-25 15:24:02.338 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:24:02.339 INFO TLSServer
+📨 BSSCI message #105 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:02.340 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:02.340 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 48}
+2025-08-25 15:24:02.340 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:24:02.353 INFO TLSServer
+📨 BSSCI message #104 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:02.353 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:02.353 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 48}
+2025-08-25 15:24:02.353 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:24:02.356 INFO TLSServer
+📨 BSSCI message #105 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:02.357 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:02.357 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 48}
+2025-08-25 15:24:02.357 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:24:07.354 INFO TLSServer
+📨 BSSCI message #106 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:07.354 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:07.354 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 49}
+2025-08-25 15:24:07.354 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:24:07.355 INFO TLSServer
+📨 BSSCI message #107 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:07.355 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:07.356 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 49}
+2025-08-25 15:24:07.356 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:24:07.369 INFO TLSServer
+📨 BSSCI message #106 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:07.369 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:07.369 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 49}
+2025-08-25 15:24:07.370 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:24:07.372 INFO TLSServer
+📨 BSSCI message #107 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:07.373 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:07.373 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 49}
+2025-08-25 15:24:07.373 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:24:12.369 INFO TLSServer
+📨 BSSCI message #108 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:12.369 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:12.369 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 50}
+2025-08-25 15:24:12.369 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:24:12.371 INFO TLSServer
+📨 BSSCI message #109 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:12.371 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:12.371 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 50}
+2025-08-25 15:24:12.371 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:24:12.387 INFO TLSServer
+📨 BSSCI message #108 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:12.387 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:12.387 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 50}
+2025-08-25 15:24:12.387 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:24:12.390 INFO TLSServer
+📨 BSSCI message #109 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:12.390 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:12.391 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 50}
+2025-08-25 15:24:12.391 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:24:17.384 INFO TLSServer
+📨 BSSCI message #110 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:17.385 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:17.385 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 51}
+2025-08-25 15:24:17.385 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:24:17.387 INFO TLSServer
+📨 BSSCI message #111 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:17.387 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:17.387 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 51}
+2025-08-25 15:24:17.387 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:24:17.408 INFO TLSServer
+📨 BSSCI message #110 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:17.409 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:17.409 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 51}
+2025-08-25 15:24:17.409 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:24:17.412 INFO TLSServer
+📨 BSSCI message #111 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:17.412 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:17.412 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 51}
+2025-08-25 15:24:17.412 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:24:22.400 INFO TLSServer
+📨 BSSCI message #112 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:22.400 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:22.401 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 52}
+2025-08-25 15:24:22.401 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:24:22.402 INFO TLSServer
+📨 BSSCI message #113 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:22.402 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:22.403 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 52}
+2025-08-25 15:24:22.403 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:24:22.425 INFO TLSServer
+📨 BSSCI message #112 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:22.426 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:22.426 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 52}
+2025-08-25 15:24:22.426 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:24:22.429 INFO TLSServer
+📨 BSSCI message #113 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:22.429 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:22.429 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 52}
+2025-08-25 15:24:22.429 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:24:27.416 INFO TLSServer
+📨 BSSCI message #114 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:27.416 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:27.417 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 53}
+2025-08-25 15:24:27.417 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:24:27.418 INFO TLSServer
+📨 BSSCI message #115 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:27.419 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:27.419 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 53}
+2025-08-25 15:24:27.419 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:24:27.443 INFO TLSServer
+📨 BSSCI message #114 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:27.443 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:27.444 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 53}
+2025-08-25 15:24:27.444 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:24:27.447 INFO TLSServer
+📨 BSSCI message #115 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:27.447 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:27.447 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 53}
+2025-08-25 15:24:27.447 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:24:32.433 INFO TLSServer
+📨 BSSCI message #116 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:32.433 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:32.433 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 54}
+2025-08-25 15:24:32.433 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:24:32.435 INFO TLSServer
+📨 BSSCI message #117 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:32.436 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:32.436 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 54}
+2025-08-25 15:24:32.436 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:24:32.460 INFO TLSServer
+📨 BSSCI message #116 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:32.460 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:32.460 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 54}
+2025-08-25 15:24:32.461 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:24:32.463 INFO TLSServer
+📨 BSSCI message #117 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:32.464 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:32.464 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 54}
+2025-08-25 15:24:32.464 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:24:37.449 INFO TLSServer
+📨 BSSCI message #118 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:37.449 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:37.449 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 55}
+2025-08-25 15:24:37.450 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:24:37.451 INFO TLSServer
+📨 BSSCI message #119 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:37.451 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:37.452 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 55}
+2025-08-25 15:24:37.452 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:24:37.476 INFO TLSServer
+📨 BSSCI message #118 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:37.476 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:37.476 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 55}
+2025-08-25 15:24:37.476 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:24:37.479 INFO TLSServer
+📨 BSSCI message #119 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:37.480 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:37.480 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 55}
+2025-08-25 15:24:37.480 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:24:42.283 INFO TLSServer
+📊 PERIODIC STATUS REQUEST CYCLE STARTING
+2025-08-25 15:24:42.283 INFO TLSServer
+   Connected base stations: 2
+2025-08-25 15:24:42.283 INFO TLSServer
+   Base stations: ['70b3d59cd00009f6', '9c65f9fffe6be145']
+2025-08-25 15:24:42.283 INFO TLSServer
+📤 Sending status request to base station 70b3d59cd00009f6
+2025-08-25 15:24:42.283 INFO TLSServer
+   Operation ID: -15
+2025-08-25 15:24:42.284 INFO TLSServer
+✅ Status request transmitted to 70b3d59cd00009f6 (opID: -15)
+2025-08-25 15:24:42.284 INFO TLSServer
+📤 Sending status request to base station 9c65f9fffe6be145
+2025-08-25 15:24:42.284 INFO TLSServer
+   Operation ID: -16
+2025-08-25 15:24:42.284 INFO TLSServer
+✅ Status request transmitted to 9c65f9fffe6be145 (opID: -16)
+2025-08-25 15:24:42.284 INFO TLSServer
+📊 STATUS REQUEST CYCLE COMPLETE
+2025-08-25 15:24:42.284 INFO TLSServer
+   Requests sent: 2
+2025-08-25 15:24:42.285 INFO TLSServer
+   Failed requests: 0
+2025-08-25 15:24:42.285 INFO TLSServer
+   Remaining connected base stations: 2
+2025-08-25 15:24:42.285 INFO TLSServer
+📨 BSSCI message #120 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:42.286 INFO TLSServer
+   Message type: statusRsp
+2025-08-25 15:24:42.286 DEBUG TLSServer
+   Full message: {'code': 0, 'command': 'statusRsp', 'cpuLoad': 0.1151999980211258, 'dutyCycle': 0.0, 'geoLocation': [0.0, 0.0, 0.0], 'memLoad': 0.4234658479690552, 'message': 'ok', 'opId': -15, 'time': 1756135482283592315, 'uptime': 1725415}
+2025-08-25 15:24:42.286 INFO TLSServer
+📊 BASE STATION STATUS RESPONSE received from 70b3d59cd00009f6
+2025-08-25 15:24:42.286 INFO TLSServer
+   Operation ID: -15
+2025-08-25 15:24:42.286 INFO TLSServer
+   Status Code: 0
+2025-08-25 15:24:42.286 INFO TLSServer
+   Memory Load: 42.3%
+2025-08-25 15:24:42.286 INFO TLSServer
+   CPU Load: 11.5%
+2025-08-25 15:24:42.287 INFO TLSServer
+   Duty Cycle: 0.0%
+2025-08-25 15:24:42.287 INFO TLSServer
+   Uptime: 479:16:55 (1725415s)
+2025-08-25 15:24:42.287 INFO TLSServer
+   Base Station Time: 2025-08-25 15:24:42.283
+2025-08-25 15:24:42.287 INFO TLSServer
+📤 MQTT PUBLICATION - BASE STATION STATUS
+2025-08-25 15:24:42.287 INFO TLSServer
+   Topic: bssci/bs/70b3d59cd00009f6
+2025-08-25 15:24:42.287 INFO TLSServer
+   Base Station EUI: 70b3d59cd00009f6
+2025-08-25 15:24:42.288 INFO TLSServer
+   Payload size: 139 bytes
+2025-08-25 15:24:42.288 INFO TLSServer
+   Status data: Code=0, CPU=11.5%, Memory=42.3%
+2025-08-25 15:24:42.288 INFO TLSServer
+✅ Base station status queued for MQTT publication
+2025-08-25 15:24:42.288 DEBUG TLSServer
+📤 STATUS COMPLETE sent for opID -15
+2025-08-25 15:24:42.288 INFO TLSServer
+📨 BSSCI message #120 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:42.289 INFO TLSServer
+   Message type: statusRsp
+2025-08-25 15:24:42.289 DEBUG TLSServer
+   Full message: {'code': 0, 'command': 'statusRsp', 'cpuLoad': 0.2741333246231079, 'dutyCycle': 0.0, 'geoLocation': [0.0, 0.0, 0.0], 'memLoad': 0.4717312455177307, 'message': 'ok', 'opId': -16, 'time': 1756135480790046765, 'uptime': 13052725}
+2025-08-25 15:24:42.289 INFO TLSServer
+📊 BASE STATION STATUS RESPONSE received from 9c65f9fffe6be145
+2025-08-25 15:24:42.289 INFO TLSServer
+   Operation ID: -16
+2025-08-25 15:24:42.289 INFO TLSServer
+   Status Code: 0
+2025-08-25 15:24:42.289 INFO TLSServer
+   Memory Load: 47.2%
+2025-08-25 15:24:42.289 INFO TLSServer
+   CPU Load: 27.4%
+2025-08-25 15:24:42.290 INFO TLSServer
+   Duty Cycle: 0.0%
+2025-08-25 15:24:42.290 INFO TLSServer
+   Uptime: 3625:45:25 (13052725s)
+2025-08-25 15:24:42.290 INFO TLSServer
+   Base Station Time: 2025-08-25 15:24:40.790
+2025-08-25 15:24:42.290 INFO TLSServer
+📤 MQTT PUBLICATION - BASE STATION STATUS
+2025-08-25 15:24:42.290 INFO TLSServer
+   Topic: bssci/bs/9c65f9fffe6be145
+2025-08-25 15:24:42.290 INFO TLSServer
+   Base Station EUI: 9c65f9fffe6be145
+2025-08-25 15:24:42.291 INFO TLSServer
+   Payload size: 140 bytes
+2025-08-25 15:24:42.291 INFO TLSServer
+   Status data: Code=0, CPU=27.4%, Memory=47.2%
+2025-08-25 15:24:42.291 INFO TLSServer
+✅ Base station status queued for MQTT publication
+2025-08-25 15:24:42.291 DEBUG TLSServer
+📤 STATUS COMPLETE sent for opID -16
+2025-08-25 15:24:47.301 INFO TLSServer
+📨 BSSCI message #121 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:47.301 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:47.301 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 56}
+2025-08-25 15:24:47.301 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:24:47.302 INFO TLSServer
+📨 BSSCI message #121 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:47.302 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:47.302 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 56}
+2025-08-25 15:24:47.302 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:24:47.304 INFO TLSServer
+📨 BSSCI message #122 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:47.304 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:47.304 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 56}
+2025-08-25 15:24:47.304 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:24:47.305 INFO TLSServer
+📨 BSSCI message #122 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:47.305 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:47.305 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 56}
+2025-08-25 15:24:47.305 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:24:52.318 INFO TLSServer
+📨 BSSCI message #123 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:52.318 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:52.318 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 57}
+2025-08-25 15:24:52.318 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:24:52.319 INFO TLSServer
+📨 BSSCI message #123 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:52.320 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:52.320 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 57}
+2025-08-25 15:24:52.320 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:24:52.321 INFO TLSServer
+📨 BSSCI message #124 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:52.321 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:52.321 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 57}
+2025-08-25 15:24:52.321 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:24:52.322 INFO TLSServer
+📨 BSSCI message #124 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:52.322 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:52.322 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 57}
+2025-08-25 15:24:52.322 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:24:57.336 INFO TLSServer
+📨 BSSCI message #125 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:57.336 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:57.336 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 58}
+2025-08-25 15:24:57.336 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:24:57.338 INFO TLSServer
+📨 BSSCI message #125 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:57.338 INFO TLSServer
+   Message type: ping
+2025-08-25 15:24:57.338 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 58}
+2025-08-25 15:24:57.338 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:24:57.340 INFO TLSServer
+📨 BSSCI message #126 received from ('192.168.64.1', 54294)
+2025-08-25 15:24:57.340 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:57.340 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 58}
+2025-08-25 15:24:57.341 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:24:57.341 INFO TLSServer
+📨 BSSCI message #126 received from ('192.168.64.1', 54298)
+2025-08-25 15:24:57.341 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:24:57.341 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 58}
+2025-08-25 15:24:57.341 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:25:02.350 INFO TLSServer
+📨 BSSCI message #127 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:02.351 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:02.351 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 59}
+2025-08-25 15:25:02.351 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:25:02.353 INFO TLSServer
+📨 BSSCI message #127 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:02.354 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:02.354 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 59}
+2025-08-25 15:25:02.354 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:25:02.371 INFO TLSServer
+📨 BSSCI message #128 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:02.372 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:02.372 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 59}
+2025-08-25 15:25:02.372 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:25:02.372 INFO TLSServer
+📨 BSSCI message #128 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:02.372 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:02.372 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 59}
+2025-08-25 15:25:02.373 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:25:07.366 INFO TLSServer
+📨 BSSCI message #129 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:07.367 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:07.367 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 60}
+2025-08-25 15:25:07.367 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:25:07.370 INFO TLSServer
+📨 BSSCI message #130 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:07.370 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:07.370 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 60}
+2025-08-25 15:25:07.371 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:25:07.372 INFO TLSServer
+📨 BSSCI message #129 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:07.372 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:07.372 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 60}
+2025-08-25 15:25:07.372 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:25:07.374 INFO TLSServer
+📨 BSSCI message #130 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:07.374 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:07.374 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 60}
+2025-08-25 15:25:07.374 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:25:12.385 INFO TLSServer
+📨 BSSCI message #131 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:12.385 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:12.385 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 61}
+2025-08-25 15:25:12.386 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:25:12.388 INFO TLSServer
+📨 BSSCI message #132 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:12.389 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:12.389 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 61}
+2025-08-25 15:25:12.389 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:25:12.389 INFO TLSServer
+📨 BSSCI message #131 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:12.390 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:12.390 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 61}
+2025-08-25 15:25:12.390 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:25:12.392 INFO TLSServer
+📨 BSSCI message #132 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:12.392 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:12.392 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 61}
+2025-08-25 15:25:12.392 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:25:17.403 INFO TLSServer
+📨 BSSCI message #133 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:17.403 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:17.403 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 62}
+2025-08-25 15:25:17.404 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:25:17.404 INFO TLSServer
+📨 BSSCI message #133 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:17.404 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:17.404 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 62}
+2025-08-25 15:25:17.405 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:25:17.406 INFO TLSServer
+📨 BSSCI message #134 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:17.406 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:17.407 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 62}
+2025-08-25 15:25:17.407 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:25:17.407 INFO TLSServer
+📨 BSSCI message #134 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:17.407 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:17.407 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 62}
+2025-08-25 15:25:17.407 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:25:22.420 INFO TLSServer
+📨 BSSCI message #135 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:22.421 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:22.421 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 63}
+2025-08-25 15:25:22.421 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:25:22.422 INFO TLSServer
+📨 BSSCI message #136 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:22.422 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:22.423 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 63}
+2025-08-25 15:25:22.423 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:25:22.423 INFO TLSServer
+📨 BSSCI message #135 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:22.423 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:22.423 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 63}
+2025-08-25 15:25:22.424 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:25:22.426 INFO TLSServer
+📨 BSSCI message #136 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:22.427 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:22.427 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 63}
+2025-08-25 15:25:22.427 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:25:25.162 INFO TLSServer
+Sensor configuration reloaded: 3 -> 3 sensors
+2025-08-25 15:25:27.437 INFO TLSServer
+📨 BSSCI message #137 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:27.437 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:27.437 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 64}
+2025-08-25 15:25:27.437 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:25:27.439 INFO TLSServer
+📨 BSSCI message #138 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:27.439 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:27.439 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 64}
+2025-08-25 15:25:27.440 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:25:27.440 INFO TLSServer
+📨 BSSCI message #137 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:27.440 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:27.440 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 64}
+2025-08-25 15:25:27.440 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:25:27.443 INFO TLSServer
+📨 BSSCI message #138 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:27.444 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:27.444 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 64}
+2025-08-25 15:25:27.444 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:25:32.455 INFO TLSServer
+📨 BSSCI message #139 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:32.455 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:32.455 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 65}
+2025-08-25 15:25:32.456 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:25:32.457 INFO TLSServer
+📨 BSSCI message #140 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:32.457 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:32.457 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 65}
+2025-08-25 15:25:32.458 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:25:32.460 INFO TLSServer
+📨 BSSCI message #139 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:32.461 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:32.461 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 65}
+2025-08-25 15:25:32.461 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:25:32.464 INFO TLSServer
+📨 BSSCI message #140 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:32.464 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:32.464 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 65}
+2025-08-25 15:25:32.464 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:25:37.473 INFO TLSServer
+📨 BSSCI message #141 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:37.473 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:37.473 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 66}
+2025-08-25 15:25:37.474 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:25:37.474 INFO TLSServer
+📨 BSSCI message #141 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:37.474 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:37.474 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 66}
+2025-08-25 15:25:37.475 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:25:37.475 INFO TLSServer
+📨 BSSCI message #142 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:37.475 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:37.476 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 66}
+2025-08-25 15:25:37.476 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:25:37.477 INFO TLSServer
+📨 BSSCI message #142 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:37.477 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:37.478 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 66}
+2025-08-25 15:25:37.478 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:25:42.285 INFO TLSServer
+📊 PERIODIC STATUS REQUEST CYCLE STARTING
+2025-08-25 15:25:42.286 INFO TLSServer
+   Connected base stations: 2
+2025-08-25 15:25:42.286 INFO TLSServer
+   Base stations: ['70b3d59cd00009f6', '9c65f9fffe6be145']
+2025-08-25 15:25:42.286 INFO TLSServer
+📤 Sending status request to base station 70b3d59cd00009f6
+2025-08-25 15:25:42.286 INFO TLSServer
+   Operation ID: -17
+2025-08-25 15:25:42.287 INFO TLSServer
+✅ Status request transmitted to 70b3d59cd00009f6 (opID: -17)
+2025-08-25 15:25:42.287 INFO TLSServer
+📤 Sending status request to base station 9c65f9fffe6be145
+2025-08-25 15:25:42.287 INFO TLSServer
+   Operation ID: -18
+2025-08-25 15:25:42.288 INFO TLSServer
+✅ Status request transmitted to 9c65f9fffe6be145 (opID: -18)
+2025-08-25 15:25:42.288 INFO TLSServer
+📊 STATUS REQUEST CYCLE COMPLETE
+2025-08-25 15:25:42.288 INFO TLSServer
+   Requests sent: 2
+2025-08-25 15:25:42.288 INFO TLSServer
+   Failed requests: 0
+2025-08-25 15:25:42.288 INFO TLSServer
+   Remaining connected base stations: 2
+2025-08-25 15:25:42.290 INFO TLSServer
+📨 BSSCI message #143 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:42.290 INFO TLSServer
+   Message type: statusRsp
+2025-08-25 15:25:42.290 DEBUG TLSServer
+   Full message: {'code': 0, 'command': 'statusRsp', 'cpuLoad': 0.08760000020265579, 'dutyCycle': 0.0, 'geoLocation': [0.0, 0.0, 0.0], 'memLoad': 0.4234933853149414, 'message': 'ok', 'opId': -17, 'time': 1756135542288003068, 'uptime': 1725475}
+2025-08-25 15:25:42.290 INFO TLSServer
+📊 BASE STATION STATUS RESPONSE received from 70b3d59cd00009f6
+2025-08-25 15:25:42.291 INFO TLSServer
+   Operation ID: -17
+2025-08-25 15:25:42.291 INFO TLSServer
+   Status Code: 0
+2025-08-25 15:25:42.291 INFO TLSServer
+   Memory Load: 42.3%
+2025-08-25 15:25:42.291 INFO TLSServer
+   CPU Load: 8.8%
+2025-08-25 15:25:42.291 INFO TLSServer
+   Duty Cycle: 0.0%
+2025-08-25 15:25:42.291 INFO TLSServer
+   Uptime: 479:17:55 (1725475s)
+2025-08-25 15:25:42.292 INFO TLSServer
+   Base Station Time: 2025-08-25 15:25:42.288
+2025-08-25 15:25:42.292 INFO TLSServer
+📤 MQTT PUBLICATION - BASE STATION STATUS
+2025-08-25 15:25:42.292 INFO TLSServer
+   Topic: bssci/bs/70b3d59cd00009f6
+2025-08-25 15:25:42.292 INFO TLSServer
+   Base Station EUI: 70b3d59cd00009f6
+2025-08-25 15:25:42.292 INFO TLSServer
+   Payload size: 140 bytes
+2025-08-25 15:25:42.292 INFO TLSServer
+   Status data: Code=0, CPU=8.8%, Memory=42.3%
+2025-08-25 15:25:42.293 INFO TLSServer
+✅ Base station status queued for MQTT publication
+2025-08-25 15:25:42.293 DEBUG TLSServer
+📤 STATUS COMPLETE sent for opID -17
+2025-08-25 15:25:42.293 INFO TLSServer
+📨 BSSCI message #143 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:42.294 INFO TLSServer
+   Message type: statusRsp
+2025-08-25 15:25:42.294 DEBUG TLSServer
+   Full message: {'code': 0, 'command': 'statusRsp', 'cpuLoad': 0.24133333563804626, 'dutyCycle': 0.0, 'geoLocation': [0.0, 0.0, 0.0], 'memLoad': 0.4717312455177307, 'message': 'ok', 'opId': -18, 'time': 1756135540794684540, 'uptime': 13052785}
+2025-08-25 15:25:42.294 INFO TLSServer
+📊 BASE STATION STATUS RESPONSE received from 9c65f9fffe6be145
+2025-08-25 15:25:42.294 INFO TLSServer
+   Operation ID: -18
+2025-08-25 15:25:42.294 INFO TLSServer
+   Status Code: 0
+2025-08-25 15:25:42.294 INFO TLSServer
+   Memory Load: 47.2%
+2025-08-25 15:25:42.295 INFO TLSServer
+   CPU Load: 24.1%
+2025-08-25 15:25:42.295 INFO TLSServer
+   Duty Cycle: 0.0%
+2025-08-25 15:25:42.295 INFO TLSServer
+   Uptime: 3625:46:25 (13052785s)
+2025-08-25 15:25:42.295 INFO TLSServer
+   Base Station Time: 2025-08-25 15:25:40.794
+2025-08-25 15:25:42.295 INFO TLSServer
+📤 MQTT PUBLICATION - BASE STATION STATUS
+2025-08-25 15:25:42.296 INFO TLSServer
+   Topic: bssci/bs/9c65f9fffe6be145
+2025-08-25 15:25:42.296 INFO TLSServer
+   Base Station EUI: 9c65f9fffe6be145
+2025-08-25 15:25:42.296 INFO TLSServer
+   Payload size: 141 bytes
+2025-08-25 15:25:42.296 INFO TLSServer
+   Status data: Code=0, CPU=24.1%, Memory=47.2%
+2025-08-25 15:25:42.296 INFO TLSServer
+✅ Base station status queued for MQTT publication
+2025-08-25 15:25:42.296 DEBUG TLSServer
+📤 STATUS COMPLETE sent for opID -18
+2025-08-25 15:25:47.302 INFO TLSServer
+📨 BSSCI message #144 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:47.302 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:47.302 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 67}
+2025-08-25 15:25:47.302 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:25:47.305 INFO TLSServer
+📨 BSSCI message #144 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:47.305 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:47.305 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 67}
+2025-08-25 15:25:47.305 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:25:47.306 INFO TLSServer
+📨 BSSCI message #145 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:47.306 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:47.306 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 67}
+2025-08-25 15:25:47.306 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
+2025-08-25 15:25:47.307 INFO TLSServer
+📨 BSSCI message #145 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:47.307 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:47.307 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 67}
+2025-08-25 15:25:47.307 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:25:52.321 INFO TLSServer
+📨 BSSCI message #146 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:52.321 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:52.321 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 68}
+2025-08-25 15:25:52.322 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54298)
+2025-08-25 15:25:52.322 INFO TLSServer
+📨 BSSCI message #146 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:52.322 INFO TLSServer
+   Message type: ping
+2025-08-25 15:25:52.322 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 68}
+2025-08-25 15:25:52.322 DEBUG TLSServer
+Ping request received from ('192.168.64.1', 54294)
+2025-08-25 15:25:52.324 INFO TLSServer
+📨 BSSCI message #147 received from ('192.168.64.1', 54294)
+2025-08-25 15:25:52.324 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:52.324 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 68}
+2025-08-25 15:25:52.324 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54294)
+2025-08-25 15:25:52.325 INFO TLSServer
+📨 BSSCI message #147 received from ('192.168.64.1', 54298)
+2025-08-25 15:25:52.325 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 15:25:52.325 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 68}
+2025-08-25 15:25:52.325 DEBUG TLSServer
+Ping complete received from ('192.168.64.1', 54298)
