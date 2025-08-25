@@ -28,11 +28,16 @@ EXPOSE 16017 5000
 # Set proper permissions for certificates
 RUN chmod -R 644 certs/ || true
 
-# Ensure endpoints.json is writable
-RUN touch endpoints.json && chmod 666 endpoints.json || true
-
 # Create a non-root user for security
-RUN useradd -m -u 1000 bssci && chown -R bssci:bssci /app
+RUN useradd -m -u 1000 bssci
+
+# Set ownership of all files to bssci user
+RUN chown -R bssci:bssci /app
+
+# Ensure configuration files are writable
+RUN chmod 664 endpoints.json bssci_config.py
+
+# Switch to non-root user
 USER bssci
 
 # Run the application with web UI and unbuffered output
