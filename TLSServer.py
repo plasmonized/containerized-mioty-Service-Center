@@ -36,37 +36,47 @@ class TLSServer:
             self.sensor_config = []
 
     async def start_server(self) -> None:
-        logger.info("🔐 Setting up SSL/TLS context for BSSCI server...")
-        logger.info(f"   Certificate file: {bssci_config.CERT_FILE}")
-        logger.info(f"   Key file: {bssci_config.KEY_FILE}")
-        logger.info(f"   CA file: {bssci_config.CA_FILE}")
+        # Check if SSL should be used
+        use_ssl = getattr(bssci_config, 'USE_SSL', True)
+        ssl_ctx = None
+        
+        if use_ssl:
+            logger.info("🔐 Setting up SSL/TLS context for BSSCI server...")
+            logger.info(f"   Certificate file: {bssci_config.CERT_FILE}")
+            logger.info(f"   Key file: {bssci_config.KEY_FILE}")
+            logger.info(f"   CA file: {bssci_config.CA_FILE}")
 
-        try:
-            ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-            ssl_ctx.load_cert_chain(
-                certfile=bssci_config.CERT_FILE, keyfile=bssci_config.KEY_FILE
-            )
-            ssl_ctx.load_verify_locations(cafile=bssci_config.CA_FILE)
-            ssl_ctx.verify_mode = ssl.CERT_REQUIRED
+            try:
+                ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+                ssl_ctx.load_cert_chain(
+                    certfile=bssci_config.CERT_FILE, keyfile=bssci_config.KEY_FILE
+                )
+                ssl_ctx.load_verify_locations(cafile=bssci_config.CA_FILE)
+                ssl_ctx.verify_mode = ssl.CERT_REQUIRED
 
-            # Log SSL context details
-            logger.info(f"   TLS Protocol versions: {ssl_ctx.minimum_version.name} - {ssl_ctx.maximum_version.name}")
-            logger.info("✓ SSL context configured successfully with client certificate verification")
+                # Log SSL context details
+                logger.info(f"   TLS Protocol versions: {ssl_ctx.minimum_version.name} - {ssl_ctx.maximum_version.name}")
+                logger.info("✓ SSL context configured successfully with client certificate verification")
 
-        except FileNotFoundError as e:
-            logger.error(f"❌ SSL certificate file not found: {e}")
-            raise
-        except ssl.SSLError as e:
-            logger.error(f"❌ SSL configuration error: {e}")
-            raise
-        except Exception as e:
-            logger.error(f"❌ Unexpected error setting up SSL: {e}")
-            raise
+            except FileNotFoundError as e:
+                logger.error(f"❌ SSL certificate file not found: {e}")
+                raise
+            except ssl.SSLError as e:
+                logger.error(f"❌ SSL configuration error: {e}")
+                raise
+            except Exception as e:
+                logger.error(f"❌ Unexpected error setting up SSL: {e}")
+                raise
+        else:
+            logger.warning("⚠️  SSL/TLS is DISABLED - server will accept insecure connections")
+            logger.warning("   This configuration should ONLY be used for local testing!")
 
-        logger.info(f"🚀 Starting BSSCI TLS server...")
+        server_type = "TLS" if ssl_ctx else "TCP"
+        logger.info(f"🚀 Starting BSSCI {server_type} server...")
         logger.info(f"   Listen address: {bssci_config.LISTEN_HOST}:{bssci_config.LISTEN_PORT}")
         logger.info(f"   Sensor config file: {self.sensor_config_file}")
         logger.info(f"   Loaded sensors: {len(self.sensor_config)}")
+        logger.info(f"   SSL/TLS: {'Enabled' if ssl_ctx else 'Disabled'}")
 
         server = await asyncio.start_server(
             self.handle_client,
