@@ -361,13 +361,17 @@ class TLSServer:
                 if not data:
                     break
                 try:
-                    for message in decode_messages(data):
+                    messages = decode_messages(data)
+                    if not messages:
+                        continue
+                        
+                    for message in messages:
                         msg_type = message.get("command", "")
                         messages_processed += 1
 
-                    logger.info(f"📨 BSSCI message #{messages_processed} received from {addr}")
-                    logger.info(f"   Message type: {msg_type}")
-                    logger.debug(f"   Full message: {message}")
+                        logger.info(f"📨 BSSCI message #{messages_processed} received from {addr}")
+                        logger.info(f"   Message type: {msg_type}")
+                        logger.debug(f"   Full message: {message}")
 
                     if msg_type == "con":
                         logger.info(f"📨 BSSCI CONNECTION REQUEST received from {addr}")
@@ -648,7 +652,7 @@ class TLSServer:
                         print(f"[DETACH] {eui} {status}")
 
                     else:
-                        print(f"[WARN] Unbekannte Nachricht: {message}")
+                            print(f"[WARN] Unbekannte Nachricht: {message}")
 
                 except Exception as e:
                     logger.error(f"❌ Error processing message: {e}")

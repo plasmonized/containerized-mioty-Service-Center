@@ -43,37 +43,37 @@
     },
     {
         "eui": "FCA84A030000127B",
-        "nwKey": "0011223344556677889AABBCCDDEEFF",
+        "nwKey": "0011223344556677889AABBCCDDEEFF0",
         "shortAddr": "127B",
         "bidi": false
     },
     {
         "eui": "FCA84A030000127D",
-        "nwKey": "0011223344556677889AABBCCDDEEFF",
+        "nwKey": "0011223344556677889AABBCCDDEEFF0",
         "shortAddr": "127D",
         "bidi": false
     },
     {
         "eui": "FCA84A0300001276",
-        "nwKey": "0011223344556677889AABBCCDDEEFF",
+        "nwKey": "0011223344556677889AABBCCDDEEFF0",
         "shortAddr": "1276",
         "bidi": false
     },
     {
         "eui": "FCA84A030000127C",
-        "nwKey": "0011223344556677889AABBCCDDEEFF",
+        "nwKey": "0011223344556677889AABBCCDDEEFF0",
         "shortAddr": "127C",
         "bidi": false
     },
     {
         "eui": "FCA84A090000000A",
-        "nwKey": "0011223344556677889AABBCCDDEEFF",
+        "nwKey": "0011223344556677889AABBCCDDEEFF0",
         "shortAddr": "000A",
         "bidi": false
     },
     {
         "eui": "74731D000000008F",
-        "nwKey": "0011223344556677889AABBCCDDEEFF",
+        "nwKey": "0011223344556677889AABBCCDDEEFF0",
         "shortAddr": "008F",
         "bidi": false
     },
