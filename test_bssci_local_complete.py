@@ -19,11 +19,22 @@ class BSScILocalTestClient:
         self.use_ssl = True
 
     async def connect(self):
-        """Connect with SSL first, fallback to non-SSL for local testing"""
+        """Connect with non-SSL first for local testing, fallback to SSL"""
         
-        # First try SSL connection
+        # First try non-SSL connection for local testing
         try:
-            print("🔐 Attempting SSL connection...")
+            print("🔌 Attempting non-SSL connection for local testing...")
+            self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
+            print("✅ Connected to BSSCI server (non-SSL)")
+            self.use_ssl = False
+            return
+            
+        except Exception as no_ssl_error:
+            print(f"❌ Non-SSL connection failed: {no_ssl_error}")
+            print("🔐 Trying SSL connection...")
+        
+        # Fallback to SSL connection
+        try:
             ssl_context = ssl.create_default_context()
             ssl_context.check_hostname = False
             ssl_context.verify_mode = ssl.CERT_NONE
@@ -41,17 +52,7 @@ class BSScILocalTestClient:
             )
             print("✅ Connected to BSSCI server (SSL/TLS)")
             self.use_ssl = True
-            return
             
-        except Exception as ssl_error:
-            print(f"❌ SSL connection failed: {ssl_error}")
-            print("🔄 Trying non-SSL connection for local testing...")
-        
-        # Fallback to non-SSL connection
-        try:
-            self.reader, self.writer = await asyncio.open_connection(self.host, self.port)
-            print("✅ Connected to BSSCI server (non-SSL)")
-            self.use_ssl = False
         except Exception as e:
             print(f"❌ All connection attempts failed: {e}")
             raise
@@ -77,15 +78,32 @@ class BSScILocalTestClient:
             if expect_response:
                 try:
                     response_data = await asyncio.wait_for(self.reader.read(4096), timeout=timeout)
-                    if response_data and len(response_data) > 12:
-                        # Check for BSSCI identifier
-                        if response_data[:8] == IDENTIFIER:
-                            length = int.from_bytes(response_data[8:12], byteorder='little')
-                            if len(response_data) >= 12 + length:
-                                msg_data = response_data[12:12+length]
-                                response = msgpack.unpackb(msg_data, raw=False, strict_map_key=False)
-                                print(f"📨 Received: {response['command']} (opId: {response.get('opId', 'N/A')})")
-                                return response
+                    print(f"🔍 Raw response received: {len(response_data) if response_data else 0} bytes")
+                    
+                    if response_data:
+                        print(f"🔍 First 32 bytes (hex): {response_data[:32].hex()}")
+                        print(f"🔍 Expected identifier: {IDENTIFIER.hex()}")
+                        
+                        if len(response_data) > 12:
+                            # Check for BSSCI identifier
+                            if response_data[:8] == IDENTIFIER:
+                                length = int.from_bytes(response_data[8:12], byteorder='little')
+                                print(f"🔍 Message length: {length}")
+                                
+                                if len(response_data) >= 12 + length:
+                                    msg_data = response_data[12:12+length]
+                                    print(f"🔍 Message data (hex): {msg_data.hex()}")
+                                    response = msgpack.unpackb(msg_data, raw=False, strict_map_key=False)
+                                    print(f"📨 Received: {response['command']} (opId: {response.get('opId', 'N/A')})")
+                                    return response
+                                else:
+                                    print(f"🔍 Incomplete message: got {len(response_data)} bytes, need {12 + length}")
+                            else:
+                                print(f"🔍 Wrong identifier: got {response_data[:8].hex()}")
+                        else:
+                            print(f"🔍 Response too short: {len(response_data)} bytes < 12 minimum")
+                    else:
+                        print("🔍 No response data received (connection closed?)")
                     
                     print("📨 Received invalid or empty response")
                     return None
