@@ -1,30 +1,14 @@
 import asyncio
 import logging
-import os
-import sys
 
 from bssci_config import SENSOR_CONFIG_FILE, LISTEN_HOST, LISTEN_PORT, MQTT_BROKER, MQTT_PORT
 from mqtt_interface import MQTTClient
 from TLSServer import TLSServer
 
-# Configure logging for both container and local environment
-# Ensure logs directory exists
-if os.path.exists('/app'):
-    # Container environment - logs mounted at /logs
-    os.makedirs('/logs', exist_ok=True)
-    log_file = '/logs/bssci.log'
-else:
-    # Local development environment
-    os.makedirs('logs', exist_ok=True)
-    log_file = 'logs/bssci.log'
-
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler(log_file, mode='a')
-    ]
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
