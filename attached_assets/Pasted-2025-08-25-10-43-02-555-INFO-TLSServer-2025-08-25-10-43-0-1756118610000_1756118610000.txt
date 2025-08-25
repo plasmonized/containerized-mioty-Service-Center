@@ -1,0 +1,200 @@
+2025-08-25 10:43:02.555 INFO TLSServer
+   =====================================
+2025-08-25 10:43:02 INFO TLSServer
+   =====================================
+2025-08-25 10:43:02.555 DEBUG TLSServer
+📤 BSSCI ATTACH COMPLETE sent for opID -2
+2025-08-25 10:43:02 DEBUG TLSServer
+📤 BSSCI ATTACH COMPLETE sent for opID -2
+2025-08-25 10:43:07.452 INFO TLSServer
+📨 BSSCI message #4 received from ('172.23.0.1', 43082)
+2025-08-25 10:43:07 INFO TLSServer
+📨 BSSCI message #4 received from ('172.23.0.1', 43082)
+2025-08-25 10:43:07.452 INFO TLSServer
+   Message type: ping
+2025-08-25 10:43:07 INFO TLSServer
+   Message type: ping
+2025-08-25 10:43:07.452 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 1}
+2025-08-25 10:43:07 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 1}
+2025-08-25 10:43:07.452 DEBUG TLSServer
+Ping request received from ('172.23.0.1', 43082)
+2025-08-25 10:43:07 DEBUG TLSServer
+Ping request received from ('172.23.0.1', 43082)
+2025-08-25 10:43:07.454 INFO TLSServer
+📨 BSSCI message #5 received from ('172.23.0.1', 43082)
+2025-08-25 10:43:07 INFO TLSServer
+📨 BSSCI message #5 received from ('172.23.0.1', 43082)
+2025-08-25 10:43:07.454 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 10:43:07 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 10:43:07.454 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 1}
+2025-08-25 10:43:07 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 1}
+2025-08-25 10:43:07.454 DEBUG TLSServer
+Ping complete received from ('172.23.0.1', 43082)
+2025-08-25 10:43:07 DEBUG TLSServer
+Ping complete received from ('172.23.0.1', 43082)
+2025-08-25 10:43:07.575 INFO TLSServer
+📨 BSSCI message #4 received from ('172.23.0.1', 43088)
+2025-08-25 10:43:07 INFO TLSServer
+📨 BSSCI message #4 received from ('172.23.0.1', 43088)
+2025-08-25 10:43:07.575 INFO TLSServer
+   Message type: ping
+2025-08-25 10:43:07 INFO TLSServer
+   Message type: ping
+2025-08-25 10:43:07.576 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 1}
+2025-08-25 10:43:07 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 1}
+2025-08-25 10:43:07.576 DEBUG TLSServer
+Ping request received from ('172.23.0.1', 43088)
+2025-08-25 10:43:07 DEBUG TLSServer
+Ping request received from ('172.23.0.1', 43088)
+2025-08-25 10:43:07.578 INFO TLSServer
+📨 BSSCI message #5 received from ('172.23.0.1', 43088)
+2025-08-25 10:43:07 INFO TLSServer
+📨 BSSCI message #5 received from ('172.23.0.1', 43088)
+2025-08-25 10:43:07.578 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 10:43:07 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 10:43:07.578 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 1}
+2025-08-25 10:43:07 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 1}
+2025-08-25 10:43:07.578 DEBUG TLSServer
+Ping complete received from ('172.23.0.1', 43088)
+2025-08-25 10:43:07 DEBUG TLSServer
+Ping complete received from ('172.23.0.1', 43088)
+2025-08-25 10:43:12.468 INFO TLSServer
+📨 BSSCI message #6 received from ('172.23.0.1', 43082)
+2025-08-25 10:43:12 INFO TLSServer
+📨 BSSCI message #6 received from ('172.23.0.1', 43082)
+2025-08-25 10:43:12.468 INFO TLSServer
+   Message type: ping
+2025-08-25 10:43:12 INFO TLSServer
+   Message type: ping
+2025-08-25 10:43:12.468 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 2}
+2025-08-25 10:43:12 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 2}
+2025-08-25 10:43:12.469 DEBUG TLSServer
+Ping request received from ('172.23.0.1', 43082)
+2025-08-25 10:43:12 DEBUG TLSServer
+Ping request received from ('172.23.0.1', 43082)
+2025-08-25 10:43:12.470 INFO TLSServer
+📨 BSSCI message #7 received from ('172.23.0.1', 43082)
+2025-08-25 10:43:12 INFO TLSServer
+📨 BSSCI message #7 received from ('172.23.0.1', 43082)
+2025-08-25 10:43:12.470 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 10:43:12 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 10:43:12.470 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 2}
+2025-08-25 10:43:12 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 2}
+2025-08-25 10:43:12.471 DEBUG TLSServer
+Ping complete received from ('172.23.0.1', 43082)
+2025-08-25 10:43:12 DEBUG TLSServer
+Ping complete received from ('172.23.0.1', 43082)
+2025-08-25 10:43:12.586 INFO TLSServer
+📨 BSSCI message #6 received from ('172.23.0.1', 43088)
+2025-08-25 10:43:12 INFO TLSServer
+📨 BSSCI message #6 received from ('172.23.0.1', 43088)
+2025-08-25 10:43:12.587 INFO TLSServer
+   Message type: ping
+2025-08-25 10:43:12 INFO TLSServer
+   Message type: ping
+2025-08-25 10:43:12.587 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 2}
+2025-08-25 10:43:12 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 2}
+2025-08-25 10:43:12.587 DEBUG TLSServer
+Ping request received from ('172.23.0.1', 43088)
+2025-08-25 10:43:12 DEBUG TLSServer
+Ping request received from ('172.23.0.1', 43088)
+2025-08-25 10:43:12.593 INFO TLSServer
+📨 BSSCI message #7 received from ('172.23.0.1', 43088)
+2025-08-25 10:43:12 INFO TLSServer
+📨 BSSCI message #7 received from ('172.23.0.1', 43088)
+2025-08-25 10:43:12.593 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 10:43:12 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 10:43:12.593 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 2}
+2025-08-25 10:43:12 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 2}
+2025-08-25 10:43:12.593 DEBUG TLSServer
+Ping complete received from ('172.23.0.1', 43088)
+2025-08-25 10:43:12 DEBUG TLSServer
+Ping complete received from ('172.23.0.1', 43088)
+2025-08-25 10:43:17.485 INFO TLSServer
+📨 BSSCI message #8 received from ('172.23.0.1', 43082)
+2025-08-25 10:43:17 INFO TLSServer
+📨 BSSCI message #8 received from ('172.23.0.1', 43082)
+2025-08-25 10:43:17.485 INFO TLSServer
+   Message type: ping
+2025-08-25 10:43:17 INFO TLSServer
+   Message type: ping
+2025-08-25 10:43:17.485 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 3}
+2025-08-25 10:43:17 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 3}
+2025-08-25 10:43:17.486 DEBUG TLSServer
+Ping request received from ('172.23.0.1', 43082)
+2025-08-25 10:43:17 DEBUG TLSServer
+Ping request received from ('172.23.0.1', 43082)
+2025-08-25 10:43:17.487 INFO TLSServer
+📨 BSSCI message #9 received from ('172.23.0.1', 43082)
+2025-08-25 10:43:17 INFO TLSServer
+📨 BSSCI message #9 received from ('172.23.0.1', 43082)
+2025-08-25 10:43:17.487 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 10:43:17 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 10:43:17.487 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 3}
+2025-08-25 10:43:17 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 3}
+2025-08-25 10:43:17.488 DEBUG TLSServer
+Ping complete received from ('172.23.0.1', 43082)
+2025-08-25 10:43:17 DEBUG TLSServer
+Ping complete received from ('172.23.0.1', 43082)
+2025-08-25 10:43:17.594 INFO TLSServer
+📨 BSSCI message #8 received from ('172.23.0.1', 43088)
+2025-08-25 10:43:17 INFO TLSServer
+📨 BSSCI message #8 received from ('172.23.0.1', 43088)
+2025-08-25 10:43:17.594 INFO TLSServer
+   Message type: ping
+2025-08-25 10:43:17 INFO TLSServer
+   Message type: ping
+2025-08-25 10:43:17.594 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 3}
+2025-08-25 10:43:17 DEBUG TLSServer
+   Full message: {'command': 'ping', 'opId': 3}
+2025-08-25 10:43:17.594 DEBUG TLSServer
+Ping request received from ('172.23.0.1', 43088)
+2025-08-25 10:43:17 DEBUG TLSServer
+Ping request received from ('172.23.0.1', 43088)
+2025-08-25 10:43:17.599 INFO TLSServer
+📨 BSSCI message #9 received from ('172.23.0.1', 43088)
+2025-08-25 10:43:17 INFO TLSServer
+📨 BSSCI message #9 received from ('172.23.0.1', 43088)
+2025-08-25 10:43:17.599 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 10:43:17 INFO TLSServer
+   Message type: pingCmp
+2025-08-25 10:43:17.599 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 3}
+2025-08-25 10:43:17 DEBUG TLSServer
+   Full message: {'command': 'pingCmp', 'opId': 3}
+2025-08-25 10:43:17.600 DEBUG TLSServer
+Ping complete received from ('172.23.0.1', 43088)
+2025-08-25 10:43:17 DEBUG TLSServer
+Ping complete received from ('172.23.0.1', 43088)
