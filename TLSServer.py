@@ -38,13 +38,27 @@ class TLSServer:
         logger.info(f"   Key file: {bssci_config.KEY_FILE}")
         logger.info(f"   CA file: {bssci_config.CA_FILE}")
         
-        ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-        ssl_ctx.load_cert_chain(
-            certfile=bssci_config.CERT_FILE, keyfile=bssci_config.KEY_FILE
-        )
-        ssl_ctx.load_verify_locations(cafile=bssci_config.CA_FILE)
-        ssl_ctx.verify_mode = ssl.CERT_REQUIRED
-        logger.info("✓ SSL context configured successfully with client certificate verification")
+        try:
+            ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            ssl_ctx.load_cert_chain(
+                certfile=bssci_config.CERT_FILE, keyfile=bssci_config.KEY_FILE
+            )
+            ssl_ctx.load_verify_locations(cafile=bssci_config.CA_FILE)
+            ssl_ctx.verify_mode = ssl.CERT_REQUIRED
+            
+            # Log SSL context details
+            logger.info(f"   TLS Protocol versions: {ssl_ctx.minimum_version.name} - {ssl_ctx.maximum_version.name}")
+            logger.info("✓ SSL context configured successfully with client certificate verification")
+            
+        except FileNotFoundError as e:
+            logger.error(f"❌ SSL certificate file not found: {e}")
+            raise
+        except ssl.SSLError as e:
+            logger.error(f"❌ SSL configuration error: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"❌ Unexpected error setting up SSL: {e}")
+            raise
 
         logger.info(f"🚀 Starting BSSCI TLS server...")
         logger.info(f"   Listen address: {bssci_config.LISTEN_HOST}:{bssci_config.LISTEN_PORT}")
@@ -136,18 +150,33 @@ class TLSServer:
         addr = writer.get_extra_info("peername")
         ssl_obj = writer.get_extra_info("ssl_object")
         
-        logger.info(f"🔗 New BSSCI connection established from {addr}")
-        if ssl_obj:
-            cert = ssl_obj.getpeercert()
-            if cert:
-                subject = cert.get('subject', [])
-                cn = None
-                for field in subject:
-                    for name, value in field:
-                        if name == 'commonName':
-                            cn = value
-                            break
-                logger.info(f"   Client certificate CN: {cn}")
+        try:
+            logger.info(f"🔗 New BSSCI connection attempt from {addr}")
+            
+            if ssl_obj:
+                cert = ssl_obj.getpeercert()
+                if cert:
+                    subject = cert.get('subject', [])
+                    cn = None
+                    for field in subject:
+                        for name, value in field:
+                            if name == 'commonName':
+                                cn = value
+                                break
+                    logger.info(f"   ✓ SSL handshake successful - Client certificate CN: {cn}")
+                else:
+                    logger.warning(f"   ⚠️  SSL handshake completed but no client certificate provided")
+            else:
+                logger.error(f"   ❌ No SSL object found - connection may not be encrypted")
+                
+        except Exception as e:
+            logger.error(f"   ❌ SSL connection error from {addr}: {e}")
+            try:
+                writer.close()
+                await writer.wait_closed()
+            except:
+                pass
+            return
         
         connection_start_time = asyncio.get_event_loop().time()
         messages_processed = 0
@@ -297,8 +326,14 @@ class TLSServer:
                     # except Exception as e:
                     #    print(f"[ERROR] Fehler beim Dekodieren der Nachricht: {e}")
 
+        except asyncio.CancelledError:
+            logger.info(f"🔌 Connection from {addr} was cancelled")
+        except ConnectionResetError:
+            logger.warning(f"🔌 Connection from {addr} was reset by peer")
+        except ssl.SSLError as e:
+            logger.error(f"❌ SSL/TLS error from {addr}: {e}")
         except Exception as e:
-            logger.error(f"Error handling connection from {addr}: {e}")
+            logger.error(f"❌ Unexpected error handling connection from {addr}: {e}")
         finally:
             connection_duration = asyncio.get_event_loop().time() - connection_start_time
             
@@ -350,11 +385,29 @@ class TLSServer:
         connected_stations = []
         for writer, bs_eui in self.connected_base_stations.items():
             addr = writer.get_extra_info("peername")
-            connected_stations.append({
+            ssl_obj = writer.get_extra_info("ssl_object")
+            
+            station_info = {
                 "eui": bs_eui,
                 "address": f"{addr[0]}:{addr[1]}" if addr else "unknown",
                 "status": "connected"
-            })
+            }
+            
+            # Add SSL certificate info if available
+            if ssl_obj:
+                try:
+                    cert = ssl_obj.getpeercert()
+                    if cert:
+                        subject = cert.get('subject', [])
+                        for field in subject:
+                            for name, value in field:
+                                if name == 'commonName':
+                                    station_info['certificate_cn'] = value
+                                    break
+                except:
+                    pass
+            
+            connected_stations.append(station_info)
         
         connecting_stations = []
         for writer, bs_eui in self.connecting_base_stations.items():
