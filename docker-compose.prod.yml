@@ -4,31 +4,43 @@ version: '3.8'
 services:
   bssci-service-center:
     build: .
-    container_name: bssci-service-center
+    container_name: bssci-service-center-prod
     ports:
-      - "16019:16017"  # TLS Server port
-      - "5000:5000"    # Web UI port
+      - "16017:16017"  # Direct TLS port mapping for production
+      - "80:5000"      # Web UI on standard HTTP port
     volumes:
       - ./certs:/app/certs:ro
       - ./endpoints.json:/app/endpoints.json
       - ./bssci_config.py:/app/bssci_config.py
-      - ./logs:/app/logs
+      - bssci-logs:/app/logs
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1
+      - FLASK_ENV=production
     networks:
       - bssci-network
     logging:
       driver: "json-file"
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: "50m"
+        max-file: "5"
     healthcheck:
       test: ["CMD", "python", "-c", "import socket; s1 = socket.create_connection(('localhost', 16017), timeout=5); s2 = socket.create_connection(('localhost', 5000), timeout=5); s1.close(); s2.close()"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+
+volumes:
+  bssci-logs:
 
 networks:
   bssci-network:
