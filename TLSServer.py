@@ -576,10 +576,40 @@ class TLSServer:
                                 logger.error(f"   Conversion error: {conv_error}")
                                 logger.error(f"   Full message: {message}")
                         else:
-                            logger.error(f"❌ ATTACH RESPONSE missing endpoint EUI")
-                            logger.error(f"   Full message received: {message}")
+                            # Critical issue: Base station not returning epEui in attach response
+                            logger.error(f"❌ CRITICAL: ATTACH RESPONSE MISSING ENDPOINT EUI")
+                            logger.error(f"   =====================================")
                             logger.error(f"   Base station: {bs_eui}")
                             logger.error(f"   Operation ID: {op_id}")
+                            logger.error(f"   Result Code: {result_code}")
+                            logger.error(f"   Full message received: {message}")
+                            logger.error(f"   ❌ This indicates a PROTOCOL VIOLATION by the base station!")
+                            logger.error(f"   ❌ Base station should return 'epEui' field to identify which sensor failed!")
+                            logger.error(f"   ❌ Without epEui, cannot determine which sensor registration failed!")
+                            logger.error(f"   ❌ This will prevent sensors from registering and receiving data!")
+                            logger.error(f"   ⚠️  RECOMMENDED ACTIONS:")
+                            logger.error(f"     1. Check base station firmware version")
+                            logger.error(f"     2. Verify base station BSSCI protocol implementation")
+                            logger.error(f"     3. Check attach request format being sent to base station")
+                            logger.error(f"     4. Review base station logs for error details")
+                            logger.error(f"   =====================================")
+                            
+                            # Try to correlate with recent attach requests based on operation ID
+                            logger.warning(f"🔍 ATTEMPTING TO CORRELATE with recent attach requests...")
+                            logger.warning(f"   Looking for sensors that might have caused opID {op_id}")
+                            
+                            # Since we can't identify the exact sensor, mark this as a critical system issue
+                            critical_failure_key = f"missing_eui_opid_{abs(int(op_id))}"
+                            self.registered_sensors[critical_failure_key] = {
+                                'status': 'critical_protocol_error',
+                                'base_station': bs_eui,
+                                'timestamp': asyncio.get_event_loop().time(),
+                                'result_code': result_code,
+                                'error_description': 'Base station attach response missing epEui field - protocol violation',
+                                'failure_time': datetime.now().isoformat(),
+                                'op_id': op_id,
+                                'issue_type': 'missing_eui_in_attach_response'
+                            }
                         
                         msg_pack = encode_message(
                             messages.build_attach_complete(message.get("opId", ""))
