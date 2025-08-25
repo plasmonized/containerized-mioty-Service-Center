@@ -41,7 +41,9 @@ class MQTTClient:
                     port=MQTT_PORT, 
                     username=MQTT_USERNAME, 
                     password=MQTT_PASSWORD,
-                    protocol=paho.mqtt.client.MQTTv311
+                    protocol=paho.mqtt.client.MQTTv311,
+                    clean_session=True,  # Use clean_session for v3.1.1 instead of clean_start
+                    keepalive=60
                 ) as client:
                     logger.info("✓ MQTT client connected successfully")
                     logger.info("✓ Authentication successful")
