@@ -26,11 +26,20 @@ class TLSServer:
         self.connected_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
         self.connecting_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
         self.sensor_config_file = sensor_config_file
+        
+        # Ensure logs directory exists
+        os.makedirs('/app/logs', exist_ok=True)
+        
         try:
             with open(sensor_config_file, "r") as f:
                 self.sensor_config = json.load(f)
-        except Exception:
-            self.sensor_config = {}
+            logger.info(f"Loaded {len(self.sensor_config)} sensor configurations from {sensor_config_file}")
+        except FileNotFoundError:
+            logger.warning(f"Sensor config file {sensor_config_file} not found, starting with empty configuration")
+            self.sensor_config = []
+        except Exception as e:
+            logger.error(f"Error loading sensor config file {sensor_config_file}: {e}")
+            self.sensor_config = []
 
     async def start_server(self) -> None:
         logger.info("Setting up SSL context...")
@@ -213,7 +222,9 @@ class TLSServer:
                         eui = int(message["epEui"]).to_bytes(8, byteorder="big").hex()
                         bs_eui = self.connected_base_stations[writer]
                         logger.info(f"Uplink data received from endpoint {eui} via base station {bs_eui}")
-                        logger.debug(f"Data details - SNR: {message['snr']}, RSSI: {message['rssi']}, Packet count: {message['packetCnt']}")
+                        logger.info(f"Data details - SNR: {message['snr']}, RSSI: {message['rssi']}, Packet count: {message['packetCnt']}")
+                        logger.info(f"Raw sensor data: {message['userData']}")
+                        
                         data_dict = {
                             "bs_eui": bs_eui,
                             "rxTime": message["rxTime"],
@@ -222,9 +233,16 @@ class TLSServer:
                             "cnt": message["packetCnt"],
                             "data": message["userData"],
                         }
+                        
+                        topic = f"ep/{eui}/ul"
+                        payload = json.dumps(data_dict)
+                        logger.info(f"Publishing sensor data to MQTT topic: {topic}")
+                        logger.debug(f"MQTT payload: {payload}")
+                        
                         await self.mqtt_out_queue.put(
-                            {"topic": f"ep/{eui}/ul", "payload": json.dumps(data_dict)}
+                            {"topic": topic, "payload": payload}
                         )
+                        
                         msg_pack = encode_message(
                             messages.build_ul_response(message.get("opId", ""))
                         )
@@ -234,6 +252,7 @@ class TLSServer:
                             + msg_pack
                         )
                         await writer.drain()
+                        logger.debug(f"Sent uplink response for endpoint {eui}")
 
                     elif msg_type == "ulDataCmp":
                         pass

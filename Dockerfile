@@ -15,8 +15,8 @@ COPY *.py ./
 COPY endpoints.json ./
 COPY bssci_config.py ./
 
-# Create certs directory
-RUN mkdir -p certs
+# Create necessary directories
+RUN mkdir -p certs logs
 
 # Copy certificates if they exist
 COPY certs/ ./certs/
@@ -27,8 +27,9 @@ EXPOSE 16017
 # Set proper permissions for certificates
 RUN chmod -R 644 certs/ || true
 
-# Ensure endpoints.json is writable
-RUN touch endpoints.json && chmod 666 endpoints.json || true
+# Ensure endpoints.json is writable and logs directory is accessible
+RUN touch endpoints.json && chmod 666 endpoints.json
+RUN chmod 777 logs
 
 # Run the application with unbuffered output
 CMD ["python", "-u", "main.py"]

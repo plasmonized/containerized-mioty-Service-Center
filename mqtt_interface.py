@@ -59,11 +59,16 @@ class MQTTClient:
     async def _handle_outgoing(self, client: Client) -> None:
         logger.info("MQTT outgoing message handler started")
         while True:
-            msg = await self.mqtt_out_queue.get()
-            topic = f"{self.base_topic}/{msg['topic']}"
-            logger.info(f"Publishing to MQTT topic: {topic}")
-            logger.debug(f"Message payload: {msg['payload']}")
-            await client.publish(topic, msg["payload"])
+            try:
+                msg = await self.mqtt_out_queue.get()
+                topic = f"{self.base_topic}/{msg['topic']}"
+                logger.info(f"Publishing to MQTT topic: {topic}")
+                logger.info(f"Message payload: {msg['payload']}")
+                await client.publish(topic, msg["payload"])
+                logger.info(f"Successfully published message to {topic}")
+            except Exception as e:
+                logger.error(f"Error publishing MQTT message: {e}")
+                logger.error(f"Failed topic: {topic if 'topic' in locals() else 'unknown'}")
 
 
 if __name__ == "__main__":
