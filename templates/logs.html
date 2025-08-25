@@ -1,0 +1,104 @@
+
+{% extends "base.html" %}
+{% block title %}Logs{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>System Logs</h1>
+    <div>
+        <button class="btn btn-outline-secondary" onclick="loadLogs()">Refresh</button>
+        <button class="btn btn-outline-danger" onclick="clearLogs()">Clear Display</button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div id="logs-container" style="height: 600px; overflow-y: auto; background-color: #f8f9fa; padding: 15px; font-family: monospace;">
+            <div id="logs-content">
+                <p class="text-muted">Loading logs...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-3">
+    <div class="form-check form-check-inline">
+        <input class="form-check-input" type="checkbox" id="autoRefresh" checked>
+        <label class="form-check-label" for="autoRefresh">
+            Auto-refresh (5 seconds)
+        </label>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let autoRefreshInterval = null;
+let lastLogCount = 0;
+
+function loadLogs() {
+    fetch('/api/logs')
+        .then(response => response.json())
+        .then(logs => {
+            const container = document.getElementById('logs-content');
+            if (logs.length === 0) {
+                container.innerHTML = '<p class="text-muted">No logs available</p>';
+                return;
+            }
+            
+            container.innerHTML = logs.map(log => 
+                `<div class="log-entry log-${log.level}" style="margin-bottom: 5px;">
+                    <span class="text-muted">${log.timestamp}</span>
+                    <span class="badge bg-${getBadgeColor(log.level)}">${log.level}</span>
+                    <strong>${log.logger}:</strong> ${log.message}
+                </div>`
+            ).join('');
+            
+            // Auto-scroll to bottom if new logs were added
+            if (logs.length > lastLogCount) {
+                const logsContainer = document.getElementById('logs-container');
+                logsContainer.scrollTop = logsContainer.scrollHeight;
+            }
+            lastLogCount = logs.length;
+        })
+        .catch(error => {
+            document.getElementById('logs-content').innerHTML = '<p class="text-danger">Error loading logs: ' + error + '</p>';
+        });
+}
+
+function getBadgeColor(level) {
+    switch(level) {
+        case 'ERROR': return 'danger';
+        case 'WARNING': return 'warning';
+        case 'INFO': return 'info';
+        case 'DEBUG': return 'secondary';
+        default: return 'light';
+    }
+}
+
+function clearLogs() {
+    document.getElementById('logs-content').innerHTML = '<p class="text-muted">Logs cleared from display</p>';
+    lastLogCount = 0;
+}
+
+function toggleAutoRefresh() {
+    const autoRefresh = document.getElementById('autoRefresh').checked;
+    
+    if (autoRefreshInterval) {
+        clearInterval(autoRefreshInterval);
+        autoRefreshInterval = null;
+    }
+    
+    if (autoRefresh) {
+        autoRefreshInterval = setInterval(loadLogs, 5000);
+    }
+}
+
+// Load logs on page load
+loadLogs();
+
+// Set up auto-refresh
+document.getElementById('autoRefresh').addEventListener('change', toggleAutoRefresh);
+toggleAutoRefresh();
+</script>
+{% endblock %}

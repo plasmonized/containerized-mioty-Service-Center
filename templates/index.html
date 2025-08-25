@@ -1,0 +1,78 @@
+
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <h1>BSSCI Service Center Dashboard</h1>
+        <div class="alert alert-info">
+            <h4>Service Status</h4>
+            <p>The BSSCI Service Center is running and ready to accept base station connections.</p>
+            <ul>
+                <li><strong>TLS Server:</strong> Listening on port {{ config.LISTEN_PORT if config else '16017' }}</li>
+                <li><strong>MQTT Broker:</strong> Connected to {{ config.MQTT_BROKER if config else 'akahlig.selfhost.co' }}</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('sensors') }}" class="btn btn-primary btn-block mb-2">Manage Sensors</a>
+                <a href="{{ url_for('config') }}" class="btn btn-secondary btn-block mb-2">Configuration</a>
+                <a href="{{ url_for('logs') }}" class="btn btn-info btn-block">View Logs</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>Recent Logs</h5>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                <div id="recent-logs">
+                    <p class="text-muted">Loading logs...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function loadRecentLogs() {
+    fetch('/api/logs')
+        .then(response => response.json())
+        .then(logs => {
+            const container = document.getElementById('recent-logs');
+            if (logs.length === 0) {
+                container.innerHTML = '<p class="text-muted">No logs available</p>';
+                return;
+            }
+            
+            const recentLogs = logs.slice(-10).reverse();
+            container.innerHTML = recentLogs.map(log => 
+                `<div class="log-entry log-${log.level}">
+                    <small class="text-muted">${log.timestamp}</small>
+                    <strong>[${log.level}]</strong> ${log.logger}: ${log.message}
+                </div>`
+            ).join('');
+        })
+        .catch(error => {
+            document.getElementById('recent-logs').innerHTML = '<p class="text-danger">Error loading logs</p>';
+        });
+}
+
+// Load logs on page load and refresh every 5 seconds
+loadRecentLogs();
+setInterval(loadRecentLogs, 5000);
+</script>
+{% endblock %}

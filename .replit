@@ -11,3 +11,15 @@ run = ["sh", "-c", "py main.py"]
 [[ports]]
 localPort = 16017
 externalPort = 80
+
+[workflows]
+runButton = "Run with Web UI"
+
+[[workflows.workflow]]
+name = "Run with Web UI"
+author = 45640243
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python web_main.py"
