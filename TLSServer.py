@@ -415,8 +415,7 @@ class TLSServer:
                         
                         # Parse timestamp
                         try:
-                            import datetime
-                            bs_time = datetime.datetime.fromtimestamp(message['time'] / 1_000_000_000)
+                            bs_time = datetime.fromtimestamp(message['time'] / 1_000_000_000)
                             logger.info(f"   Base Station Time: {bs_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
                         except:
                             logger.info(f"   Base Station Time: {message['time']} (raw)")
@@ -600,9 +599,8 @@ class TLSServer:
                         rx_time = message["rxTime"]
                         
                         # Parse received timestamp if available
-                        import datetime
                         try:
-                            rx_datetime = datetime.datetime.fromtimestamp(rx_time / 1_000_000_000)
+                            rx_datetime = datetime.fromtimestamp(rx_time / 1_000_000_000)
                             rx_time_str = rx_datetime.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
                         except:
                             rx_time_str = str(rx_time)
