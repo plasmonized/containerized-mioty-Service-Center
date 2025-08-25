@@ -10,11 +10,11 @@ run = ["sh", "-c", "py main.py"]
 
 [[ports]]
 localPort = 5000
-externalPort = 5000
+externalPort = 80
 
 [[ports]]
 localPort = 16017
-externalPort = 80
+externalPort = 16017
 
 [workflows]
 runButton = "Run with Web UI"
