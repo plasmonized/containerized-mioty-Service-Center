@@ -19,6 +19,13 @@ max_log_entries = 1000
 class WebUILogHandler(logging.Handler):
     def emit(self, record):
         global log_entries
+        
+        # Filter out noisy web request logs
+        if record.name == 'werkzeug' and any(x in record.getMessage() for x in [
+            'GET /api/', 'GET /logs', 'GET /sensors', 'GET /config', 'GET /'
+        ]):
+            return  # Skip web request logs
+            
         log_entry = {
             'timestamp': datetime.fromtimestamp(record.created).strftime('%Y-%m-%d %H:%M:%S'),
             'level': record.levelname,

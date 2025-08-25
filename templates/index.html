@@ -80,8 +80,7 @@ function loadBaseStationStatus() {
             } else {
                 const connectedHtml = data.connected.map(bs => 
                     `<div class="mb-1">
-                        <small><strong>EUI:</strong> ${bs.eui}</small><br>
-                        <small class="text-muted">Address: ${bs.address}</small>
+                        <small><code>${bs.eui}</code> <span class="badge bg-success">Connected</span></small>
                     </div>`
                 ).join('');
                 connectedDiv.innerHTML = connectedHtml;
@@ -94,8 +93,7 @@ function loadBaseStationStatus() {
             } else {
                 const connectingHtml = data.connecting.map(bs => 
                     `<div class="mb-1">
-                        <small><strong>EUI:</strong> ${bs.eui}</small><br>
-                        <small class="text-muted">Address: ${bs.address}</small>
+                        <small><code>${bs.eui}</code> <span class="badge bg-warning">Connecting</span></small>
                     </div>`
                 ).join('');
                 connectingDiv.innerHTML = connectingHtml;

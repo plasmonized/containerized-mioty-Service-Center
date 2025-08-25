@@ -111,20 +111,24 @@ class TLSServer:
     async def send_status_requests(self) -> None:
         while True:
             await asyncio.sleep(bssci_config.STATUS_INTERVAL)
-            logger.info(f"Sending status requests to {len(self.connected_base_stations)} base stations")
-            for writer, bs_eui in self.connected_base_stations.items():
-                try:
-                    msg_pack = encode_message(messages.build_status_request(self.opID))
-                    writer.write(
-                        IDENTIFIER
-                        + len(msg_pack).to_bytes(4, byteorder="little")
-                        + msg_pack
-                    )
-                    await writer.drain()
-                    logger.debug(f"Status request sent to base station {bs_eui} with opID {self.opID}")
-                    self.opID -= 1
-                except Exception as e:
-                    logger.error(f"Failed to send status request to base station {bs_eui}: {e}")
+            if self.connected_base_stations:
+                logger.debug(f"Sending status requests to {len(self.connected_base_stations)} base stations")
+                for writer, bs_eui in self.connected_base_stations.copy().items():  # Use copy to avoid dict change during iteration
+                    try:
+                        msg_pack = encode_message(messages.build_status_request(self.opID))
+                        writer.write(
+                            IDENTIFIER
+                            + len(msg_pack).to_bytes(4, byteorder="little")
+                            + msg_pack
+                        )
+                        await writer.drain()
+                        logger.debug(f"Status request sent to base station {bs_eui} with opID {self.opID}")
+                        self.opID -= 1
+                    except Exception as e:
+                        logger.warning(f"Base station {bs_eui} disconnected, removing from list")
+                        # Remove disconnected base station
+                        if writer in self.connected_base_stations:
+                            self.connected_base_stations.pop(writer)
 
     async def handle_client(
         self, reader: asyncio.streams.StreamReader, writer: asyncio.streams.StreamWriter
@@ -180,7 +184,7 @@ class TLSServer:
                             writer in self.connecting_base_stations
                             and writer not in self.connected_base_stations
                         ):
-                            bs_eui = self.connecting_base_stations[writer]
+                            bs_eui = self.connecting_base_stations.pop(writer)  # Remove from connecting
                             self.connected_base_stations[writer] = bs_eui
                             connection_time = asyncio.get_event_loop().time() - connection_start_time
                             
