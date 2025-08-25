@@ -1,10 +1,8 @@
 import asyncio
 import json
 import logging
-import os
-from logging.handlers import RotatingFileHandler
-
-from paho.mqtt.client import Client, MQTTMessage
+from aiomqtt import Client
+import bssci_config
 
 # Configure logging
 logging.basicConfig(
@@ -23,23 +21,23 @@ class SimpleMQTTClient:
 
     def __init__(
         self,
-        out_queue: asyncio.Queue,
-        in_queue: asyncio.Queue,
-        broker_host: str = "localhost",
-        port: int = 1883,
-        username: str = "",
-        password: str = "",
-        base_topic: str = "app",
-        config_topic: str = "config",
+        mqtt_out_queue: asyncio.Queue,
+        mqtt_in_queue: asyncio.Queue,
+        broker_host: str = None,
+        port: int = None,
+        username: str = None,
+        password: str = None,
+        base_topic: str = None,
+        config_topic: str = None,
     ):
-        self.out_queue = out_queue
-        self.in_queue = in_queue
-        self.broker_host = broker_host
-        self.port = port
-        self.username = username
-        self.password = password
-        self.base_topic = base_topic
-        self.config_topic = config_topic
+        self.broker_host = broker_host or bssci_config.MQTT_BROKER
+        self.port = port or bssci_config.MQTT_PORT
+        self.username = username or bssci_config.MQTT_USERNAME
+        self.password = password or bssci_config.MQTT_PASSWORD
+        self.base_topic = (base_topic or bssci_config.BASE_TOPIC).rstrip('/')
+        self.config_topic = config_topic or f"{self.base_topic}/ep/+/config"
+        self.mqtt_out_queue = mqtt_out_queue
+        self.mqtt_in_queue = mqtt_in_queue
 
     async def _handle_incoming_messages(self, client: Client):
         """Handle incoming messages from the MQTT broker."""
