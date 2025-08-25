@@ -6,6 +6,7 @@ services:
     build: .
     container_name: bssci-service-center
     user: "1000:1000"  # Map to user bssci
+    init: true
     ports:
       - "16019:16017"  # TLS Server port
       - "5056:5000"    # Web UI port

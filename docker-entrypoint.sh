@@ -10,6 +10,11 @@ fi
 # Create logs directory if it doesn't exist
 mkdir -p /app/logs
 
+# Ensure config files are writable (in case host permissions are wrong)
+if [ -w /app ]; then
+    chmod 664 /app/endpoints.json /app/bssci_config.py 2>/dev/null || true
+fi
+
 # Check if running with web UI or just the service
 if [ "${RUN_MODE}" = "service-only" ]; then
     echo "Starting BSSCI service only..."
