@@ -1,0 +1,101 @@
+2025-08-25 07:59:57 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 07:59:57] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:00:02 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:00:02] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:00:02 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:00:02] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:00:07 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:00:07] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:00:07 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:00:07] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:00:12 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:00:12] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:00:12 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:00:12] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:00:17 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:00:17] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:00:17 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:00:17] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:00:22 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:00:22] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:00:22 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:00:22] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:00:26 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:00:26] "GET /logs HTTP/1.1" 200 -
+2025-08-25 08:00:26 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:00:26] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:00:30 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:00:30] "GET / HTTP/1.1" 200 -
+2025-08-25 08:00:30 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:00:30] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:00:30 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:00:30] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:00:31 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:00:31] "GET /config HTTP/1.1" 200 -
+2025-08-25 08:00:32 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:00:32] "GET /sensors HTTP/1.1" 200 -
+2025-08-25 08:00:32 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:00:32] "GET /api/sensors HTTP/1.1" 200 -
+2025-08-25 08:01:46 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:01:46] "GET / HTTP/1.1" 200 -
+2025-08-25 08:01:46 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:01:46] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:01:46 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:01:46] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:01:51 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:01:51] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:01:51 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:01:51] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:01:56 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:01:56] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:01:56 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:01:56] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:02:01 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:01] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:02:01 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:01] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:02:06 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:06] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:02:06 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:06] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:02:11 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:11] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:02:11 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:11] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:02:13 ERROR TLSServer: Error handling connection from ('192.168.112.1', 51946): EOF occurred in violation of protocol (_ssl.c:2580)
+2025-08-25 08:02:13 ERROR TLSServer: Failed to save sensor configuration: [Errno 13] Permission denied: 'endpoints.json'
+2025-08-25 08:02:13 ERROR TLSServer: Error handling connection from ('192.168.112.1', 51942): EOF occurred in violation of protocol (_ssl.c:2580)
+2025-08-25 08:02:13 ERROR TLSServer: Failed to save sensor configuration: [Errno 13] Permission denied: 'endpoints.json'
+2025-08-25 08:02:13 ERROR asyncio: Unhandled exception in client_connected_cb transport:
+2025-08-25 08:02:13 ERROR asyncio: Unhandled exception in client_connected_cb transport:
+2025-08-25 08:02:13 ERROR TLSServer: Error handling connection from ('192.168.112.1', 51940): EOF occurred in violation of protocol (_ssl.c:2580)
+2025-08-25 08:02:13 ERROR TLSServer: Failed to save sensor configuration: [Errno 13] Permission denied: 'endpoints.json'
+2025-08-25 08:02:13 ERROR TLSServer: Error handling connection from ('192.168.112.1', 51938): EOF occurred in violation of protocol (_ssl.c:2580)
+2025-08-25 08:02:13 ERROR TLSServer: Failed to save sensor configuration: [Errno 13] Permission denied: 'endpoints.json'
+2025-08-25 08:02:13 ERROR asyncio: Unhandled exception in client_connected_cb transport:
+2025-08-25 08:02:13 ERROR asyncio: Unhandled exception in client_connected_cb transport:
+2025-08-25 08:02:13 ERROR TLSServer: Error handling connection from ('192.168.112.1', 51934): EOF occurred in violation of protocol (_ssl.c:2580)
+2025-08-25 08:02:13 ERROR TLSServer: Failed to save sensor configuration: [Errno 13] Permission denied: 'endpoints.json'
+2025-08-25 08:02:13 ERROR TLSServer: Error handling connection from ('192.168.112.1', 51936): EOF occurred in violation of protocol (_ssl.c:2580)
+2025-08-25 08:02:13 ERROR TLSServer: Failed to save sensor configuration: [Errno 13] Permission denied: 'endpoints.json'
+2025-08-25 08:02:13 ERROR asyncio: Unhandled exception in client_connected_cb transport:
+2025-08-25 08:02:13 ERROR asyncio: Unhandled exception in client_connected_cb transport:
+2025-08-25 08:02:16 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:16] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:02:16 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:16] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:02:21 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:21] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:02:21 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:21] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:02:26 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:26] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:02:26 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:26] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:02:31 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:31] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:02:31 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:31] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:02:36 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:36] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:02:36 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:36] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:02:41 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:41] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:02:41 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:41] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:02:46 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:46] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:02:46 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:46] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:02:51 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:51] "GET /api/base_stations HTTP/1.1" 200 -
+2025-08-25 08:02:51 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:51] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:02:52 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:52] "GET /logs HTTP/1.1" 200 -
+2025-08-25 08:02:52 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:52] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 ERROR TLSServer: Failed to send status request to base station 00073200007e221d: 'NoneType' object has no attribute '_write_appdata'
+2025-08-25 08:02:57 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:02:57] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:03:02 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:03:02] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:03:07 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:03:07] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:03:12 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:03:12] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:03:17 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:03:17] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:03:22 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:03:22] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:03:24 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:03:24] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:03:27 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:03:27] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:03:32 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:03:32] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:03:37 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:03:37] "GET /api/logs HTTP/1.1" 200 -
+2025-08-25 08:03:42 INFO werkzeug: 192.168.112.1 - - [25/Aug/2025 08:03:42] "GET /api/logs HTTP/1.1" 200 -
+Auto-refresh (5 seconds)
