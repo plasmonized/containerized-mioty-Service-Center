@@ -102,6 +102,8 @@ class MQTTClient:
                 logger.info(f"📤 MQTT OUTGOING MESSAGE #{message_count}")
                 logger.info(f"   ===================================")
                 logger.info(f"   Message Type: {msg_type}")
+                logger.info(f"   Base Topic: {self.base_topic}")
+                logger.info(f"   Raw Topic: {msg['topic']}")
                 logger.info(f"   Full Topic: {topic}")
                 logger.info(f"   Payload Size: {len(msg['payload'])} bytes")
                 logger.info(f"   Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
@@ -113,10 +115,16 @@ class MQTTClient:
                         logger.info(f"   Status Preview: Code={payload_data.get('code', 'N/A')}, CPU={payload_data.get('cpuLoad', 0)*100:.1f}%, Mem={payload_data.get('memLoad', 0)*100:.1f}%")
                     except:
                         logger.info(f"   Payload Preview: {msg['payload'][:100]}...")
+                elif msg_type == "Sensor Uplink Data":
+                    try:
+                        payload_data = json.loads(msg['payload'])
+                        logger.info(f"   Sensor Preview: EUI from topic, BS={payload_data.get('bs_eui', 'N/A')}, Count={payload_data.get('cnt', 'N/A')}")
+                    except:
+                        logger.info(f"   Payload Preview: {msg['payload'][:100]}...")
                 else:
                     logger.debug(f"   Payload: {msg['payload']}")
                 
-                logger.info(f"   📡 Attempting MQTT publish...")
+                logger.info(f"   📡 Attempting MQTT publish to broker {self.broker_host}:{MQTT_PORT}...")
                 await client.publish(topic, msg["payload"])
                 
                 logger.info(f"✅ MQTT MESSAGE #{message_count} PUBLISHED SUCCESSFULLY")

@@ -646,13 +646,29 @@ class TLSServer:
                         }
 
                         mqtt_topic = f"ep/{eui}/ul"
-                        logger.info(f"📤 MQTT PUBLICATION")
-                        logger.info(f"   Topic: {mqtt_topic}")
-                        logger.info(f"   Payload size: {len(json.dumps(data_dict))} bytes")
-
-                        await self.mqtt_out_queue.put(
-                            {"topic": mqtt_topic, "payload": json.dumps(data_dict)}
-                        )
+                        payload_json = json.dumps(data_dict)
+                        
+                        logger.info(f"📤 MQTT PUBLICATION - SENSOR UPLINK DATA")
+                        logger.info(f"   =====================================")
+                        logger.info(f"   Full Topic: bssci/{mqtt_topic}")
+                        logger.info(f"   Sensor EUI: {eui}")
+                        logger.info(f"   Base Station: {bs_eui}")
+                        logger.info(f"   Payload Size: {len(payload_json)} bytes")
+                        logger.info(f"   Data Preview: SNR={data_dict['snr']:.1f}dB, RSSI={data_dict['rssi']:.1f}dBm, Count={data_dict['cnt']}")
+                        logger.debug(f"   Full Payload: {payload_json}")
+                        
+                        try:
+                            await self.mqtt_out_queue.put(
+                                {"topic": mqtt_topic, "payload": payload_json}
+                            )
+                            logger.info(f"✅ MQTT message queued successfully")
+                            logger.info(f"   Queue size after add: {self.mqtt_out_queue.qsize()}")
+                        except Exception as mqtt_err:
+                            logger.error(f"❌ FAILED to queue MQTT message")
+                            logger.error(f"   Error: {type(mqtt_err).__name__}: {mqtt_err}")
+                            logger.error(f"   Topic: {mqtt_topic}")
+                            logger.error(f"   Payload: {payload_json}")
+                        logger.info(f"   =======================================")
 
                         msg_pack = encode_message(
                             messages.build_ul_response(message.get("opId", ""))
