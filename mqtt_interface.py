@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+from datetime import datetime
 
 from aiomqtt import Client
 
@@ -84,30 +85,55 @@ class MQTTClient:
         message_count = 0
         
         while True:
-            msg = await self.mqtt_out_queue.get()
-            message_count += 1
-            topic = f"{self.base_topic}/{msg['topic']}"
-            
-            # Determine message type for better logging
-            msg_type = "Unknown"
-            if "/bs/" in msg['topic']:
-                msg_type = "Base Station Status"
-            elif "/ep/" in msg['topic'] and "/ul" in msg['topic']:
-                msg_type = "Sensor Uplink Data"
-            elif "/ep/" in msg['topic'] and "/config" in msg['topic']:
-                msg_type = "Sensor Configuration"
-            
-            logger.info(f"📤 Publishing MQTT message #{message_count} ({msg_type})")
-            logger.info(f"   Topic: {topic}")
-            logger.debug(f"   Payload: {msg['payload']}")
-            
             try:
+                msg = await self.mqtt_out_queue.get()
+                message_count += 1
+                topic = f"{self.base_topic}/{msg['topic']}"
+                
+                # Determine message type for better logging
+                msg_type = "Unknown"
+                if "/bs/" in msg['topic']:
+                    msg_type = "Base Station Status"
+                elif "/ep/" in msg['topic'] and "/ul" in msg['topic']:
+                    msg_type = "Sensor Uplink Data"
+                elif "/ep/" in msg['topic'] and "/config" in msg['topic']:
+                    msg_type = "Sensor Configuration"
+                
+                logger.info(f"📤 MQTT OUTGOING MESSAGE #{message_count}")
+                logger.info(f"   ===================================")
+                logger.info(f"   Message Type: {msg_type}")
+                logger.info(f"   Full Topic: {topic}")
+                logger.info(f"   Payload Size: {len(msg['payload'])} bytes")
+                logger.info(f"   Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+                
+                # Log payload preview for status messages
+                if msg_type == "Base Station Status":
+                    try:
+                        payload_data = json.loads(msg['payload'])
+                        logger.info(f"   Status Preview: Code={payload_data.get('code', 'N/A')}, CPU={payload_data.get('cpuLoad', 0)*100:.1f}%, Mem={payload_data.get('memLoad', 0)*100:.1f}%")
+                    except:
+                        logger.info(f"   Payload Preview: {msg['payload'][:100]}...")
+                else:
+                    logger.debug(f"   Payload: {msg['payload']}")
+                
+                logger.info(f"   📡 Attempting MQTT publish...")
                 await client.publish(topic, msg["payload"])
-                logger.info(f"✓ Message #{message_count} published successfully")
+                
+                logger.info(f"✅ MQTT MESSAGE #{message_count} PUBLISHED SUCCESSFULLY")
+                logger.info(f"   Topic: {topic}")
+                logger.info(f"   ===================================")
+                
             except Exception as e:
-                logger.error(f"✗ Failed to publish message #{message_count}: {e}")
-                logger.error(f"   Topic: {topic}")
-                logger.error(f"   Payload: {msg['payload']}")
+                logger.error(f"❌ MQTT PUBLISH ERROR for message #{message_count}")
+                logger.error(f"   Error Type: {type(e).__name__}")
+                logger.error(f"   Error Message: {str(e)}")
+                if 'topic' in locals():
+                    logger.error(f"   Failed Topic: {topic}")
+                if 'msg' in locals():
+                    logger.error(f"   Failed Payload: {msg.get('payload', 'N/A')}")
+                logger.error(f"   ===================================")
+                
+                # Don't break the loop, continue processing other messages
 
 
 if __name__ == "__main__":

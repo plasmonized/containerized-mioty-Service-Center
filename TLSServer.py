@@ -29,6 +29,7 @@ class TLSServer:
         self.sensor_config_file = sensor_config_file
         self.registered_sensors: Dict[str, Dict[str, Any]] = {}  # EUI -> {status, base_station, timestamp}
         self.pending_attach_requests: Dict[int, Dict[str, Any]] = {}  # opID -> {sensor_eui, timestamp, base_station}
+        self._status_task_running = False  # Track if status request task is running
         try:
             with open(sensor_config_file, "r") as f:
                 self.sensor_config = json.load(f)
@@ -250,34 +251,60 @@ class TLSServer:
             logger.warning(f"   ⚠️  {failed_attachments} sensors failed to attach - check individual sensor logs above")
 
     async def send_status_requests(self) -> None:
-        while True:
-            await asyncio.sleep(bssci_config.STATUS_INTERVAL)
-            if self.connected_base_stations:
-                logger.info(f"📊 PERIODIC STATUS REQUEST CYCLE")
-                logger.info(f"   Requesting status from {len(self.connected_base_stations)} connected base stations")
-                logger.info(f"   Status interval: {bssci_config.STATUS_INTERVAL} seconds")
+        logger.info(f"📊 STATUS REQUEST TASK STARTED")
+        logger.info(f"   Status request interval: {bssci_config.STATUS_INTERVAL} seconds")
+        
+        try:
+            while True:
+                await asyncio.sleep(bssci_config.STATUS_INTERVAL)
+                if self.connected_base_stations:
+                    logger.info(f"📊 PERIODIC STATUS REQUEST CYCLE STARTING")
+                    logger.info(f"   Connected base stations: {len(self.connected_base_stations)}")
+                    logger.info(f"   Base stations: {list(self.connected_base_stations.values())}")
 
-                for writer, bs_eui in self.connected_base_stations.copy().items():  # Use copy to avoid dict change during iteration
-                    try:
-                        logger.debug(f"📤 Sending status request to base station {bs_eui} (opID: {self.opID})")
-                        msg_pack = encode_message(messages.build_status_request(self.opID))
-                        writer.write(
-                            IDENTIFIER
-                            + len(msg_pack).to_bytes(4, byteorder="little")
-                            + msg_pack
-                        )
-                        await writer.drain()
-                        logger.debug(f"✅ Status request transmitted to {bs_eui}")
-                        self.opID -= 1
-                    except Exception as e:
-                        logger.error(f"❌ Base station {bs_eui} connection lost during status request")
-                        logger.error(f"   Error: {e}")
-                        logger.warning(f"🔌 Removing disconnected base station {bs_eui} from active list")
-                        # Remove disconnected base station
-                        if writer in self.connected_base_stations:
-                            self.connected_base_stations.pop(writer)
-            else:
-                logger.debug(f"⏸️  No base stations connected - skipping status request cycle")
+                    requests_sent = 0
+                    failed_requests = 0
+                    
+                    for writer, bs_eui in self.connected_base_stations.copy().items():  # Use copy to avoid dict change during iteration
+                        try:
+                            logger.info(f"📤 Sending status request to base station {bs_eui}")
+                            logger.info(f"   Operation ID: {self.opID}")
+                            
+                            msg_pack = encode_message(messages.build_status_request(self.opID))
+                            full_message = IDENTIFIER + len(msg_pack).to_bytes(4, byteorder="little") + msg_pack
+                            
+                            writer.write(full_message)
+                            await writer.drain()
+                            
+                            logger.info(f"✅ Status request transmitted to {bs_eui} (opID: {self.opID})")
+                            requests_sent += 1
+                            self.opID -= 1
+                            
+                        except Exception as e:
+                            failed_requests += 1
+                            logger.error(f"❌ Failed to send status request to base station {bs_eui}")
+                            logger.error(f"   Error: {type(e).__name__}: {e}")
+                            logger.warning(f"🔌 Removing disconnected base station {bs_eui} from active list")
+                            # Remove disconnected base station
+                            if writer in self.connected_base_stations:
+                                self.connected_base_stations.pop(writer)
+                    
+                    logger.info(f"📊 STATUS REQUEST CYCLE COMPLETE")
+                    logger.info(f"   Requests sent: {requests_sent}")
+                    logger.info(f"   Failed requests: {failed_requests}")
+                    logger.info(f"   Remaining connected base stations: {len(self.connected_base_stations)}")
+                    
+                else:
+                    logger.info(f"⏸️  STATUS REQUEST CYCLE SKIPPED - No base stations connected")
+                    
+        except asyncio.CancelledError:
+            logger.info(f"📊 STATUS REQUEST TASK CANCELLED")
+            self._status_task_running = False
+            raise
+        except Exception as e:
+            logger.error(f"❌ STATUS REQUEST TASK ERROR: {e}")
+            self._status_task_running = False
+            raise
 
     async def handle_client(
         self, reader: asyncio.streams.StreamReader, writer: asyncio.streams.StreamWriter
@@ -381,9 +408,10 @@ class TLSServer:
                             # Start attachment process
                             await self.attach_file(writer)
 
-                            # Only create status request task if this is the first base station
-                            if len(self.connected_base_stations) == 1:
+                            # Always ensure status request task is running
+                            if not hasattr(self, '_status_task_running') or not self._status_task_running:
                                 logger.info(f"📊 Starting periodic status request task for all base stations")
+                                self._status_task_running = True
                                 asyncio.create_task(self.send_status_requests())
                             else:
                                 logger.info(f"📊 Status request task already running, will include this base station")
@@ -440,13 +468,24 @@ class TLSServer:
                         }
 
                         mqtt_topic = f"bs/{bs_eui}"
-                        logger.info(f"📤 Publishing base station status to MQTT topic: {mqtt_topic}")
-                        await self.mqtt_out_queue.put(
-                            {
-                                "topic": mqtt_topic,
-                                "payload": json.dumps(data_dict),
-                            }
-                        )
+                        payload = json.dumps(data_dict)
+                        
+                        logger.info(f"📤 MQTT PUBLICATION - BASE STATION STATUS")
+                        logger.info(f"   Topic: bssci/{mqtt_topic}")
+                        logger.info(f"   Base Station EUI: {bs_eui}")
+                        logger.info(f"   Payload size: {len(payload)} bytes")
+                        logger.info(f"   Status data: Code={data_dict['code']}, CPU={data_dict['cpuLoad']:.1%}, Memory={data_dict['memLoad']:.1%}")
+                        
+                        try:
+                            await self.mqtt_out_queue.put(
+                                {
+                                    "topic": mqtt_topic,
+                                    "payload": payload,
+                                }
+                            )
+                            logger.info(f"✅ Base station status queued for MQTT publication")
+                        except Exception as mqtt_err:
+                            logger.error(f"❌ Failed to queue MQTT message: {mqtt_err}")
                         msg_pack = encode_message(
                             messages.build_status_complete(message.get("opId", ""))
                         )
