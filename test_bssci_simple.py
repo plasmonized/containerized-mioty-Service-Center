@@ -49,6 +49,9 @@ class SimpleTestClient:
                         response = msgpack.unpackb(msg_data, raw=False, strict_map_key=False)
                         print(f"📨 Received: {response['command']} (opId: {response.get('opId', 'N/A')})")
                         return response
+                    else:
+                        print("📨 Received empty or invalid response")
+                        return None
                 except asyncio.TimeoutError:
                     print("⏰ Response timeout")
                     return None
