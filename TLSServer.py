@@ -295,11 +295,21 @@ class TLSServer:
         addr = writer.get_extra_info("peername")
         ssl_obj = writer.get_extra_info("ssl_object")
 
-        try:
-            logger.info(f"🔗 New BSSCI connection attempt from {addr}")
+        logger.info(f"🔗 NEW CLIENT CONNECTION ATTEMPT")
+        logger.info(f"   =====================================")
+        logger.info(f"   Client address: {addr}")
+        logger.info(f"   Connection time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
 
+        try:
+            # Check SSL status in detail
+            use_ssl = getattr(bssci_config, 'USE_SSL', True)
+            logger.info(f"   Server SSL mode: {'ENABLED' if use_ssl else 'DISABLED'}")
+            
             if ssl_obj:
                 cert = ssl_obj.getpeercert()
+                logger.info(f"   ✓ SSL connection established")
+                logger.info(f"   SSL version: {ssl_obj.version()}")
+                logger.info(f"   SSL cipher: {ssl_obj.cipher()}")
                 if cert:
                     subject = cert.get('subject', [])
                     cn = None
@@ -308,11 +318,30 @@ class TLSServer:
                             if name == 'commonName':
                                 cn = value
                                 break
-                    logger.info(f"   ✓ SSL handshake successful - Client certificate CN: {cn}")
+                    logger.info(f"   Client certificate CN: {cn}")
                 else:
-                    logger.warning(f"   ⚠️  SSL handshake completed but no client certificate provided")
+                    logger.warning(f"   ⚠️  No client certificate provided")
             else:
-                logger.error(f"   ❌ No SSL object found - connection may not be encrypted")
+                if use_ssl:
+                    logger.warning(f"   ⚠️  Expected SSL connection but none found")
+                else:
+                    logger.info(f"   ✓ Non-SSL connection (as configured)")
+                    
+            logger.info(f"   ✅ Connection accepted - starting message processing")
+            logger.info(f"   =====================================")
+
+        except Exception as e:
+            logger.error(f"❌ SSL CONNECTION ERROR from {addr}")
+            logger.error(f"   Error type: {type(e).__name__}")
+            logger.error(f"   Error message: {str(e)}")
+            logger.error(f"   This usually indicates SSL handshake failure")
+            logger.error(f"   =====================================")
+            try:
+                writer.close()
+                await writer.wait_closed()
+            except:
+                pass
+            return
 
         except Exception as e:
             logger.error(f"   ❌ SSL connection error from {addr}: {e}")
