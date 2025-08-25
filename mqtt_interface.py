@@ -53,8 +53,7 @@ class MQTTClient:
                     protocol=paho.mqtt.client.MQTTv311,
                     keepalive=60,
                     timeout=10,
-                    clean_session=True,  # Add back for v3.1.1 compatibility
-                    client_id=f"bssci_service_{int(asyncio.get_event_loop().time())}"  # Unique client ID
+                    clean_session=True  # Add back for v3.1.1 compatibility
                 ) as client:
                     logger.info("✅ MQTT CLIENT CONNECTION SUCCESSFUL!")
                     logger.info("✅ Authentication completed successfully")
@@ -76,7 +75,6 @@ class MQTTClient:
                     logger.info("📊 MQTT STARTUP DIAGNOSTICS:")
                     logger.info(f"   Outgoing queue size: {self.mqtt_out_queue.qsize()}")
                     logger.info(f"   Incoming queue size: {self.mqtt_in_queue.qsize()}")
-                    logger.info(f"   Client ID: {client._client._client_id}")
                     logger.info(f"   Keep Alive: {client._client._keepalive}")
                     logger.info(f"   Clean Session: {client._client._clean_session}")
                     logger.info("✅ Starting handler tasks...")
