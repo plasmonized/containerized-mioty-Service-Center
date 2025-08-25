@@ -9,14 +9,20 @@ def decode_messages(data: bytes) -> list[dict[str, Any]]:
         try:
             unpacker = msgpack.Unpacker(raw=False, strict_map_key=False)
             length = int.from_bytes(data[8 : 8 + 4], byteorder="little")
-            if length + 8 > len(data):
+            if length + 12 > len(data):
                 break
             unpacker.feed(data[12 : 12 + length])
             data = data[12 + length :]
             for msg in unpacker:
-                messages.append(msg)
+                # Ensure we only append dictionaries
+                if isinstance(msg, dict):
+                    messages.append(msg)
+                else:
+                    print(f"[WARN] Skipping non-dict message: {type(msg)}")
         except Exception as e:
-            print(f"[ERROR] Fehler beim Dekodieren der Nachricht: {e}")
+            print(f"[ERROR] Error decoding message: {e}")
+            # Skip this message and try to continue with remaining data
+            break
     return messages
 
 

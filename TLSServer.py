@@ -360,10 +360,10 @@ class TLSServer:
                 data = await reader.read(4096)
                 if not data:
                     break
-                # try:
-                for message in decode_messages(data):
-                    msg_type = message.get("command", "")
-                    messages_processed += 1
+                try:
+                    for message in decode_messages(data):
+                        msg_type = message.get("command", "")
+                        messages_processed += 1
 
                     logger.info(f"📨 BSSCI message #{messages_processed} received from {addr}")
                     logger.info(f"   Message type: {msg_type}")
@@ -650,8 +650,11 @@ class TLSServer:
                     else:
                         print(f"[WARN] Unbekannte Nachricht: {message}")
 
-                    # except Exception as e:
-                    #    print(f"[ERROR] Fehler beim Dekodieren der Nachricht: {e}")
+                except Exception as e:
+                    logger.error(f"❌ Error processing message: {e}")
+                    logger.error(f"   Raw data length: {len(data)} bytes")
+                    logger.error(f"   First 32 bytes: {data[:32].hex() if len(data) >= 32 else data.hex()}")
+                    # Continue processing other messages
 
         except asyncio.CancelledError:
             logger.info(f"🔌 Connection from {addr} was cancelled")
