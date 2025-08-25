@@ -36,47 +36,37 @@ class TLSServer:
             self.sensor_config = []
 
     async def start_server(self) -> None:
-        # Check if SSL should be used
-        use_ssl = getattr(bssci_config, 'USE_SSL', True)
-        ssl_ctx = None
-        
-        if use_ssl:
-            logger.info("🔐 Setting up SSL/TLS context for BSSCI server...")
-            logger.info(f"   Certificate file: {bssci_config.CERT_FILE}")
-            logger.info(f"   Key file: {bssci_config.KEY_FILE}")
-            logger.info(f"   CA file: {bssci_config.CA_FILE}")
+        logger.info("🔐 Setting up SSL/TLS context for BSSCI server...")
+        logger.info(f"   Certificate file: {bssci_config.CERT_FILE}")
+        logger.info(f"   Key file: {bssci_config.KEY_FILE}")
+        logger.info(f"   CA file: {bssci_config.CA_FILE}")
 
-            try:
-                ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
-                ssl_ctx.load_cert_chain(
-                    certfile=bssci_config.CERT_FILE, keyfile=bssci_config.KEY_FILE
-                )
-                ssl_ctx.load_verify_locations(cafile=bssci_config.CA_FILE)
-                ssl_ctx.verify_mode = ssl.CERT_REQUIRED
+        try:
+            ssl_ctx = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            ssl_ctx.load_cert_chain(
+                certfile=bssci_config.CERT_FILE, keyfile=bssci_config.KEY_FILE
+            )
+            ssl_ctx.load_verify_locations(cafile=bssci_config.CA_FILE)
+            ssl_ctx.verify_mode = ssl.CERT_REQUIRED
 
-                # Log SSL context details
-                logger.info(f"   TLS Protocol versions: {ssl_ctx.minimum_version.name} - {ssl_ctx.maximum_version.name}")
-                logger.info("✓ SSL context configured successfully with client certificate verification")
+            # Log SSL context details
+            logger.info(f"   TLS Protocol versions: {ssl_ctx.minimum_version.name} - {ssl_ctx.maximum_version.name}")
+            logger.info("✓ SSL context configured successfully with client certificate verification")
 
-            except FileNotFoundError as e:
-                logger.error(f"❌ SSL certificate file not found: {e}")
-                raise
-            except ssl.SSLError as e:
-                logger.error(f"❌ SSL configuration error: {e}")
-                raise
-            except Exception as e:
-                logger.error(f"❌ Unexpected error setting up SSL: {e}")
-                raise
-        else:
-            logger.warning("⚠️  SSL/TLS is DISABLED - server will accept insecure connections")
-            logger.warning("   This configuration should ONLY be used for local testing!")
+        except FileNotFoundError as e:
+            logger.error(f"❌ SSL certificate file not found: {e}")
+            raise
+        except ssl.SSLError as e:
+            logger.error(f"❌ SSL configuration error: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"❌ Unexpected error setting up SSL: {e}")
+            raise
 
-        server_type = "TLS" if ssl_ctx else "TCP"
-        logger.info(f"🚀 Starting BSSCI {server_type} server...")
+        logger.info(f"🚀 Starting BSSCI TLS server...")
         logger.info(f"   Listen address: {bssci_config.LISTEN_HOST}:{bssci_config.LISTEN_PORT}")
         logger.info(f"   Sensor config file: {self.sensor_config_file}")
         logger.info(f"   Loaded sensors: {len(self.sensor_config)}")
-        logger.info(f"   SSL/TLS: {'Enabled' if ssl_ctx else 'Disabled'}")
 
         server = await asyncio.start_server(
             self.handle_client,
@@ -295,21 +285,11 @@ class TLSServer:
         addr = writer.get_extra_info("peername")
         ssl_obj = writer.get_extra_info("ssl_object")
 
-        logger.info(f"🔗 NEW CLIENT CONNECTION ATTEMPT")
-        logger.info(f"   =====================================")
-        logger.info(f"   Client address: {addr}")
-        logger.info(f"   Connection time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
-
         try:
-            # Check SSL status in detail
-            use_ssl = getattr(bssci_config, 'USE_SSL', True)
-            logger.info(f"   Server SSL mode: {'ENABLED' if use_ssl else 'DISABLED'}")
-            
+            logger.info(f"🔗 New BSSCI connection attempt from {addr}")
+
             if ssl_obj:
                 cert = ssl_obj.getpeercert()
-                logger.info(f"   ✓ SSL connection established")
-                logger.info(f"   SSL version: {ssl_obj.version()}")
-                logger.info(f"   SSL cipher: {ssl_obj.cipher()}")
                 if cert:
                     subject = cert.get('subject', [])
                     cn = None
@@ -318,30 +298,11 @@ class TLSServer:
                             if name == 'commonName':
                                 cn = value
                                 break
-                    logger.info(f"   Client certificate CN: {cn}")
+                    logger.info(f"   ✓ SSL handshake successful - Client certificate CN: {cn}")
                 else:
-                    logger.warning(f"   ⚠️  No client certificate provided")
+                    logger.warning(f"   ⚠️  SSL handshake completed but no client certificate provided")
             else:
-                if use_ssl:
-                    logger.warning(f"   ⚠️  Expected SSL connection but none found")
-                else:
-                    logger.info(f"   ✓ Non-SSL connection (as configured)")
-                    
-            logger.info(f"   ✅ Connection accepted - starting message processing")
-            logger.info(f"   =====================================")
-
-        except Exception as e:
-            logger.error(f"❌ SSL CONNECTION ERROR from {addr}")
-            logger.error(f"   Error type: {type(e).__name__}")
-            logger.error(f"   Error message: {str(e)}")
-            logger.error(f"   This usually indicates SSL handshake failure")
-            logger.error(f"   =====================================")
-            try:
-                writer.close()
-                await writer.wait_closed()
-            except:
-                pass
-            return
+                logger.error(f"   ❌ No SSL object found - connection may not be encrypted")
 
         except Exception as e:
             logger.error(f"   ❌ SSL connection error from {addr}: {e}")
@@ -360,20 +321,16 @@ class TLSServer:
                 data = await reader.read(4096)
                 if not data:
                     break
-                try:
-                    messages = decode_messages(data)
-                    if not messages:
-                        continue
-                        
-                    for message in messages:
-                        msg_type = message.get("command", "")
-                        messages_processed += 1
+                # try:
+                for message in decode_messages(data):
+                    msg_type = message.get("command", "")
+                    messages_processed += 1
 
-                        logger.info(f"📨 BSSCI message #{messages_processed} received from {addr}")
-                        logger.info(f"   Message type: {msg_type}")
-                        logger.debug(f"   Full message: {message}")
+                    logger.info(f"📨 BSSCI message #{messages_processed} received from {addr}")
+                    logger.info(f"   Message type: {msg_type}")
+                    logger.debug(f"   Full message: {message}")
 
-                        if msg_type == "con":
+                    if msg_type == "con":
                         logger.info(f"📨 BSSCI CONNECTION REQUEST received from {addr}")
                         logger.info(f"   Operation ID: {message.get('opId', 'unknown')}")
                         logger.info(f"   Base Station UUID: {message.get('snBsUuid', 'unknown')}")
@@ -652,13 +609,10 @@ class TLSServer:
                         print(f"[DETACH] {eui} {status}")
 
                     else:
-                            print(f"[WARN] Unbekannte Nachricht: {message}")
+                        print(f"[WARN] Unbekannte Nachricht: {message}")
 
-                except Exception as e:
-                    logger.error(f"❌ Error processing message: {e}")
-                    logger.error(f"   Raw data length: {len(data)} bytes")
-                    logger.error(f"   First 32 bytes: {data[:32].hex() if len(data) >= 32 else data.hex()}")
-                    # Continue processing other messages
+                    # except Exception as e:
+                    #    print(f"[ERROR] Fehler beim Dekodieren der Nachricht: {e}")
 
         except asyncio.CancelledError:
             logger.info(f"🔌 Connection from {addr} was cancelled")

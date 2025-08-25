@@ -1,8 +1,6 @@
 LISTEN_HOST = "0.0.0.0"
 LISTEN_PORT = 16017  # Internal container port
 
-# SSL Configuration
-USE_SSL = False  # Set to False for local testing
 CERT_FILE = "certs/service_center_cert.pem"
 KEY_FILE = "certs/service_center_key.pem"
 CA_FILE = "certs/ca_cert.pem"
