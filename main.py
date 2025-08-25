@@ -8,6 +8,9 @@ from mqtt_interface import MQTTClient
 from TLSServer import TLSServer
 
 # Configure logging for container environment
+# Ensure logs directory exists
+os.makedirs('/app/logs', exist_ok=True)
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
