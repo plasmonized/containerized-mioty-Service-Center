@@ -56,11 +56,34 @@ def sensors():
 @app.route('/api/sensors', methods=['GET'])
 def get_sensors():
     try:
+        # Also reload TLS server config to sync
+        try:
+            from web_main import get_tls_server
+            tls_server = get_tls_server()
+            if tls_server:
+                tls_server.reload_sensor_config()
+                # Get registration status
+                return jsonify(tls_server.get_sensor_registration_status())
+        except:
+            pass  # Fallback to file only
+        
         with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
             sensors = json.load(f)
-        return jsonify(sensors)
+            # Convert to registration status format
+            sensor_status = {}
+            for sensor in sensors:
+                eui = sensor['eui'].lower()
+                sensor_status[eui] = {
+                    'eui': sensor['eui'],
+                    'nwKey': sensor['nwKey'],
+                    'shortAddr': sensor['shortAddr'],
+                    'bidi': sensor['bidi'],
+                    'registered': False,
+                    'registration_info': {}
+                }
+            return jsonify(sensor_status)
     except:
-        return jsonify([])
+        return jsonify({})
 
 @app.route('/api/sensors', methods=['POST'])
 def add_sensor():
@@ -123,6 +146,20 @@ def clear_all_sensors():
             pass  # TLS server not available, that's okay
         
         return jsonify({'success': True, 'message': 'All sensors cleared successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/sensors/reload', methods=['POST'])
+def reload_sensors():
+    """Force reload sensor configuration in TLS server"""
+    try:
+        from web_main import get_tls_server
+        tls_server = get_tls_server()
+        if tls_server:
+            tls_server.reload_sensor_config()
+            return jsonify({'success': True, 'message': 'Sensor configuration reloaded successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'TLS server not available'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 

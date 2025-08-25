@@ -26,11 +26,12 @@ class TLSServer:
         self.connected_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
         self.connecting_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
         self.sensor_config_file = sensor_config_file
+        self.registered_sensors: Dict[str, Dict[str, Any]] = {}  # EUI -> {status, base_station, timestamp}
         try:
             with open(sensor_config_file, "r") as f:
                 self.sensor_config = json.load(f)
         except Exception:
-            self.sensor_config = {}
+            self.sensor_config = []
 
     async def start_server(self) -> None:
         logger.info("🔐 Setting up SSL/TLS context for BSSCI server...")
@@ -266,6 +267,22 @@ class TLSServer:
                         await writer.drain()
 
                     elif msg_type == "attPrpRsp":
+                        # Track successful sensor registration
+                        if message.get("resultCode", -1) == 0:  # Success
+                            ep_eui = message.get("epEui")
+                            if ep_eui:
+                                eui_hex = int(ep_eui).to_bytes(8, byteorder="big").hex()
+                                bs_eui = self.connected_base_stations[writer]
+                                self.registered_sensors[eui_hex.lower()] = {
+                                    'status': 'registered',
+                                    'base_station': bs_eui,
+                                    'timestamp': asyncio.get_event_loop().time(),
+                                    'result_code': message.get("resultCode", 0)
+                                }
+                                logger.info(f"✅ Sensor {eui_hex} successfully registered to base station {bs_eui}")
+                        else:
+                            logger.warning(f"❌ Sensor registration failed with code: {message.get('resultCode', -1)}")
+                        
                         msg_pack = encode_message(
                             messages.build_attach_complete(message.get("opId", ""))
                         )
@@ -425,13 +442,51 @@ class TLSServer:
             "total_connecting": len(connecting_stations)
         }
 
+    def reload_sensor_config(self) -> None:
+        """Reload sensor configuration from file"""
+        try:
+            with open(self.sensor_config_file, "r") as f:
+                new_config = json.load(f)
+            
+            old_count = len(self.sensor_config)
+            self.sensor_config = new_config
+            new_count = len(self.sensor_config)
+            
+            logger.info(f"Sensor configuration reloaded: {old_count} -> {new_count} sensors")
+            
+            # Clear registration status for removed sensors
+            configured_euis = {sensor['eui'].lower() for sensor in self.sensor_config}
+            removed_euis = set(self.registered_sensors.keys()) - configured_euis
+            for eui in removed_euis:
+                self.registered_sensors.pop(eui, None)
+                logger.info(f"Removed registration status for deleted sensor: {eui}")
+                
+        except Exception as e:
+            logger.error(f"Failed to reload sensor configuration: {e}")
+
+    def get_sensor_registration_status(self) -> Dict[str, Dict[str, Any]]:
+        """Get registration status of all sensors"""
+        status = {}
+        for sensor in self.sensor_config:
+            eui = sensor['eui'].lower()
+            status[eui] = {
+                'eui': sensor['eui'],
+                'nwKey': sensor['nwKey'],
+                'shortAddr': sensor['shortAddr'],
+                'bidi': sensor['bidi'],
+                'registered': eui in self.registered_sensors,
+                'registration_info': self.registered_sensors.get(eui, {})
+            }
+        return status
+
     def clear_all_sensors(self) -> None:
         """Clear all sensor configurations"""
         self.sensor_config = []
+        self.registered_sensors = {}
         try:
             with open(self.sensor_config_file, "w") as f:
                 json.dump(self.sensor_config, f, indent=4)
-            logger.info(f"All sensor configurations cleared from {self.sensor_config_file}")
+            logger.info(f"All sensor configurations and registration status cleared")
         except Exception as e:
             logger.error(f"Failed to clear sensor configurations: {e}")
 

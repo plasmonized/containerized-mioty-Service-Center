@@ -6,6 +6,9 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Sensor Management</h1>
     <div>
+        <button class="btn btn-info me-2" onclick="reloadSensors()" title="Reload sensor configuration">
+            Reload Config
+        </button>
         <button class="btn btn-danger me-2" onclick="clearAllSensors()" title="Clear all sensors">
             Clear All
         </button>
@@ -25,6 +28,7 @@
                         <th>Network Key</th>
                         <th>Short Address</th>
                         <th>Bidirectional</th>
+                        <th>Registration Status</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -84,14 +88,20 @@ let editingEui = null;
 function loadSensors() {
     fetch('/api/sensors')
         .then(response => response.json())
-        .then(sensors => {
+        .then(sensorStatus => {
             const tbody = document.getElementById('sensors-table');
-            tbody.innerHTML = sensors.map(sensor => `
+            tbody.innerHTML = Object.values(sensorStatus).map(sensor => `
                 <tr>
                     <td><code>${sensor.eui}</code></td>
                     <td><code>${sensor.nwKey.substring(0, 8)}...</code></td>
                     <td><code>${sensor.shortAddr}</code></td>
                     <td>${sensor.bidi ? 'Yes' : 'No'}</td>
+                    <td>
+                        ${sensor.registered ? 
+                            `<span class="badge bg-success">Registered</span><br><small>BS: ${sensor.registration_info.base_station || 'N/A'}</small>` : 
+                            '<span class="badge bg-warning">Not Registered</span>'
+                        }
+                    </td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary" onclick="editSensor('${sensor.eui}')">Edit</button>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteSensor('${sensor.eui}')">Delete</button>
@@ -120,8 +130,8 @@ function openSensorModal(sensor = null) {
 function editSensor(eui) {
     fetch('/api/sensors')
         .then(response => response.json())
-        .then(sensors => {
-            const sensor = sensors.find(s => s.eui === eui);
+        .then(sensorStatus => {
+            const sensor = Object.values(sensorStatus).find(s => s.eui === eui);
             if (sensor) {
                 openSensorModal(sensor);
                 new bootstrap.Modal(document.getElementById('sensorModal')).show();
@@ -169,6 +179,21 @@ function deleteSensor(eui) {
             }
         });
     }
+}
+
+function reloadSensors() {
+    fetch('/api/sensors/reload', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            loadSensors();
+            alert('Sensor configuration reloaded successfully');
+        } else {
+            alert('Error: ' + result.message);
+        }
+    });
 }
 
 function clearAllSensors() {
