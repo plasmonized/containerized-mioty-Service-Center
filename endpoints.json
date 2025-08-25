@@ -66,12 +66,6 @@
         "bidi": false
     },
     {
-        "eui": "74731D0000000016",
-        "nwKey": "0011223344556677889AABBCCDDEEFF1",
-        "shortAddr": "0016",
-        "bidi": false
-    },
-    {
         "eui": "FCA84A090000000A",
         "nwKey": "0011223344556677889AABBCCDDEEFF",
         "shortAddr": "000A",
@@ -82,5 +76,11 @@
         "nwKey": "0011223344556677889AABBCCDDEEFF",
         "shortAddr": "008F",
         "bidi": false
+    },
+    {
+        "eui": "74731D0000000016",
+        "nwKey": "0011223344556677889AABBCCDDEEFF1",
+        "shortAddr": "0016",
+        "bidi": true
     }
 ]
