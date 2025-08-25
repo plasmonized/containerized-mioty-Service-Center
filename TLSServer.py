@@ -27,7 +27,7 @@ class TLSServer:
         self.connected_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
         self.connecting_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
         self.sensor_config_file = sensor_config_file
-        self.registered_sensors: Dict[str, Dict[str, Any]] = {}  # EUI -> {status, base_station, timestamp}
+        self.registered_sensors: Dict[str, Dict[str, Any]] = {}  # EUI -> {status, base_stations: [], timestamp}
         self.pending_attach_requests: Dict[int, Dict[str, Any]] = {}  # opID -> {sensor_eui, timestamp, base_station}
         self._status_task_running = False  # Track if status request task is running
         try:
@@ -140,13 +140,18 @@ class TLSServer:
             bidi_value = sensor.get("bidi", False)
             logger.info(f"   ✓ Bidirectional flag: {bidi_value}")
 
-            # Check for duplicate EUI in registered sensors
+            # Check for existing registrations to this base station
             eui_lower = sensor["eui"].lower()
             if eui_lower in self.registered_sensors:
                 reg_info = self.registered_sensors[eui_lower]
                 if reg_info.get('status') == 'registered':
-                    validation_warnings.append(f"Sensor {sensor['eui']} already registered to base station {reg_info.get('base_station', 'unknown')}")
-                    logger.warning(f"   ⚠️  Re-registering already registered sensor")
+                    existing_bases = reg_info.get('base_stations', [])
+                    if bs_eui in existing_bases:
+                        validation_warnings.append(f"Sensor {sensor['eui']} already registered to base station {bs_eui}")
+                        logger.warning(f"   ⚠️  Re-registering sensor to same base station")
+                    else:
+                        validation_warnings.append(f"Sensor {sensor['eui']} already registered to {len(existing_bases)} other base station(s): {existing_bases}")
+                        logger.warning(f"   ⚠️  Adding registration to additional base station")
 
             # Log all warnings
             for warning in validation_warnings:
@@ -529,19 +534,33 @@ class TLSServer:
                             logger.info(f"     Bidirectional: {sensor_config['bidi']}")
 
                             # According to BSSCI specification, receiving attach response indicates success
-                            # Store successful registration
-                            self.registered_sensors[sensor_eui.lower()] = {
-                                'status': 'registered',
-                                'base_station': bs_eui,
-                                'timestamp': response_time,
-                                'registration_time': datetime.now().isoformat(),
-                                'op_id': op_id,
-                                'processing_duration': processing_duration
-                            }
+                            # Store successful registration - support multiple base stations
+                            eui_key = sensor_eui.lower()
+                            if eui_key not in self.registered_sensors:
+                                self.registered_sensors[eui_key] = {
+                                    'status': 'registered',
+                                    'base_stations': [],
+                                    'timestamp': response_time,
+                                    'registration_time': datetime.now().isoformat(),
+                                    'registrations': []
+                                }
+                            
+                            # Add this base station if not already registered
+                            if bs_eui not in self.registered_sensors[eui_key]['base_stations']:
+                                self.registered_sensors[eui_key]['base_stations'].append(bs_eui)
+                                self.registered_sensors[eui_key]['registrations'].append({
+                                    'base_station': bs_eui,
+                                    'op_id': op_id,
+                                    'processing_duration': processing_duration,
+                                    'registration_time': datetime.now().isoformat()
+                                })
+                                self.registered_sensors[eui_key]['timestamp'] = response_time
 
                             logger.info(f"✅ SENSOR REGISTRATION SUCCESSFUL")
                             logger.info(f"   Sensor {sensor_eui} is now REGISTERED to base station {bs_eui}")
                             logger.info(f"   Registration completed at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
+                            logger.info(f"   Total base stations for this sensor: {len(self.registered_sensors[eui_key]['base_stations'])}")
+                            logger.info(f"   All base stations for sensor: {self.registered_sensors[eui_key]['base_stations']}")
                             logger.info(f"   Total registered sensors: {len([k for k in self.registered_sensors.keys() if not k.endswith('_failure')])}")
 
                             # Remove from pending requests
@@ -569,14 +588,26 @@ class TLSServer:
                                 logger.warning(f"   Fallback Sensor EUI: {sensor_eui}")
 
                                 # Store successful registration with fallback data
-                                self.registered_sensors[sensor_eui.lower()] = {
-                                    'status': 'registered',
-                                    'base_station': bs_eui,
-                                    'timestamp': asyncio.get_event_loop().time(),
-                                    'registration_time': datetime.now().isoformat(),
-                                    'op_id': op_id,
-                                    'fallback_used': True
-                                }
+                                eui_key = sensor_eui.lower()
+                                if eui_key not in self.registered_sensors:
+                                    self.registered_sensors[eui_key] = {
+                                        'status': 'registered',
+                                        'base_stations': [],
+                                        'timestamp': asyncio.get_event_loop().time(),
+                                        'registration_time': datetime.now().isoformat(),
+                                        'registrations': []
+                                    }
+                                
+                                # Add this base station if not already registered
+                                if bs_eui not in self.registered_sensors[eui_key]['base_stations']:
+                                    self.registered_sensors[eui_key]['base_stations'].append(bs_eui)
+                                    self.registered_sensors[eui_key]['registrations'].append({
+                                        'base_station': bs_eui,
+                                        'op_id': op_id,
+                                        'registration_time': datetime.now().isoformat(),
+                                        'fallback_used': True
+                                    })
+                                    self.registered_sensors[eui_key]['timestamp'] = asyncio.get_event_loop().time()
 
                                 logger.warning(f"   ✅ FALLBACK REGISTRATION: Sensor {sensor_eui} registered to {bs_eui}")
 
@@ -630,7 +661,8 @@ class TLSServer:
                         if is_registered:
                             reg_info = self.registered_sensors[eui.lower()]
                             logger.info(f"   Registration Status: ✅ REGISTERED")
-                            logger.info(f"     Registered to: {reg_info.get('base_station', 'unknown')}")
+                            logger.info(f"     Registered to {len(reg_info.get('base_stations', []))} base station(s): {reg_info.get('base_stations', [])}")
+                            logger.info(f"     Data received via: {bs_eui}")
                             logger.info(f"     Registration time: {reg_info.get('registration_time', 'unknown')}")
                         else:
                             logger.warning(f"   Registration Status: ⚠️  NOT REGISTERED")
@@ -844,13 +876,16 @@ class TLSServer:
         status = {}
         for sensor in self.sensor_config:
             eui = sensor['eui'].lower()
+            reg_info = self.registered_sensors.get(eui, {})
             status[eui] = {
                 'eui': sensor['eui'],
                 'nwKey': sensor['nwKey'],
                 'shortAddr': sensor['shortAddr'],
                 'bidi': sensor['bidi'],
                 'registered': eui in self.registered_sensors,
-                'registration_info': self.registered_sensors.get(eui, {})
+                'registration_info': reg_info,
+                'base_stations': reg_info.get('base_stations', []),
+                'total_registrations': len(reg_info.get('base_stations', []))
             }
         return status
 

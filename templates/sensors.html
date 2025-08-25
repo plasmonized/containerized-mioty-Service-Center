@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 {% block title %}Sensors{% endblock %}
 
@@ -16,7 +15,7 @@
             Add New Sensor
         </button>
     </div>
-</div></div>
+</div>
 
 <div class="card">
     <div class="card-body">
@@ -98,7 +97,9 @@ function loadSensors() {
                     <td>${sensor.bidi ? 'Yes' : 'No'}</td>
                     <td>
                         ${sensor.registered ? 
-                            `<span class="badge bg-success">Registered</span><br><small>BS: ${sensor.registration_info.base_station || 'N/A'}</small>` : 
+                            `<span class="badge bg-success">Registered</span>
+<br><small>Base Stations (${sensor.total_registrations || 0}):</small>
+<br><small>${sensor.base_stations ? sensor.base_stations.join(', ') : 'N/A'}</small>` : 
                             '<span class="badge bg-warning">Not Registered</span>'
                         }
                     </td>
@@ -114,7 +115,7 @@ function loadSensors() {
 function openSensorModal(sensor = null) {
     editingEui = sensor ? sensor.eui : null;
     document.getElementById('sensorModalTitle').textContent = sensor ? 'Edit Sensor' : 'Add New Sensor';
-    
+
     if (sensor) {
         document.getElementById('eui').value = sensor.eui;
         document.getElementById('nwKey').value = sensor.nwKey;
@@ -146,7 +147,7 @@ function saveSensor() {
         shortAddr: document.getElementById('shortAddr').value.toUpperCase(),
         bidi: document.getElementById('bidi').checked
     };
-    
+
     fetch('/api/sensors', {
         method: 'POST',
         headers: {
