@@ -17,65 +17,52 @@ log_entries: List[Dict[str, Any]] = []
 max_log_entries = 1000
 
 # Custom log handler to capture all logs
-class WebUILogHandler(logging.Handler):
-    def __init__(self):
-        super().__init__()
-        self.setLevel(logging.DEBUG)
-        
-    def emit(self, record):
-        global log_entries
-        try:
-            log_entry = {
-                'timestamp': datetime.fromtimestamp(record.created).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3],
-                'level': record.levelname,
-                'logger': record.name,
-                'message': record.getMessage(),
-                'module': getattr(record, 'module', ''),
-                'funcName': getattr(record, 'funcName', ''),
-                'lineno': getattr(record, 'lineno', 0)
-            }
-            
-            log_entries.append(log_entry)
-            
-            # Keep only the last max_log_entries
-            if len(log_entries) > max_log_entries:
-                log_entries = log_entries[-max_log_entries:]
-                
-        except Exception:
-            pass  # Don't let logging errors break the application
-
-# Set up the custom log handler
-web_log_handler = WebUILogHandler()
-logging.getLogger().addHandler(web_log_handler)
-logging.getLogger().setLevel(logging.DEBUG)
-
-# Specifically capture TLS server logs
-logging.getLogger('TLSServer').setLevel(logging.DEBUG)
-logging.getLogger('__main__').setLevel(logging.DEBUG)
+# Consolidated WebUILogHandler - single definition to avoid duplicates
 
 class WebUILogHandler(logging.Handler):
     def emit(self, record):
         global log_entries
         
-        # Filter out noisy web request logs
+        # Filter out noisy web request logs to reduce clutter
         if record.name == 'werkzeug' and any(x in record.getMessage() for x in [
-            'GET /api/', 'GET /logs', 'GET /sensors', 'GET /config', 'GET /'
+            'GET /api/', 'GET /logs', 'GET /sensors', 'GET /config', 'GET /', 'GET /static/'
         ]):
             return  # Skip web request logs
             
+        # Avoid duplicate handlers by checking if this exact message was just logged
+        current_time = datetime.fromtimestamp(record.created).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        message = record.getMessage()
+        
+        # Check if this exact message was logged in the last second (duplicate detection)
+        if log_entries:
+            last_entry = log_entries[-1]
+            time_diff = abs(record.created - datetime.strptime(last_entry['timestamp'], '%Y-%m-%d %H:%M:%S.%f').timestamp())
+            if (time_diff < 1.0 and  # Within 1 second
+                last_entry['message'] == message and 
+                last_entry['logger'] == record.name):
+                return  # Skip duplicate message
+            
         log_entry = {
-            'timestamp': datetime.fromtimestamp(record.created).strftime('%Y-%m-%d %H:%M:%S'),
+            'timestamp': current_time,
             'level': record.levelname,
             'logger': record.name,
-            'message': record.getMessage()
+            'message': message
         }
         log_entries.append(log_entry)
+        
+        # Keep only the last max_log_entries
         if len(log_entries) > max_log_entries:
-            log_entries.pop(0)
+            log_entries = log_entries[-max_log_entries:]
 
-# Add our custom handler to the root logger
-web_handler = WebUILogHandler()
-logging.getLogger().addHandler(web_handler)
+# Add our custom handler to the root logger (only once)
+if not any(isinstance(h, WebUILogHandler) for h in logging.getLogger().handlers):
+    web_handler = WebUILogHandler()
+    logging.getLogger().addHandler(web_handler)
+    logging.getLogger().setLevel(logging.DEBUG)
+    
+    # Specifically capture important logs
+    logging.getLogger('TLSServer').setLevel(logging.DEBUG)
+    logging.getLogger('mqtt_interface').setLevel(logging.DEBUG)
 
 @app.route('/')
 def index():
