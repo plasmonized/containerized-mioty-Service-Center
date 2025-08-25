@@ -16,6 +16,43 @@ app.secret_key = 'bssci-ui-secret-key'
 log_entries: List[Dict[str, Any]] = []
 max_log_entries = 1000
 
+# Custom log handler to capture all logs
+class WebUILogHandler(logging.Handler):
+    def __init__(self):
+        super().__init__()
+        self.setLevel(logging.DEBUG)
+        
+    def emit(self, record):
+        global log_entries
+        try:
+            log_entry = {
+                'timestamp': datetime.fromtimestamp(record.created).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3],
+                'level': record.levelname,
+                'logger': record.name,
+                'message': record.getMessage(),
+                'module': getattr(record, 'module', ''),
+                'funcName': getattr(record, 'funcName', ''),
+                'lineno': getattr(record, 'lineno', 0)
+            }
+            
+            log_entries.append(log_entry)
+            
+            # Keep only the last max_log_entries
+            if len(log_entries) > max_log_entries:
+                log_entries = log_entries[-max_log_entries:]
+                
+        except Exception:
+            pass  # Don't let logging errors break the application
+
+# Set up the custom log handler
+web_log_handler = WebUILogHandler()
+logging.getLogger().addHandler(web_log_handler)
+logging.getLogger().setLevel(logging.DEBUG)
+
+# Specifically capture TLS server logs
+logging.getLogger('TLSServer').setLevel(logging.DEBUG)
+logging.getLogger('__main__').setLevel(logging.DEBUG)
+
 class WebUILogHandler(logging.Handler):
     def emit(self, record):
         global log_entries
@@ -209,6 +246,63 @@ def logs():
     return render_template('logs.html')
 
 @app.route('/api/logs')
+def get_logs():
+    global log_entries
+    
+    # Get query parameters for filtering
+    level_filter = request.args.get('level', 'all').upper()
+    logger_filter = request.args.get('logger', 'all')
+    limit = int(request.args.get('limit', 100))
+    
+    # Filter logs based on parameters
+    filtered_logs = log_entries
+    
+    if level_filter != 'ALL':
+        filtered_logs = [log for log in filtered_logs if log['level'] == level_filter]
+    
+    if logger_filter != 'all':
+        filtered_logs = [log for log in filtered_logs if logger_filter.lower() in log['logger'].lower()]
+    
+    # Return the most recent logs (up to limit)
+    recent_logs = filtered_logs[-limit:] if len(filtered_logs) > limit else filtered_logs
+    
+    return jsonify({
+        'logs': recent_logs,
+        'total_logs': len(log_entries),
+        'filtered_logs': len(filtered_logs),
+        'bssci_status': get_bssci_service_status()
+    })
+
+def get_bssci_service_status():
+    """Get the status of the BSSCI service"""
+    try:
+        from web_main import get_tls_server
+        tls_server = get_tls_server()
+        if tls_server:
+            bs_status = tls_server.get_base_station_status()
+            sensor_status = tls_server.get_sensor_registration_status()
+            
+            return {
+                'running': True,
+                'base_stations': bs_status,
+                'total_sensors': len(sensor_status),
+                'registered_sensors': len([s for s in sensor_status.values() if s['registered']]),
+                'pending_requests': len(tls_server.pending_attach_requests)
+            }
+        else:
+            return {'running': False, 'error': 'TLS server not available'}
+    except Exception as e:
+        return {'running': False, 'error': str(e)}
+
+@app.route('/api/logs/clear', methods=['POST'])
+def clear_logs():
+    global log_entries
+    log_entries = []
+    return jsonify({'success': True, 'message': 'Logs cleared successfully'})
+
+@app.route('/api/bssci/status')
+def bssci_status():
+    return jsonify(get_bssci_service_status())
 def get_logs():
     return jsonify(log_entries[-100:])  # Return last 100 log entries
 
