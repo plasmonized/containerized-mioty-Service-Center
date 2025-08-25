@@ -543,7 +543,7 @@ class TLSServer:
                         except:
                             rx_time_str = str(rx_time)
 
-                        logger.info(f"📡 SENSOR UPLINK DATA RECEIVED")
+                        logger.info(f"FindingsRequestReceived")
                         logger.info(f"   =================================")
                         logger.info(f"   Endpoint EUI: {eui}")
                         logger.info(f"   Via Base Station: {bs_eui}")
