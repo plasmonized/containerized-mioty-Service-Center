@@ -341,6 +341,33 @@ class TLSServer:
         except asyncio.CancelledError:
             pass  # normal beim Client disconnect
 
+    def get_base_station_status(self) -> dict:
+        """Get status of connected base stations"""
+        connected_stations = []
+        for writer, bs_eui in self.connected_base_stations.items():
+            addr = writer.get_extra_info("peername")
+            connected_stations.append({
+                "eui": bs_eui,
+                "address": f"{addr[0]}:{addr[1]}" if addr else "unknown",
+                "status": "connected"
+            })
+        
+        connecting_stations = []
+        for writer, bs_eui in self.connecting_base_stations.items():
+            addr = writer.get_extra_info("peername")
+            connecting_stations.append({
+                "eui": bs_eui,
+                "address": f"{addr[0]}:{addr[1]}" if addr else "unknown", 
+                "status": "connecting"
+            })
+        
+        return {
+            "connected": connected_stations,
+            "connecting": connecting_stations,
+            "total_connected": len(connected_stations),
+            "total_connecting": len(connecting_stations)
+        }
+
     def update_or_add_entry(self, msg: dict[str, Any]) -> None:
         # Update existing entry or add new one
         for sensor in self.sensor_config:

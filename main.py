@@ -12,23 +12,41 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-async def main() -> None:
-    logger.info("Starting BSSCI Service Center...")
-    logger.info(f"TLS Server will listen on {LISTEN_HOST}:{LISTEN_PORT}")
-    logger.info(f"MQTT Broker: {MQTT_BROKER}:{MQTT_PORT}")
-    logger.info(f"Sensor config file: {SENSOR_CONFIG_FILE}")
-    
-    mqtt_in_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
+async def main():
+    global tls_server_instance
     mqtt_out_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
-    
-    logger.info("Initializing TLS Server...")
-    server = TLSServer(SENSOR_CONFIG_FILE, mqtt_out_queue, mqtt_in_queue)
-    
-    logger.info("Initializing MQTT Client...")
-    mqtt_server = MQTTClient(mqtt_out_queue, mqtt_in_queue)
-    
-    logger.info("Starting services...")
-    await asyncio.gather(mqtt_server.start(), server.start_server())
+    mqtt_in_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
+
+    tls_server = TLSServer(
+        bssci_config.SENSOR_CONFIG_FILE, mqtt_out_queue, mqtt_in_queue
+    )
+    tls_server_instance = tls_server  # Store global reference
+    mqtt_client = MqttInterface(mqtt_out_queue, mqtt_in_queue)
+
+    # Create tasks for both services
+    tls_task = asyncio.create_task(tls_server.start_server())
+    mqtt_task = asyncio.create_task(mqtt_client.start())
+
+    logger.info("Starting BSSCI Service Center...")
+    logger.info("✓ Both TLS Server and MQTT Interface are starting...")
+
+    try:
+        # Wait for both tasks to complete (they should run indefinitely)
+        await asyncio.gather(tls_task, mqtt_task)
+    except KeyboardInterrupt:
+        logger.info("Shutting down BSSCI Service Center...")
+        tls_task.cancel()
+        mqtt_task.cancel()
+
+        try:
+            await asyncio.gather(tls_task, mqtt_task, return_exceptions=True)
+        except Exception as e:
+            logger.error(f"Error during shutdown: {e}")
+
+        logger.info("✓ BSSCI Service Center shut down complete")
+
+# Global TLS server instance for web UI access
+tls_server_instance = None
 
 
 if __name__ == "__main__":

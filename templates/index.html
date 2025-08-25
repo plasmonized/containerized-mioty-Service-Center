@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 {% block title %}Dashboard{% endblock %}
 
@@ -30,15 +29,33 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5>Base Station Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Connected Base Stations: <span id="connected-count" class="badge badge-success">0</span></h6>
+                        <div id="connected-stations"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Connecting Base Stations: <span id="connecting-count" class="badge badge-warning">0</span></h6>
+                        <div id="connecting-stations"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="card">
             <div class="card-header">
                 <h5>Recent Logs</h5>
             </div>
             <div class="card-body" style="max-height: 400px; overflow-y: auto;">
                 <div id="recent-logs">
-                    <p class="text-muted">Loading logs...</p>
+                    Loading logs...
                 </div>
             </div>
         </div>
@@ -48,31 +65,78 @@
 
 {% block scripts %}
 <script>
+function loadBaseStationStatus() {
+    fetch('/api/base_stations')
+        .then(response => response.json())
+        .then(data => {
+            // Update connected count
+            document.getElementById('connected-count').textContent = data.total_connected;
+            document.getElementById('connecting-count').textContent = data.total_connecting;
+
+            // Update connected base stations list
+            const connectedDiv = document.getElementById('connected-stations');
+            if (data.connected.length === 0) {
+                connectedDiv.innerHTML = '<small class="text-muted">No base stations connected</small>';
+            } else {
+                const connectedHtml = data.connected.map(bs => 
+                    `<div class="mb-1">
+                        <small><strong>EUI:</strong> ${bs.eui}</small><br>
+                        <small class="text-muted">Address: ${bs.address}</small>
+                    </div>`
+                ).join('');
+                connectedDiv.innerHTML = connectedHtml;
+            }
+
+            // Update connecting base stations list
+            const connectingDiv = document.getElementById('connecting-stations');
+            if (data.connecting.length === 0) {
+                connectingDiv.innerHTML = '<small class="text-muted">No base stations connecting</small>';
+            } else {
+                const connectingHtml = data.connecting.map(bs => 
+                    `<div class="mb-1">
+                        <small><strong>EUI:</strong> ${bs.eui}</small><br>
+                        <small class="text-muted">Address: ${bs.address}</small>
+                    </div>`
+                ).join('');
+                connectingDiv.innerHTML = connectingHtml;
+            }
+        })
+        .catch(error => {
+            document.getElementById('connected-stations').innerHTML = '<small class="text-danger">Error loading status</small>';
+            document.getElementById('connecting-stations').innerHTML = '<small class="text-danger">Error loading status</small>';
+        });
+}
+
 function loadRecentLogs() {
     fetch('/api/logs')
         .then(response => response.json())
         .then(logs => {
-            const container = document.getElementById('recent-logs');
+            const logsDiv = document.getElementById('recent-logs');
             if (logs.length === 0) {
-                container.innerHTML = '<p class="text-muted">No logs available</p>';
+                logsDiv.innerHTML = '<p>No logs available</p>';
                 return;
             }
-            
-            const recentLogs = logs.slice(-10).reverse();
-            container.innerHTML = recentLogs.map(log => 
-                `<div class="log-entry log-${log.level}">
+
+            const logHtml = logs.slice(-10).map(log => 
+                `<div class="log-entry mb-1">
                     <small class="text-muted">${log.timestamp}</small>
-                    <strong>[${log.level}]</strong> ${log.logger}: ${log.message}
+                    <span class="badge badge-${log.level.toLowerCase() === 'error' ? 'danger' : 
+                                                log.level.toLowerCase() === 'warning' ? 'warning' : 'info'}">${log.level}</span>
+                    <strong>${log.logger}:</strong> ${log.message}
                 </div>`
             ).join('');
+
+            logsDiv.innerHTML = logHtml;
         })
         .catch(error => {
-            document.getElementById('recent-logs').innerHTML = '<p class="text-danger">Error loading logs</p>';
+            document.getElementById('recent-logs').innerHTML = '<p>Error loading logs</p>';
         });
 }
 
-// Load logs on page load and refresh every 5 seconds
+// Load status and logs on page load and refresh every 5 seconds
+loadBaseStationStatus();
 loadRecentLogs();
+setInterval(loadBaseStationStatus, 5000);
 setInterval(loadRecentLogs, 5000);
 </script>
 {% endblock %}

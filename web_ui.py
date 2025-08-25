@@ -147,5 +147,33 @@ def logs():
 def get_logs():
     return jsonify(log_entries[-100:])  # Return last 100 log entries
 
+@app.route('/api/base_stations')
+def get_base_stations():
+    """Get status of connected base stations"""
+    try:
+        # Import here to avoid circular import
+        from web_main import get_tls_server
+        tls_server = get_tls_server()
+        
+        if tls_server:
+            status = tls_server.get_base_station_status()
+            return jsonify(status)
+        else:
+            return jsonify({
+                "connected": [],
+                "connecting": [],
+                "total_connected": 0,
+                "total_connecting": 0,
+                "error": "TLS server not initialized"
+            })
+    except Exception as e:
+        return jsonify({
+            "connected": [],
+            "connecting": [],
+            "total_connected": 0,
+            "total_connecting": 0,
+            "error": str(e)
+        })
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
