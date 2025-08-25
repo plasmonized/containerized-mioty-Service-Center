@@ -511,10 +511,38 @@ class TLSServer:
                         else:
                             logger.warning(f"⚠️  ATTACH RESPONSE for unknown operation ID")
                             logger.warning(f"   Operation ID {op_id} not found in pending requests")
+                            logger.warning(f"   Available pending requests: {list(self.pending_attach_requests.keys())}")
                             logger.warning(f"   This could indicate:")
                             logger.warning(f"     - Response arrived after timeout")
                             logger.warning(f"     - Duplicate response")
                             logger.warning(f"     - Base station sent unsolicited response")
+
+                            # Try to find a matching pending request by checking recent requests
+                            # This is a fallback for when op_id correlation fails
+                            recent_requests = [(k, v) for k, v in self.pending_attach_requests.items()]
+                            if recent_requests:
+                                # Use the most recent request as fallback
+                                fallback_op_id, fallback_request = recent_requests[-1]
+                                sensor_eui = fallback_request['sensor_eui']
+
+                                logger.warning(f"   🔄 FALLBACK: Using most recent pending request")
+                                logger.warning(f"   Fallback OP ID: {fallback_op_id}")
+                                logger.warning(f"   Fallback Sensor EUI: {sensor_eui}")
+
+                                # Store successful registration with fallback data
+                                self.registered_sensors[sensor_eui.lower()] = {
+                                    'status': 'registered',
+                                    'base_station': bs_eui,
+                                    'timestamp': asyncio.get_event_loop().time(),
+                                    'registration_time': datetime.now().isoformat(),
+                                    'op_id': op_id,
+                                    'fallback_used': True
+                                }
+
+                                logger.warning(f"   ✅ FALLBACK REGISTRATION: Sensor {sensor_eui} registered to {bs_eui}")
+
+                                # Remove the fallback request
+                                del self.pending_attach_requests[fallback_op_id]
 
                         logger.info(f"   Response received at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
                         logger.info(f"   =====================================")
