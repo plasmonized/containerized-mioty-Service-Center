@@ -1,4 +1,3 @@
-
 from typing import Any
 
 
@@ -50,4 +49,3 @@ def build_status_complete(opID: int) -> dict[str, object]:
 
 def build_ul_response(opID: int) -> dict[str, object]:
     return {"command": "ulDataRsp", "opId": opID}
-
