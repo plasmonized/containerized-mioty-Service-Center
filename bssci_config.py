@@ -12,4 +12,8 @@ MQTT_PASSWORD = "test=1234"
 BASE_TOPIC = "bssci/"
 
 SENSOR_CONFIG_FILE = "endpoints.json"
-STATUS_INTERVAL = 60  # seconds
+STATUS_INTERVAL = 30  # seconds
+
+# HTTP Forwarding Configuration (optional)
+HTTP_FORWARD_ENABLED = True
+HTTP_FORWARD_URL = "https://your-target-app.your-username.repl.co/api/sensor-data"

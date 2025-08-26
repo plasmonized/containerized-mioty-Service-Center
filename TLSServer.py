@@ -8,6 +8,7 @@ from typing import Any, Dict
 import bssci_config
 import messages
 from protocol import decode_messages, encode_message
+import aiohttp
 
 logger = logging.getLogger(__name__)
 
@@ -258,7 +259,7 @@ class TLSServer:
     async def send_status_requests(self) -> None:
         logger.info(f"📊 STATUS REQUEST TASK STARTED")
         logger.info(f"   Status request interval: {bssci_config.STATUS_INTERVAL} seconds")
-        
+
         try:
             while True:
                 await asyncio.sleep(bssci_config.STATUS_INTERVAL)
@@ -269,22 +270,22 @@ class TLSServer:
 
                     requests_sent = 0
                     failed_requests = 0
-                    
+
                     for writer, bs_eui in self.connected_base_stations.copy().items():  # Use copy to avoid dict change during iteration
                         try:
                             logger.info(f"📤 Sending status request to base station {bs_eui}")
                             logger.info(f"   Operation ID: {self.opID}")
-                            
+
                             msg_pack = encode_message(messages.build_status_request(self.opID))
                             full_message = IDENTIFIER + len(msg_pack).to_bytes(4, byteorder="little") + msg_pack
-                            
+
                             writer.write(full_message)
                             await writer.drain()
-                            
+
                             logger.info(f"✅ Status request transmitted to {bs_eui} (opID: {self.opID})")
                             requests_sent += 1
                             self.opID -= 1
-                            
+
                         except Exception as e:
                             failed_requests += 1
                             logger.error(f"❌ Failed to send status request to base station {bs_eui}")
@@ -293,15 +294,15 @@ class TLSServer:
                             # Remove disconnected base station
                             if writer in self.connected_base_stations:
                                 self.connected_base_stations.pop(writer)
-                    
+
                     logger.info(f"📊 STATUS REQUEST CYCLE COMPLETE")
                     logger.info(f"   Requests sent: {requests_sent}")
                     logger.info(f"   Failed requests: {failed_requests}")
                     logger.info(f"   Remaining connected base stations: {len(self.connected_base_stations)}")
-                    
+
                 else:
                     logger.info(f"⏸️  STATUS REQUEST CYCLE SKIPPED - No base stations connected")
-                    
+
         except asyncio.CancelledError:
             logger.info(f"📊 STATUS REQUEST TASK CANCELLED")
             self._status_task_running = False
@@ -474,13 +475,13 @@ class TLSServer:
 
                         mqtt_topic = f"bs/{bs_eui}"
                         payload = json.dumps(data_dict)
-                        
+
                         logger.info(f"📤 MQTT PUBLICATION - BASE STATION STATUS")
                         logger.info(f"   Topic: bssci/{mqtt_topic}")
                         logger.info(f"   Base Station EUI: {bs_eui}")
                         logger.info(f"   Payload size: {len(payload)} bytes")
                         logger.info(f"   Status data: Code={data_dict['code']}, CPU={data_dict['cpuLoad']:.1%}, Memory={data_dict['memLoad']:.1%}")
-                        
+
                         try:
                             await self.mqtt_out_queue.put(
                                 {
@@ -544,7 +545,7 @@ class TLSServer:
                                     'registration_time': datetime.now().isoformat(),
                                     'registrations': []
                                 }
-                            
+
                             # Add this base station if not already registered
                             if bs_eui not in self.registered_sensors[eui_key]['base_stations']:
                                 self.registered_sensors[eui_key]['base_stations'].append(bs_eui)
@@ -597,7 +598,7 @@ class TLSServer:
                                         'registration_time': datetime.now().isoformat(),
                                         'registrations': []
                                     }
-                                
+
                                 # Add this base station if not already registered
                                 if bs_eui not in self.registered_sensors[eui_key]['base_stations']:
                                     self.registered_sensors[eui_key]['base_stations'].append(bs_eui)
@@ -677,9 +678,12 @@ class TLSServer:
                             "data": message["userData"],
                         }
 
+                        # Forward data to another Replit app if configured
+                        await self.send_to_replit_app(eui, data_dict)
+
                         mqtt_topic = f"ep/{eui}/ul"
                         payload_json = json.dumps(data_dict)
-                        
+
                         logger.info(f"📤 MQTT PUBLICATION - SENSOR UPLINK DATA")
                         logger.info(f"   =====================================")
                         logger.info(f"   Full Topic: bssci/{mqtt_topic}")
@@ -688,7 +692,7 @@ class TLSServer:
                         logger.info(f"   Payload Size: {len(payload_json)} bytes")
                         logger.info(f"   Data Preview: SNR={data_dict['snr']:.1f}dB, RSSI={data_dict['rssi']:.1f}dBm, Count={data_dict['cnt']}")
                         logger.debug(f"   Full Payload: {payload_json}")
-                        
+
                         try:
                             await self.mqtt_out_queue.put(
                                 {"topic": mqtt_topic, "payload": payload_json}
@@ -852,24 +856,38 @@ class TLSServer:
     def reload_sensor_config(self) -> None:
         """Reload sensor configuration from file"""
         try:
-            with open(self.sensor_config_file, "r") as f:
-                new_config = json.load(f)
-
-            old_count = len(self.sensor_config)
-            self.sensor_config = new_config
-            new_count = len(self.sensor_config)
-
-            logger.info(f"Sensor configuration reloaded: {old_count} -> {new_count} sensors")
-
-            # Clear registration status for removed sensors
-            configured_euis = {sensor['eui'].lower() for sensor in self.sensor_config}
-            removed_euis = set(self.registered_sensors.keys()) - configured_euis
-            for eui in removed_euis:
-                self.registered_sensors.pop(eui, None)
-                logger.info(f"Removed registration status for deleted sensor: {eui}")
-
+            with open(self.sensor_config_file, 'r') as f:
+                self.sensor_config = json.load(f)
+            logger.info(f"✅ Sensor configuration reloaded: {len(self.sensor_config)} sensors")
         except Exception as e:
-            logger.error(f"Failed to reload sensor configuration: {e}")
+            logger.error(f"❌ Failed to reload sensor config: {e}")
+            self.sensor_config = []
+
+    async def send_to_replit_app(self, eui: str, data_dict: dict):
+        """Send sensor data to another Replit app via HTTP"""
+        # Configure your target Replit app URL here
+        TARGET_REPLIT_URL = "https://your-target-app.your-username.repl.co/api/sensor-data"
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                payload = {
+                    "eui": eui,
+                    "timestamp": data_dict.get("rxTime"),
+                    "sensor_data": data_dict
+                }
+
+                async with session.post(
+                    TARGET_REPLIT_URL,
+                    json=payload,
+                    headers={"Content-Type": "application/json"},
+                    timeout=5
+                ) as response:
+                    if response.status == 200:
+                        logger.info(f"✅ Data forwarded to Replit app for sensor {eui}")
+                    else:
+                        logger.warning(f"⚠️ Replit app returned status {response.status}")
+        except Exception as e:
+            logger.debug(f"🔄 Could not forward to Replit app: {e}")  # Non-critical, so just debug
 
     def get_sensor_registration_status(self) -> Dict[str, Dict[str, Any]]:
         """Get registration status of all sensors"""
