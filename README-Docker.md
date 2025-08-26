@@ -16,7 +16,7 @@ docker-compose -f docker-compose.prod.yml up --build -d
 ## Services
 
 - **TLS Server**: Port 16018 (for mioty base stations)
-- **Synchronous BSSCI Service**: Uses threading instead of asyncio
+- **Web UI**: Port 5000 (development) / Port 80 (production)
 
 ## Required Files
 
@@ -36,8 +36,9 @@ Before starting, ensure you have:
 
 ## Environment Variables
 
-- `RUN_MODE=service-only`: Run the synchronous BSSCI service
+- `RUN_MODE=service-only`: Run only the BSSCI service (no web UI)
 - `PYTHONUNBUFFERED=1`: Enable real-time logging
+- `FLASK_ENV=production`: Production mode for web UI
 
 ## Volumes
 
@@ -48,15 +49,18 @@ Before starting, ensure you have:
 
 ## Health Checks
 
-The container includes health checks for:
+The container includes health checks for both services:
 - TLS Server on port 16018
+- Web UI on port 5000
 
 ## Accessing the Services
 
 ### Development
+- Web UI: http://localhost:5000
 - TLS Server: localhost:16019 (mapped from 16018)
 
 ### Production  
+- Web UI: http://localhost (port 80)
 - TLS Server: localhost:16018
 
 ## Logs

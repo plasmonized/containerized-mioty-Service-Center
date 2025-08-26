@@ -40,5 +40,5 @@ RUN chmod 664 endpoints.json bssci_config.py
 # Switch to non-root user
 USER bssci
 
-# Run the synchronous version with unbuffered output
-CMD ["python", "-u", "sync_main.py"]
+# Run the application with web UI and unbuffered output
+CMD ["python", "-u", "web_main.py"]

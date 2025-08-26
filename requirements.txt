@@ -1,6 +1,5 @@
-
-asyncio-mqtt
+asyncio-mqtt==0.16.2
 msgpack>=1.0.7
 aiomqtt
-flask
-paho-mqtt
+flask==3.0.3
+aiohttp==3.9.1

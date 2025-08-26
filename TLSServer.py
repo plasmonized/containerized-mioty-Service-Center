@@ -482,16 +482,32 @@ class TLSServer:
                         logger.info(f"   Payload size: {len(payload)} bytes")
                         logger.info(f"   Status data: Code={data_dict['code']}, CPU={data_dict['cpuLoad']:.1%}, Memory={data_dict['memLoad']:.1%}")
 
-                        try:
-                            await self.mqtt_out_queue.put(
-                                {
-                                    "topic": mqtt_topic,
-                                    "payload": payload,
-                                }
-                            )
-                            logger.info(f"✅ Base station status queued for MQTT publication")
-                        except Exception as mqtt_err:
-                            logger.error(f"❌ Failed to queue MQTT message: {mqtt_err}")
+                        # Send base station status to service center via HTTP
+                        if bssci_config.HTTP_FORWARD_ENABLED:
+                            try:
+                                from http_client import ServiceCenterHTTPClient
+                                
+                                async with ServiceCenterHTTPClient(bssci_config.HTTP_FORWARD_URL) as client:
+                                    result = await client.send_base_station_status(bs_eui, data_dict)
+                                    if result:
+                                        logger.info(f"✅ Base station status sent to service center")
+                                    else:
+                                        logger.warning(f"⚠️ Failed to send base station status to service center")
+                            except Exception as http_err:
+                                logger.error(f"❌ Error sending base station status to service center: {http_err}")
+
+                        # Also keep MQTT for backward compatibility if needed
+                        if hasattr(self, 'mqtt_out_queue') and self.mqtt_out_queue:
+                            try:
+                                await self.mqtt_out_queue.put(
+                                    {
+                                        "topic": mqtt_topic,
+                                        "payload": payload,
+                                    }
+                                )
+                                logger.info(f"✅ Base station status queued for MQTT (legacy)")
+                            except Exception as mqtt_err:
+                                logger.debug(f"MQTT legacy support failed: {mqtt_err}")  # Non-critical
                         msg_pack = encode_message(
                             messages.build_status_complete(message.get("opId", ""))
                         )
@@ -678,33 +694,26 @@ class TLSServer:
                             "data": message["userData"],
                         }
 
-                        # Forward data to another Replit app if configured
-                        await self.send_to_replit_app(eui, data_dict)
+                        # Forward data to service center via HTTP
+                        await self.send_to_service_center(eui, data_dict)
 
-                        mqtt_topic = f"ep/{eui}/ul"
-                        payload_json = json.dumps(data_dict)
+                        # Also keep MQTT for backward compatibility if needed
+                        if hasattr(self, 'mqtt_out_queue') and self.mqtt_out_queue:
+                            mqtt_topic = f"ep/{eui}/ul"
+                            payload_json = json.dumps(data_dict)
 
-                        logger.info(f"📤 MQTT PUBLICATION - SENSOR UPLINK DATA")
-                        logger.info(f"   =====================================")
-                        logger.info(f"   Full Topic: bssci/{mqtt_topic}")
-                        logger.info(f"   Sensor EUI: {eui}")
-                        logger.info(f"   Base Station: {bs_eui}")
-                        logger.info(f"   Payload Size: {len(payload_json)} bytes")
-                        logger.info(f"   Data Preview: SNR={data_dict['snr']:.1f}dB, RSSI={data_dict['rssi']:.1f}dBm, Count={data_dict['cnt']}")
-                        logger.debug(f"   Full Payload: {payload_json}")
+                            logger.info(f"📤 MQTT PUBLICATION - SENSOR UPLINK DATA (Legacy)")
+                            logger.info(f"   Full Topic: bssci/{mqtt_topic}")
+                            logger.info(f"   Sensor EUI: {eui}")
+                            logger.info(f"   Base Station: {bs_eui}")
 
-                        try:
-                            await self.mqtt_out_queue.put(
-                                {"topic": mqtt_topic, "payload": payload_json}
-                            )
-                            logger.info(f"✅ MQTT message queued successfully")
-                            logger.info(f"   Queue size after add: {self.mqtt_out_queue.qsize()}")
-                        except Exception as mqtt_err:
-                            logger.error(f"❌ FAILED to queue MQTT message")
-                            logger.error(f"   Error: {type(mqtt_err).__name__}: {mqtt_err}")
-                            logger.error(f"   Topic: {mqtt_topic}")
-                            logger.error(f"   Payload: {payload_json}")
-                        logger.info(f"   =======================================")
+                            try:
+                                await self.mqtt_out_queue.put(
+                                    {"topic": mqtt_topic, "payload": payload_json}
+                                )
+                                logger.info(f"✅ MQTT message queued for legacy support")
+                            except Exception as mqtt_err:
+                                logger.debug(f"MQTT legacy support failed: {mqtt_err}")  # Non-critical
 
                         msg_pack = encode_message(
                             messages.build_ul_response(message.get("opId", ""))
@@ -863,31 +872,22 @@ class TLSServer:
             logger.error(f"❌ Failed to reload sensor config: {e}")
             self.sensor_config = []
 
-    async def send_to_replit_app(self, eui: str, data_dict: dict):
-        """Send sensor data to another Replit app via HTTP"""
-        # Configure your target Replit app URL here
-        TARGET_REPLIT_URL = "https://your-target-app.your-username.repl.co/api/sensor-data"
+    async def send_to_service_center(self, eui: str, data_dict: dict):
+        """Send sensor data to service center via HTTP"""
+        if not bssci_config.HTTP_FORWARD_ENABLED:
+            return
 
         try:
-            async with aiohttp.ClientSession() as session:
-                payload = {
-                    "eui": eui,
-                    "timestamp": data_dict.get("rxTime"),
-                    "sensor_data": data_dict
-                }
-
-                async with session.post(
-                    TARGET_REPLIT_URL,
-                    json=payload,
-                    headers={"Content-Type": "application/json"},
-                    timeout=5
-                ) as response:
-                    if response.status == 200:
-                        logger.info(f"✅ Data forwarded to Replit app for sensor {eui}")
-                    else:
-                        logger.warning(f"⚠️ Replit app returned status {response.status}")
+            from http_client import ServiceCenterHTTPClient
+            
+            async with ServiceCenterHTTPClient(bssci_config.HTTP_FORWARD_URL) as client:
+                result = await client.send_sensor_uplink(eui, data_dict)
+                if result:
+                    logger.info(f"✅ Data forwarded to service center for sensor {eui}")
+                else:
+                    logger.warning(f"⚠️ Failed to forward data to service center for sensor {eui}")
         except Exception as e:
-            logger.debug(f"🔄 Could not forward to Replit app: {e}")  # Non-critical, so just debug
+            logger.error(f"❌ Error forwarding to service center for sensor {eui}: {e}")
 
     def get_sensor_registration_status(self) -> Dict[str, Dict[str, Any]]:
         """Get registration status of all sensors"""

@@ -1,0 +1,93 @@
+I've added a new HTTP API endpoint that will send your registered sensors from the service center to your BSSCI app for registration. Here's how it works:
+
+🚀 New Export Endpoint:
+POST /api/sensors/export-to-bssci
+Content-Type: application/json
+{
+  "bssci_app_url": "https://your-bssci-app.replit.app",
+  "include_inactive": false
+}
+🔄 How It Works:
+1. From Your Service Center Dashboard/API:
+// Trigger the export to your BSSCI app
+const response = await fetch('/api/sensors/export-to-bssci', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    bssci_app_url: 'https://your-bssci-app.replit.app',
+    include_inactive: false  // Only export active sensors
+  })
+});
+2. What Gets Exported:
+{
+  "sensors": [
+    {
+      "eui": "FCA84A030000127C",
+      "name": "Temperature Sensor 01", 
+      "description": "Exported from mioty service center",
+      "nwKey": "network_key_here",
+      "shortAddr": "127C",
+      "bidi": false,
+      "status": "active",
+      "lastSeen": "2025-01-26T07:15:23.456Z",
+      "export_metadata": {
+        "exported_from": "mioty-service-center",
+        "export_time": "2025-01-26T07:22:15.123Z",
+        "original_id": "sensor-db-id"
+      }
+    }
+  ],
+  "source": "mioty-service-center"
+}
+3. Your BSSCI App Should Have:
+# Your BSSCI app needs this endpoint to receive sensors
+@app.route('/api/sensors/import-from-service-center', methods=['POST'])
+def import_sensors_from_service_center():
+    data = request.get_json()
+    sensors = data.get('sensors', [])
+    
+    results = {'imported': [], 'errors': []}
+    
+    for sensor in sensors:
+        try:
+            # Register sensor in your BSSCI system
+            register_sensor_in_bssci(sensor)
+            results['imported'].append({
+                'eui': sensor['eui'], 
+                'name': sensor['name']
+            })
+        except Exception as e:
+            results['errors'].append({
+                'sensor': sensor,
+                'error': str(e)
+            })
+    
+    return jsonify({
+        'success': True,
+        'results': results,
+        'message': f"Imported {len(results['imported'])} sensors"
+    })
+📊 Smart Features:
+✅ Active/Inactive Filter: Choose to export only active sensors or include all
+✅ Comprehensive Logging: Detailed console output showing export progress
+✅ Error Handling: Graceful handling of connection failures
+✅ Metadata Tracking: Each sensor includes export timestamp and source info
+✅ Flexible Response: Handles different BSSCI app response formats
+✅ Timeout Protection: 30-second timeout prevents hanging
+
+🎯 Response Format:
+{
+  "success": true,
+  "message": "Successfully exported 5 sensors to BSSCI app",
+  "results": {
+    "exported": [...],
+    "failed": [...],
+    "total_sent": 5
+  },
+  "summary": {
+    "bssci_app_url": "https://your-bssci-app.replit.app",
+    "exported_count": 5,
+    "failed_count": 0,
+    "include_inactive": false
+  }
+}
