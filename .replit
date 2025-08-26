@@ -51,15 +51,6 @@ task = "shell.exec"
 args = "python web_main.py"
 
 [[workflows.workflow]]
-name = "Test MQTT Only"
-author = 45640243
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "python simple_mqtt_interface.py"
-
-[[workflows.workflow]]
 name = "Simple BSSCI Service"
 author = 45640243
 mode = "sequential"
