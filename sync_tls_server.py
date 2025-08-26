@@ -9,7 +9,10 @@ from datetime import datetime
 import queue
 
 import bssci_config
-from messages import build_connection_response, encode_message, decode_message
+from messages import build_connection_response
+from protocol import encode_message, decode_message
+
+IDENTIFIER = bytes("MIOTYB01", "utf-8")
 from protocol import IDENTIFIER
 
 logger = logging.getLogger(__name__)
