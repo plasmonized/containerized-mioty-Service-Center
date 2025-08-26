@@ -1,77 +1,153 @@
+
+import logging
 import queue
 import threading
 import time
+import signal
+import sys
 
-# Assume sync_mqtt_interface.py contains the SyncMQTTClient class
-# from sync_mqtt_interface import SyncMQTTClient
+from sync_mqtt_interface import SyncMQTTClient
+from sync_tls_server import SyncTLSServer
+import bssci_config
 
-# Placeholder for SyncMQTTClient if the actual file is not provided
-class SyncMQTTClient:
-    def __init__(self, out_queue, in_queue):
-        self.out_queue = out_queue
-        self.in_queue = in_queue
-        print("SyncMQTTClient initialized.")
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler('logs/bssci_sync.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger(__name__)
 
+class SyncBSSCIService:
+    def __init__(self):
+        # Create thread-safe queues for communication between TLS server and MQTT
+        self.mqtt_out_queue = queue.Queue(maxsize=100)
+        self.mqtt_in_queue = queue.Queue(maxsize=100)
+        
+        # Initialize components
+        self.tls_server = SyncTLSServer(
+            bssci_config.SENSOR_CONFIG_FILE, 
+            self.mqtt_in_queue, 
+            self.mqtt_out_queue
+        )
+        self.mqtt_client = SyncMQTTClient(self.mqtt_out_queue, self.mqtt_in_queue)
+        
+        # Threading control
+        self.stop_event = threading.Event()
+        self.threads = []
+        
     def start(self):
-        print("SyncMQTTClient starting...")
-        # Simulate MQTT client running and processing messages
-        while True:
+        """Start all BSSCI service components"""
+        logger.info("=" * 80)
+        logger.info("🚀 STARTING SYNCHRONOUS BSSCI SERVICE CENTER")
+        logger.info("=" * 80)
+        logger.info(f"📡 TLS Port: {bssci_config.LISTEN_PORT}")
+        logger.info(f"🏠 MQTT Broker: {bssci_config.MQTT_BROKER}:{bssci_config.MQTT_PORT}")
+        logger.info(f"📁 Sensor Config: {bssci_config.SENSOR_CONFIG_FILE}")
+        
+        try:
+            # Start MQTT client
+            logger.info("🌐 Starting MQTT Client...")
+            self.mqtt_client.start()
+            
+            # Start TLS server in separate thread
+            logger.info("🔐 Starting TLS Server...")
+            tls_thread = threading.Thread(target=self.tls_server.start, daemon=True)
+            tls_thread.start()
+            self.threads.append(tls_thread)
+            
+            # Start configuration processor
+            config_thread = threading.Thread(target=self._process_configurations, daemon=True)
+            config_thread.start()
+            self.threads.append(config_thread)
+            
+            logger.info("✅ ALL SERVICES STARTED SUCCESSFULLY!")
+            logger.info("🎯 BSSCI Service Center is ready for base station connections")
+            
+            # Keep main thread alive
+            while not self.stop_event.is_set():
+                time.sleep(1)
+                
+        except Exception as e:
+            logger.error(f"❌ Failed to start BSSCI service: {e}")
+            self.stop()
+            raise
+            
+    def _process_configurations(self):
+        """Process incoming MQTT configuration messages"""
+        logger.info("🔧 Configuration processor thread started")
+        
+        while not self.stop_event.is_set():
             try:
-                # Process messages from the output queue (to be sent via MQTT)
-                message = self.out_queue.get_nowait()
-                print(f"SyncMQTTClient: Sending message - {message}")
-                # Simulate sending message
-                time.sleep(0.1)
-            except queue.Empty:
-                pass # No messages to send
-
-            try:
-                # Simulate receiving messages from MQTT and putting them in the in_queue
-                # In a real scenario, this would be from the MQTT broker
-                if not self.in_queue.full():
-                    self.in_queue.put({"topic": "test/topic", "payload": f"simulated_data_{time.time()}"})
-            except queue.Full:
-                pass # In-queue is full
-
-            time.sleep(1) # Simulate loop delay
-
+                # Check for incoming configuration updates
+                try:
+                    config = self.mqtt_in_queue.get(timeout=1.0)
+                    logger.info(f"📨 Received configuration update: {config}")
+                    
+                    # Forward configuration to TLS server
+                    if hasattr(self.tls_server, 'update_sensor_config'):
+                        self.tls_server.update_sensor_config(config)
+                        logger.info("✅ Configuration forwarded to TLS server")
+                    
+                except queue.Empty:
+                    continue
+                    
+            except Exception as e:
+                logger.error(f"❌ Configuration processor error: {e}")
+                time.sleep(1)
+                
+        logger.info("🛑 Configuration processor thread stopped")
+        
     def stop(self):
-        print("SyncMQTTClient stopping...")
+        """Stop all BSSCI service components"""
+        logger.info("🛑 STOPPING SYNCHRONOUS BSSCI SERVICE CENTER...")
+        
+        self.stop_event.set()
+        
+        # Stop MQTT client
+        if self.mqtt_client:
+            self.mqtt_client.stop()
+            
+        # Stop TLS server
+        if self.tls_server:
+            self.tls_server.stop()
+            
+        # Wait for threads to finish
+        for thread in self.threads:
+            thread.join(timeout=5)
+            
+        logger.info("✅ SYNCHRONOUS BSSCI SERVICE CENTER STOPPED")
 
+def signal_handler(signum, frame):
+    """Handle shutdown signals"""
+    logger.info(f"🛑 Received signal {signum}, shutting down...")
+    if 'service' in globals():
+        service.stop()
+    sys.exit(0)
 
 def main():
-    mqtt_out_queue = queue.Queue(maxsize=10)
-    mqtt_in_queue = queue.Queue(maxsize=10)
-
-    # Start MQTT client
-    mqtt_client = SyncMQTTClient(mqtt_out_queue, mqtt_in_queue)
-    mqtt_client.start()
-
-    # Example of sending data to MQTT
+    global service
+    
+    # Set up signal handlers for graceful shutdown
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
+    logger.info("🎯 INITIALIZING SYNCHRONOUS BSSCI SERVICE CENTER")
+    
+    # Create and start the service
+    service = SyncBSSCIService()
+    
     try:
-        mqtt_out_queue.put({"topic": "test/topic", "payload": "Hello MQTT!"})
-        print("Sent initial message to MQTT queue.")
-    except queue.Full:
-        print("MQTT out queue is full, cannot send initial message.")
-
-    # Main loop to process incoming MQTT messages
-    while True:
-        try:
-            message = mqtt_in_queue.get(timeout=1) # Wait for incoming messages
-            print(f"Received message from MQTT: {message}")
-            # Process the received message here
-            # For example:
-            # if message["topic"] == "sensor/data":
-            #     process_sensor_data(message["payload"])
-        except queue.Empty:
-            # No messages received, continue looping
-            pass
-        except KeyboardInterrupt:
-            print("Shutting down...")
-            # In a real application, you would call mqtt_client.stop() here
-            # For this simulation, we just break the loop
-            break
-        time.sleep(0.5) # Small delay to prevent busy-waiting
+        service.start()
+    except KeyboardInterrupt:
+        logger.info("🛑 Keyboard interrupt received")
+    except Exception as e:
+        logger.error(f"❌ Service error: {e}")
+    finally:
+        service.stop()
 
 if __name__ == "__main__":
     main()
