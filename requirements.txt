@@ -3,3 +3,4 @@ msgpack>=1.0.7
 aiomqtt
 flask==3.0.3
 aiohttp==3.9.1
+paho-mqtt
