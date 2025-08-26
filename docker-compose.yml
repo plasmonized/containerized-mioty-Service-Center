@@ -9,6 +9,7 @@ services:
     init: true
     ports:
       - "16019:16018"  # TLS Server port
+      - "5000:5000"    # Web UI port
     volumes:
       - ./certs:/app/certs:ro
       - ./endpoints.json:/app/endpoints.json
