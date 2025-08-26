@@ -1,4 +1,5 @@
 
+
 import asyncio
 import logging
 import threading
@@ -13,9 +14,6 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Global reference for TLS server instance
-tls_server_instance = None
-
 def run_web_ui():
     """Run the Flask web UI in a separate thread"""
     logger.info("Starting Web UI on port 5000")
@@ -25,11 +23,6 @@ def run_bssci_service():
     """Run the BSSCI service"""
     logger.info("Starting BSSCI Service")
     asyncio.run(bssci_main())
-
-def get_tls_server():
-    """Get the TLS server instance"""
-    from main import tls_server_instance
-    return tls_server_instance
 
 if __name__ == "__main__":
     logger.info("Starting BSSCI Service Center with Web UI")
@@ -47,3 +40,4 @@ if __name__ == "__main__":
         run_bssci_service()
     except KeyboardInterrupt:
         logger.info("Shutting down...")
+
