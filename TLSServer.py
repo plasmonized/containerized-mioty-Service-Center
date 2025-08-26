@@ -182,10 +182,14 @@ class TLSServer:
                             "time": message["time"],
                             "uptime": message["uptime"],
                         }
+                        bs_eui = self.connected_base_stations[writer]
+                        mqtt_topic = f"bs/{bs_eui}"
+                        payload = json.dumps(data_dict)
+
                         await self.mqtt_out_queue.put(
                             {
-                                "topic": f"bs/{self.connected_base_stations[writer]}",
-                                "payload": json.dumps(data_dict),
+                                "topic": mqtt_topic,
+                                "payload": payload,
                             }
                         )
                         msg_pack = encode_message(
@@ -222,8 +226,10 @@ class TLSServer:
                             "cnt": message["packetCnt"],
                             "data": message["userData"],
                         }
+                        mqtt_topic = f"ep/{eui}/ul"
+                        payload_json = json.dumps(data_dict)
                         await self.mqtt_out_queue.put(
-                            {"topic": f"ep/{eui}/ul", "payload": json.dumps(data_dict)}
+                            {"topic": mqtt_topic, "payload": payload_json}
                         )
                         msg_pack = encode_message(
                             messages.build_ul_response(message.get("opId", ""))

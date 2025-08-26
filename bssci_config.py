@@ -1,5 +1,5 @@
 LISTEN_HOST = "0.0.0.0"
-LISTEN_PORT = 16018  # Internal container port
+LISTEN_PORT = 16017  # Internal container port
 
 CERT_FILE = "certs/service_center_cert.pem"
 KEY_FILE = "certs/service_center_key.pem"
@@ -12,7 +12,7 @@ MQTT_PASSWORD = "test=1234"
 BASE_TOPIC = "bssci/"
 
 SENSOR_CONFIG_FILE = "endpoints.json"
-STATUS_INTERVAL = 30  # seconds
+STATUS_INTERVAL = 60  # seconds
 
 # HTTP Forwarding Configuration (optional)
 HTTP_FORWARD_ENABLED = True

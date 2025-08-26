@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-from bssci_config import SENSOR_CONFIG_FILE, LISTEN_HOST, LISTEN_PORT, MQTT_BROKER, MQTT_PORT
+import bssci_config
 from mqtt_interface import MQTTClient
 from TLSServer import TLSServer
 
@@ -22,13 +22,15 @@ async def main() -> None:
     mqtt_out_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
 
     logger.info("Initializing TLS Server...")
-    server = TLSServer(SENSOR_CONFIG_FILE, mqtt_out_queue, mqtt_in_queue)
+    tls_server = TLSServer(
+        bssci_config.SENSOR_CONFIG_FILE, mqtt_out_queue, mqtt_in_queue
+    )
 
     logger.info("Initializing MQTT Client...")
     mqtt_server = MQTTClient(mqtt_out_queue, mqtt_in_queue)
 
     logger.info("Starting services...")
-    await asyncio.gather(mqtt_server.start(), server.start_server())
+    await asyncio.gather(mqtt_server.start(), tls_server.start_server())
 
 
 if __name__ == "__main__":
