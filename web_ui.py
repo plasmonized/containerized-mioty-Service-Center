@@ -197,7 +197,9 @@ def config():
         'MQTT_USERNAME': bssci_config.MQTT_USERNAME,
         'MQTT_PASSWORD': bssci_config.MQTT_PASSWORD,
         'BASE_TOPIC': bssci_config.BASE_TOPIC,
-        'STATUS_INTERVAL': bssci_config.STATUS_INTERVAL
+        'STATUS_INTERVAL': bssci_config.STATUS_INTERVAL,
+        'HTTP_FORWARD_ENABLED': getattr(bssci_config, 'HTTP_FORWARD_ENABLED', True),
+        'HTTP_FORWARD_URL': getattr(bssci_config, 'HTTP_FORWARD_URL', 'https://mioty-cloud.replit.app')
     }
     return render_template('config.html', config=config_data)
 
@@ -219,6 +221,10 @@ BASE_TOPIC = "{data['BASE_TOPIC']}"
 
 SENSOR_CONFIG_FILE = "endpoints.json"
 STATUS_INTERVAL = {data['STATUS_INTERVAL']}  # seconds
+
+# HTTP Forwarding Configuration (optional)
+HTTP_FORWARD_ENABLED = {str(data.get('HTTP_FORWARD_ENABLED', True))}
+HTTP_FORWARD_URL = "{data.get('HTTP_FORWARD_URL', 'https://mioty-cloud.replit.app')}"
 '''
     
     try:
