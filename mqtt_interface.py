@@ -49,7 +49,9 @@ class MQTTClient:
                     hostname=self.broker_host, 
                     port=MQTT_PORT, 
                     username=MQTT_USERNAME, 
-                    password=MQTT_PASSWORD
+                    password=MQTT_PASSWORD,
+                    keepalive=60,
+                    timeout=10
                 ) as client:
                     logger.info("✅ MQTT CLIENT CONNECTION SUCCESSFUL!")
                     logger.info("✅ Authentication completed successfully")
@@ -147,7 +149,7 @@ class MQTTClient:
 
                     # Simple publish like the working version
                     print(f"{topic}:\n\t{msg['payload']}")  # Keep the original print
-                    await client.publish(topic, msg["payload"])
+                    await client.publish(topic, msg["payload"], qos=0)
 
                     logger.info("✅ MQTT MESSAGE PUBLISHED SUCCESSFULLY!")
 

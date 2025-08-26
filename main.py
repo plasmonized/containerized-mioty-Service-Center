@@ -18,33 +18,31 @@ async def main():
     mqtt_out_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
     mqtt_in_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
 
+    logger.info("Initializing BSSCI Service Center...")
+    logger.info(f"Config: TLS Port {LISTEN_PORT}, MQTT Broker {MQTT_BROKER}:{MQTT_PORT}")
+
     tls_server = TLSServer(
         bssci_config.SENSOR_CONFIG_FILE, mqtt_in_queue, mqtt_out_queue
     )
     tls_server_instance = tls_server  # Store global reference
     mqtt_client = MQTTClient(mqtt_out_queue, mqtt_in_queue)
 
-    # Create tasks for both services
-    tls_task = asyncio.create_task(tls_server.start_server())
-    mqtt_task = asyncio.create_task(mqtt_client.start())
-
     logger.info("Starting BSSCI Service Center...")
     logger.info("✓ Both TLS Server and MQTT Interface are starting...")
 
     try:
-        # Wait for both tasks to complete (they should run indefinitely)
-        await asyncio.gather(tls_task, mqtt_task)
+        # Start both services concurrently
+        await asyncio.gather(
+            tls_server.start_server(),
+            mqtt_client.start(),
+            return_exceptions=True
+        )
     except KeyboardInterrupt:
         logger.info("Shutting down BSSCI Service Center...")
-        tls_task.cancel()
-        mqtt_task.cancel()
-
-        try:
-            await asyncio.gather(tls_task, mqtt_task, return_exceptions=True)
-        except Exception as e:
-            logger.error(f"Error during shutdown: {e}")
-
-        logger.info("✓ BSSCI Service Center shut down complete")
+    except Exception as e:
+        logger.error(f"Service error: {e}")
+    
+    logger.info("✓ BSSCI Service Center shut down complete")
 
 # Global TLS server instance for web UI access
 tls_server_instance = None
