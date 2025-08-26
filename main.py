@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 
 async def main() -> None:
     logger.info("Starting BSSCI Service Center...")
-    logger.info(f"TLS Server will listen on {LISTEN_HOST}:{LISTEN_PORT}")
-    logger.info(f"MQTT Broker: {MQTT_BROKER}:{MQTT_PORT}")
-    logger.info(f"Sensor config file: {SENSOR_CONFIG_FILE}")
+    logger.info(f"TLS Server will listen on {bssci_config.LISTEN_HOST}:{bssci_config.LISTEN_PORT}")
+    logger.info(f"MQTT Broker: {bssci_config.MQTT_BROKER}:{bssci_config.MQTT_PORT}")
+    logger.info(f"Sensor config file: {bssci_config.SENSOR_CONFIG_FILE}")
 
     mqtt_in_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
     mqtt_out_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
