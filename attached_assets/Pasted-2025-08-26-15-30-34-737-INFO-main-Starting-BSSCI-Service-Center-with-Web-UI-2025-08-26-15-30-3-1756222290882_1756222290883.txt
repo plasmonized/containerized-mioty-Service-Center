@@ -1,0 +1,515 @@
+2025-08-26 15:30:34.737 INFO __main__
+Starting BSSCI Service Center with Web UI
+2025-08-26 15:30:34.738 INFO __main__
+Starting Web UI on port 5000
+2025-08-26 15:30:34.761 INFO werkzeug
+[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.192.2:5000
+2025-08-26 15:30:34.762 INFO werkzeug
+[33mPress CTRL+C to quit[0m
+2025-08-26 15:30:36.738 INFO __main__
+Web UI available at http://localhost:5000
+2025-08-26 15:30:36.739 INFO __main__
+Starting BSSCI Service
+2025-08-26 15:30:36.739 DEBUG asyncio
+Using selector: EpollSelector
+2025-08-26 15:30:36.740 INFO main
+Initializing BSSCI Service Center...
+2025-08-26 15:30:36.740 INFO main
+Config: TLS Port 16018, MQTT Broker 192.168.0.156:1887
+2025-08-26 15:30:36.740 INFO main
+Starting BSSCI Service Center...
+2025-08-26 15:30:36.740 INFO main
+✓ Both TLS Server and MQTT Interface are starting...
+2025-08-26 15:30:36.741 INFO TLSServer
+🔐 Setting up SSL/TLS context for BSSCI server...
+2025-08-26 15:30:36.741 INFO TLSServer
+   Certificate file: certs/service_center_cert.pem
+2025-08-26 15:30:36.741 INFO TLSServer
+   Key file: certs/service_center_key.pem
+2025-08-26 15:30:36.741 INFO TLSServer
+   CA file: certs/ca_cert.pem
+2025-08-26 15:30:36.748 INFO TLSServer
+   TLS Protocol versions: TLSv1_2 - MAXIMUM_SUPPORTED
+2025-08-26 15:30:36.749 INFO TLSServer
+✓ SSL context configured successfully with client certificate verification
+2025-08-26 15:30:36.749 INFO TLSServer
+🚀 Starting BSSCI TLS server...
+2025-08-26 15:30:36.749 INFO TLSServer
+   Listen address: 0.0.0.0:16018
+2025-08-26 15:30:36.749 INFO TLSServer
+   Sensor config file: endpoints.json
+2025-08-26 15:30:36.749 INFO TLSServer
+   Loaded sensors: 7
+2025-08-26 15:30:36.750 INFO mqtt_interface
+============================================================
+2025-08-26 15:30:36.750 INFO mqtt_interface
+🔄 MQTT CONNECTION ATTEMPT
+2025-08-26 15:30:36.750 INFO mqtt_interface
+============================================================
+2025-08-26 15:30:36.750 INFO mqtt_interface
+📡 Broker: 192.168.0.156:1887
+2025-08-26 15:30:36.750 INFO mqtt_interface
+👤 Username: bssci
+2025-08-26 15:30:36.751 INFO mqtt_interface
+🔐 Password: *********
+2025-08-26 15:30:36.751 INFO mqtt_interface
+🎯 Config Topic: bssci/ep/+/config
+2025-08-26 15:30:36.751 INFO mqtt_interface
+🏠 Base Topic: bssci
+2025-08-26 15:30:36.751 INFO mqtt_interface
+🔧 Creating MQTT client...
+2025-08-26 15:30:36.759 INFO TLSServer
+📨 Starting MQTT queue watcher task...
+2025-08-26 15:30:36.759 INFO TLSServer
+✓ BSSCI TLS Server is ready and listening for base station connections
+2025-08-26 15:30:36.759 INFO TLSServer
+📨 MQTT queue watcher started - monitoring for configuration updates
+2025-08-26 15:30:36.762 INFO mqtt_interface
+✅ MQTT CLIENT CONNECTION SUCCESSFUL!
+2025-08-26 15:30:36.763 INFO mqtt_interface
+✅ Authentication completed successfully
+2025-08-26 15:30:36.763 INFO mqtt_interface
+🚀 Starting MQTT message handlers...
+2025-08-26 15:30:36.763 INFO mqtt_interface
+🏓 Testing MQTT connection with ping...
+2025-08-26 15:30:36.764 INFO mqtt_interface
+✅ MQTT ping successful - connection is stable
+2025-08-26 15:30:36.764 INFO mqtt_interface
+🎭 Starting concurrent MQTT handlers...
+2025-08-26 15:30:36.764 INFO mqtt_interface
+📊 MQTT STARTUP DIAGNOSTICS:
+2025-08-26 15:30:36.764 INFO mqtt_interface
+   Outgoing queue size: 0
+2025-08-26 15:30:36.764 INFO mqtt_interface
+   Incoming queue size: 0
+2025-08-26 15:30:36.765 INFO mqtt_interface
+✅ Starting handler tasks...
+2025-08-26 15:30:36.765 INFO mqtt_interface
+🔔 MQTT INCOMING HANDLER STARTING
+2025-08-26 15:30:36.765 INFO mqtt_interface
+==================================================
+2025-08-26 15:30:36.765 INFO mqtt_interface
+📌 Subscription Topic: bssci/ep/+/config
+2025-08-26 15:30:36.765 INFO mqtt_interface
+🚀 MQTT OUTGOING HANDLER INITIALIZED
+2025-08-26 15:30:36.765 INFO mqtt_interface
+📤 Ready to publish messages
+2025-08-26 15:30:36.766 INFO mqtt_interface
+⏳ WAITING FOR MQTT MESSAGE in queue (size: 0)
+2025-08-26 15:30:36.804 INFO mqtt_interface
+✅ MQTT SUBSCRIPTION SUCCESSFUL
+2025-08-26 15:30:36.804 INFO mqtt_interface
+👂 MQTT incoming message handler is now ACTIVE and listening...
+2025-08-26 15:30:36.939 INFO TLSServer
+🔗 New BSSCI connection attempt from ('192.168.192.1', 51292)
+2025-08-26 15:30:36.939 INFO TLSServer
+   ✓ SSL handshake successful - Client certificate CN: localhost
+2025-08-26 15:30:36.947 INFO TLSServer
+📨 BSSCI message #1 received from ('192.168.192.1', 51292)
+2025-08-26 15:30:36.947 INFO TLSServer
+   Message type: con
+2025-08-26 15:30:36.948 DEBUG TLSServer
+   Full message: {'bidi': True, 'bsEui': 8121069422560414198, 'command': 'con', 'geoLocation': [0.0, 0.0, 0.0], 'info': '', 'model': 'Mioty Gateway Ava', 'name': 'Mioty Gateway Ava', 'opId': 0, 'snBsOpId': 8, 'snBsUuid': [128, 40, 190, 55, 178, 115, 68, 134, 156, 249, 202, 223, 8, 244, 118, 111], 'snScOpId': -16, 'swVersion': '4.10.2', 'vendor': 'Weptech elektronik GmbH', 'version': '1.0.0'}
+2025-08-26 15:30:36.948 INFO TLSServer
+📨 BSSCI CONNECTION REQUEST received from ('192.168.192.1', 51292)
+2025-08-26 15:30:36.948 INFO TLSServer
+   Operation ID: 0
+2025-08-26 15:30:36.948 INFO TLSServer
+   Base Station UUID: [128, 40, 190, 55, 178, 115, 68, 134, 156, 249, 202, 223, 8, 244, 118, 111]
+2025-08-26 15:30:36.948 INFO TLSServer
+📤 BSSCI CONNECTION RESPONSE sent to base station 70b3d59cd00009f6
+2025-08-26 15:30:36.948 INFO TLSServer
+   Base station 70b3d59cd00009f6 is now in connecting state
+2025-08-26 15:30:36.950 INFO TLSServer
+📨 BSSCI message #2 received from ('192.168.192.1', 51292)
+2025-08-26 15:30:36.950 INFO TLSServer
+   Message type: conCmp
+2025-08-26 15:30:36.951 DEBUG TLSServer
+   Full message: {'command': 'conCmp', 'opId': 0}
+2025-08-26 15:30:36.951 INFO TLSServer
+📨 BSSCI CONNECTION COMPLETE received from ('192.168.192.1', 51292)
+2025-08-26 15:30:36.951 INFO TLSServer
+✅ BSSCI CONNECTION ESTABLISHED with base station 70b3d59cd00009f6
+2025-08-26 15:30:36.951 INFO TLSServer
+   =====================================
+2025-08-26 15:30:36.951 INFO TLSServer
+   Base Station EUI: 70b3d59cd00009f6
+2025-08-26 15:30:36.951 INFO TLSServer
+   Connection established at: 2025-08-26 15:30:36.951
+2025-08-26 15:30:36.951 INFO TLSServer
+   Connection setup duration: 0.01 seconds
+2025-08-26 15:30:36.952 INFO TLSServer
+   Client address: ('192.168.192.1', 51292)
+2025-08-26 15:30:36.952 INFO TLSServer
+   Total connected base stations: 1
+2025-08-26 15:30:36.952 INFO TLSServer
+   All connected stations: ['70b3d59cd00009f6']
+2025-08-26 15:30:36.952 INFO TLSServer
+🔗 INITIATING SENSOR ATTACHMENT PROCESS
+2025-08-26 15:30:36.952 INFO TLSServer
+   Total sensors to attach: 7
+2025-08-26 15:30:36.952 INFO TLSServer
+   Sensors to be attached:
+2025-08-26 15:30:36.952 INFO TLSServer
+      1. EUI: FCA84A030000127B, Short Addr: 127B
+2025-08-26 15:30:36.952 INFO TLSServer
+      2. EUI: FCA84A030000127D, Short Addr: 127D
+2025-08-26 15:30:36.953 INFO TLSServer
+      3. EUI: FCA84A0300001276, Short Addr: 1276
+2025-08-26 15:30:36.953 INFO TLSServer
+      4. EUI: FCA84A030000127C, Short Addr: 127C
+2025-08-26 15:30:36.953 INFO TLSServer
+      5. EUI: 74731D0000000016, Short Addr: 0016
+2025-08-26 15:30:36.953 INFO TLSServer
+      6. EUI: fca84a090000000a, Short Addr: 000A
+2025-08-26 15:30:36.953 INFO TLSServer
+      7. EUI: 74731D000000008F, Short Addr: 008F
+2025-08-26 15:30:36.953 INFO TLSServer
+   =====================================
+2025-08-26 15:30:36.953 INFO TLSServer
+🔗 BATCH SENSOR ATTACHMENT started for base station 70b3d59cd00009f6
+2025-08-26 15:30:36.954 INFO TLSServer
+   Total sensors to process: 7
+2025-08-26 15:30:36.954 INFO TLSServer
+   Processing sensor 1/7: FCA84A030000127B
+2025-08-26 15:30:36.954 INFO TLSServer
+📤 BSSCI ATTACH REQUEST INITIATED
+2025-08-26 15:30:36.954 INFO TLSServer
+   =====================================
+2025-08-26 15:30:36.954 INFO TLSServer
+   Sensor EUI: FCA84A030000127B
+2025-08-26 15:30:36.955 INFO TLSServer
+   Target Base Station: 70b3d59cd00009f6
+2025-08-26 15:30:36.955 INFO TLSServer
+   Operation ID: -1
+2025-08-26 15:30:36.955 INFO TLSServer
+   Timestamp: 2025-08-26 15:30:36.955
+2025-08-26 15:30:36.955 INFO TLSServer
+   ✓ EUI format valid: FCA84A030000127B
+2025-08-26 15:30:36.955 WARNING TLSServer
+   ⚠️  Network key too long, truncating: 0011223344556677889AABBCCDDEEFF00 -> 0011223344556677889AABBCCDDEEFF0
+2025-08-26 15:30:36.955 INFO TLSServer
+   ✓ Short address format valid: 127B
+2025-08-26 15:30:36.956 INFO TLSServer
+   ✓ Bidirectional flag: False
+2025-08-26 15:30:36.956 WARNING TLSServer
+   ⚠️  Network key truncated from 33 to 32 characters
+2025-08-26 15:30:36.956 INFO TLSServer
+   ✅ All validations passed
+2025-08-26 15:30:36.956 INFO TLSServer
+   📋 Final parameters:
+2025-08-26 15:30:36.956 INFO TLSServer
+     EUI: FCA84A030000127B
+2025-08-26 15:30:36.956 INFO TLSServer
+     Network Key: 00112233...CDDEEFF0
+2025-08-26 15:30:36.956 INFO TLSServer
+     Short Address: 127B
+2025-08-26 15:30:36.957 INFO TLSServer
+     Bidirectional: False
+2025-08-26 15:30:36.957 DEBUG TLSServer
+   📝 Built attach message: {'command': 'attPrp', 'opId': -1, 'epEui': 18205882870390592123, 'bidi': False, 'nwkSnKey': [0, 17, 34, 51, 68, 85, 102, 119, 136, 154, 171, 188, 205, 222, 239, 240], 'shAddr': 4731, 'lastPacketCnt': 0, 'dualChan': True, 'repetition': False, 'wideCarrOff': False, 'longBlkDist': False}
+2025-08-26 15:30:36.957 INFO TLSServer
+   📤 Transmitting attach request...
+2025-08-26 15:30:36.957 INFO TLSServer
+     Message size: 164 bytes
+2025-08-26 15:30:36.957 INFO TLSServer
+     Payload size: 152 bytes
+2025-08-26 15:30:36.958 INFO TLSServer
+✅ BSSCI ATTACH REQUEST TRANSMITTED
+2025-08-26 15:30:36.958 INFO TLSServer
+   Operation ID -1 sent to base station 70b3d59cd00009f6
+2025-08-26 15:30:36.958 INFO TLSServer
+   Tracking request for correlation with response
+2025-08-26 15:30:36.958 INFO TLSServer
+   Awaiting response from base station...
+2025-08-26 15:30:36.958 INFO TLSServer
+   =====================================
+2025-08-26 15:30:37.047 INFO TLSServer
+🔗 New BSSCI connection attempt from ('192.168.192.1', 51294)
+2025-08-26 15:30:37.047 INFO TLSServer
+   ✓ SSL handshake successful - Client certificate CN: localhost
+2025-08-26 15:30:37.060 INFO TLSServer
+   Processing sensor 2/7: FCA84A030000127D
+2025-08-26 15:30:37.060 INFO TLSServer
+📤 BSSCI ATTACH REQUEST INITIATED
+2025-08-26 15:30:37.060 INFO TLSServer
+   =====================================
+2025-08-26 15:30:37.060 INFO TLSServer
+   Sensor EUI: FCA84A030000127D
+2025-08-26 15:30:37.060 INFO TLSServer
+   Target Base Station: 70b3d59cd00009f6
+2025-08-26 15:30:37.060 INFO TLSServer
+   Operation ID: -2
+2025-08-26 15:30:37.061 INFO TLSServer
+   Timestamp: 2025-08-26 15:30:37.060
+2025-08-26 15:30:37.061 INFO TLSServer
+   ✓ EUI format valid: FCA84A030000127D
+2025-08-26 15:30:37.061 WARNING TLSServer
+   ⚠️  Network key too long, truncating: 0011223344556677889AABBCCDDEEFF00 -> 0011223344556677889AABBCCDDEEFF0
+2025-08-26 15:30:37.061 INFO TLSServer
+   ✓ Short address format valid: 127D
+2025-08-26 15:30:37.061 INFO TLSServer
+   ✓ Bidirectional flag: False
+2025-08-26 15:30:37.061 WARNING TLSServer
+   ⚠️  Network key truncated from 33 to 32 characters
+2025-08-26 15:30:37.061 INFO TLSServer
+   ✅ All validations passed
+2025-08-26 15:30:37.062 INFO TLSServer
+   📋 Final parameters:
+2025-08-26 15:30:37.062 INFO TLSServer
+     EUI: FCA84A030000127D
+2025-08-26 15:30:37.062 INFO TLSServer
+     Network Key: 00112233...CDDEEFF0
+2025-08-26 15:30:37.062 INFO TLSServer
+     Short Address: 127D
+2025-08-26 15:30:37.062 INFO TLSServer
+     Bidirectional: False
+2025-08-26 15:30:37.062 DEBUG TLSServer
+   📝 Built attach message: {'command': 'attPrp', 'opId': -2, 'epEui': 18205882870390592125, 'bidi': False, 'nwkSnKey': [0, 17, 34, 51, 68, 85, 102, 119, 136, 154, 171, 188, 205, 222, 239, 240], 'shAddr': 4733, 'lastPacketCnt': 0, 'dualChan': True, 'repetition': False, 'wideCarrOff': False, 'longBlkDist': False}
+2025-08-26 15:30:37.063 INFO TLSServer
+   📤 Transmitting attach request...
+2025-08-26 15:30:37.063 INFO TLSServer
+     Message size: 164 bytes
+2025-08-26 15:30:37.063 INFO TLSServer
+     Payload size: 152 bytes
+2025-08-26 15:30:37.063 INFO TLSServer
+✅ BSSCI ATTACH REQUEST TRANSMITTED
+2025-08-26 15:30:37.063 INFO TLSServer
+   Operation ID -2 sent to base station 70b3d59cd00009f6
+2025-08-26 15:30:37.064 INFO TLSServer
+   Tracking request for correlation with response
+2025-08-26 15:30:37.064 INFO TLSServer
+   Awaiting response from base station...
+2025-08-26 15:30:37.064 INFO TLSServer
+   =====================================
+2025-08-26 15:30:37.069 INFO TLSServer
+📨 BSSCI message #1 received from ('192.168.192.1', 51294)
+2025-08-26 15:30:37.069 INFO TLSServer
+   Message type: con
+2025-08-26 15:30:37.069 DEBUG TLSServer
+   Full message: {'bidi': True, 'bsEui': 11269688520444993861, 'command': 'con', 'geoLocation': [0.0, 0.0, 0.0], 'info': '', 'model': 'EDGE-GWC-MY-868', 'name': 'mioty-bsm', 'opId': 0, 'snBsOpId': 8, 'snBsUuid': [224, 215, 39, 169, 36, 54, 77, 237, 184, 250, 70, 172, 134, 173, 45, 99], 'snScOpId': -15, 'swVersion': '4.10.2', 'vendor': 'Miromico', 'version': '1.0.0'}
+2025-08-26 15:30:37.069 INFO TLSServer
+📨 BSSCI CONNECTION REQUEST received from ('192.168.192.1', 51294)
+2025-08-26 15:30:37.070 INFO TLSServer
+   Operation ID: 0
+2025-08-26 15:30:37.070 INFO TLSServer
+   Base Station UUID: [224, 215, 39, 169, 36, 54, 77, 237, 184, 250, 70, 172, 134, 173, 45, 99]
+2025-08-26 15:30:37.070 INFO TLSServer
+📤 BSSCI CONNECTION RESPONSE sent to base station 9c65f9fffe6be145
+2025-08-26 15:30:37.070 INFO TLSServer
+   Base station 9c65f9fffe6be145 is now in connecting state
+2025-08-26 15:30:37.073 INFO TLSServer
+📨 BSSCI message #2 received from ('192.168.192.1', 51294)
+2025-08-26 15:30:37.073 INFO TLSServer
+   Message type: conCmp
+2025-08-26 15:30:37.073 DEBUG TLSServer
+   Full message: {'command': 'conCmp', 'opId': 0}
+2025-08-26 15:30:37.074 INFO TLSServer
+📨 BSSCI CONNECTION COMPLETE received from ('192.168.192.1', 51294)
+2025-08-26 15:30:37.074 INFO TLSServer
+✅ BSSCI CONNECTION ESTABLISHED with base station 9c65f9fffe6be145
+2025-08-26 15:30:37.074 INFO TLSServer
+   =====================================
+2025-08-26 15:30:37.074 INFO TLSServer
+   Base Station EUI: 9c65f9fffe6be145
+2025-08-26 15:30:37.074 INFO TLSServer
+   Connection established at: 2025-08-26 15:30:37.074
+2025-08-26 15:30:37.075 INFO TLSServer
+   Connection setup duration: 0.03 seconds
+2025-08-26 15:30:37.075 INFO TLSServer
+   Client address: ('192.168.192.1', 51294)
+2025-08-26 15:30:37.075 INFO TLSServer
+   Total connected base stations: 2
+2025-08-26 15:30:37.075 INFO TLSServer
+   All connected stations: ['70b3d59cd00009f6', '9c65f9fffe6be145']
+2025-08-26 15:30:37.075 INFO TLSServer
+🔗 INITIATING SENSOR ATTACHMENT PROCESS
+2025-08-26 15:30:37.076 INFO TLSServer
+   Total sensors to attach: 7
+2025-08-26 15:30:37.076 INFO TLSServer
+   Sensors to be attached:
+2025-08-26 15:30:37.076 INFO TLSServer
+      1. EUI: FCA84A030000127B, Short Addr: 127B
+2025-08-26 15:30:37.076 INFO TLSServer
+      2. EUI: FCA84A030000127D, Short Addr: 127D
+2025-08-26 15:30:37.077 INFO TLSServer
+      3. EUI: FCA84A0300001276, Short Addr: 1276
+2025-08-26 15:30:37.077 INFO TLSServer
+      4. EUI: FCA84A030000127C, Short Addr: 127C
+2025-08-26 15:30:37.077 INFO TLSServer
+      5. EUI: 74731D0000000016, Short Addr: 0016
+2025-08-26 15:30:37.077 INFO TLSServer
+      6. EUI: fca84a090000000a, Short Addr: 000A
+2025-08-26 15:30:37.077 INFO TLSServer
+      7. EUI: 74731D000000008F, Short Addr: 008F
+2025-08-26 15:30:37.077 INFO TLSServer
+   =====================================
+2025-08-26 15:30:37.077 INFO TLSServer
+🔗 BATCH SENSOR ATTACHMENT started for base station 9c65f9fffe6be145
+2025-08-26 15:30:37.077 INFO TLSServer
+   Total sensors to process: 7
+2025-08-26 15:30:37.078 INFO TLSServer
+   Processing sensor 1/7: FCA84A030000127B
+2025-08-26 15:30:37.078 INFO TLSServer
+📤 BSSCI ATTACH REQUEST INITIATED
+2025-08-26 15:30:37.078 INFO TLSServer
+   =====================================
+2025-08-26 15:30:37.078 INFO TLSServer
+   Sensor EUI: FCA84A030000127B
+2025-08-26 15:30:37.078 INFO TLSServer
+   Target Base Station: 9c65f9fffe6be145
+2025-08-26 15:30:37.078 INFO TLSServer
+   Operation ID: -3
+2025-08-26 15:30:37.078 INFO TLSServer
+   Timestamp: 2025-08-26 15:30:37.078
+2025-08-26 15:30:37.079 INFO TLSServer
+   ✓ EUI format valid: FCA84A030000127B
+2025-08-26 15:30:37.079 WARNING TLSServer
+   ⚠️  Network key too long, truncating: 0011223344556677889AABBCCDDEEFF00 -> 0011223344556677889AABBCCDDEEFF0
+2025-08-26 15:30:37.079 INFO TLSServer
+   ✓ Short address format valid: 127B
+2025-08-26 15:30:37.079 INFO TLSServer
+   ✓ Bidirectional flag: False
+2025-08-26 15:30:37.079 WARNING TLSServer
+   ⚠️  Network key truncated from 33 to 32 characters
+2025-08-26 15:30:37.079 INFO TLSServer
+   ✅ All validations passed
+2025-08-26 15:30:37.079 INFO TLSServer
+   📋 Final parameters:
+2025-08-26 15:30:37.079 INFO TLSServer
+     EUI: FCA84A030000127B
+2025-08-26 15:30:37.080 INFO TLSServer
+     Network Key: 00112233...CDDEEFF0
+2025-08-26 15:30:37.080 INFO TLSServer
+     Short Address: 127B
+2025-08-26 15:30:37.080 INFO TLSServer
+     Bidirectional: False
+2025-08-26 15:30:37.080 DEBUG TLSServer
+   📝 Built attach message: {'command': 'attPrp', 'opId': -3, 'epEui': 18205882870390592123, 'bidi': False, 'nwkSnKey': [0, 17, 34, 51, 68, 85, 102, 119, 136, 154, 171, 188, 205, 222, 239, 240], 'shAddr': 4731, 'lastPacketCnt': 0, 'dualChan': True, 'repetition': False, 'wideCarrOff': False, 'longBlkDist': False}
+2025-08-26 15:30:37.080 INFO TLSServer
+   📤 Transmitting attach request...
+2025-08-26 15:30:37.080 INFO TLSServer
+     Message size: 164 bytes
+2025-08-26 15:30:37.080 INFO TLSServer
+     Payload size: 152 bytes
+2025-08-26 15:30:37.081 INFO TLSServer
+✅ BSSCI ATTACH REQUEST TRANSMITTED
+2025-08-26 15:30:37.081 INFO TLSServer
+   Operation ID -3 sent to base station 9c65f9fffe6be145
+2025-08-26 15:30:37.081 INFO TLSServer
+   Tracking request for correlation with response
+2025-08-26 15:30:37.081 INFO TLSServer
+   Awaiting response from base station...
+2025-08-26 15:30:37.081 INFO TLSServer
+   =====================================
+2025-08-26 15:30:37.165 INFO TLSServer
+   Processing sensor 3/7: FCA84A0300001276
+2025-08-26 15:30:37.166 INFO TLSServer
+📤 BSSCI ATTACH REQUEST INITIATED
+2025-08-26 15:30:37.166 INFO TLSServer
+   =====================================
+2025-08-26 15:30:37.166 INFO TLSServer
+   Sensor EUI: FCA84A0300001276
+2025-08-26 15:30:37.166 INFO TLSServer
+   Target Base Station: 70b3d59cd00009f6
+2025-08-26 15:30:37.166 INFO TLSServer
+   Operation ID: -4
+2025-08-26 15:30:37.166 INFO TLSServer
+   Timestamp: 2025-08-26 15:30:37.166
+2025-08-26 15:30:37.166 INFO TLSServer
+   ✓ EUI format valid: FCA84A0300001276
+2025-08-26 15:30:37.166 WARNING TLSServer
+   ⚠️  Network key too long, truncating: 0011223344556677889AABBCCDDEEFF00 -> 0011223344556677889AABBCCDDEEFF0
+2025-08-26 15:30:37.167 INFO TLSServer
+   ✓ Short address format valid: 1276
+2025-08-26 15:30:37.167 INFO TLSServer
+   ✓ Bidirectional flag: False
+2025-08-26 15:30:37.167 WARNING TLSServer
+   ⚠️  Network key truncated from 33 to 32 characters
+2025-08-26 15:30:37.167 INFO TLSServer
+   ✅ All validations passed
+2025-08-26 15:30:37.167 INFO TLSServer
+   📋 Final parameters:
+2025-08-26 15:30:37.167 INFO TLSServer
+     EUI: FCA84A0300001276
+2025-08-26 15:30:37.167 INFO TLSServer
+     Network Key: 00112233...CDDEEFF0
+2025-08-26 15:30:37.167 INFO TLSServer
+     Short Address: 1276
+2025-08-26 15:30:37.168 INFO TLSServer
+     Bidirectional: False
+2025-08-26 15:30:37.168 DEBUG TLSServer
+   📝 Built attach message: {'command': 'attPrp', 'opId': -4, 'epEui': 18205882870390592118, 'bidi': False, 'nwkSnKey': [0, 17, 34, 51, 68, 85, 102, 119, 136, 154, 171, 188, 205, 222, 239, 240], 'shAddr': 4726, 'lastPacketCnt': 0, 'dualChan': True, 'repetition': False, 'wideCarrOff': False, 'longBlkDist': False}
+2025-08-26 15:30:37.168 INFO TLSServer
+   📤 Transmitting attach request...
+2025-08-26 15:30:37.168 INFO TLSServer
+     Message size: 164 bytes
+2025-08-26 15:30:37.168 INFO TLSServer
+     Payload size: 152 bytes
+2025-08-26 15:30:37.168 INFO TLSServer
+✅ BSSCI ATTACH REQUEST TRANSMITTED
+2025-08-26 15:30:37.169 INFO TLSServer
+   Operation ID -4 sent to base station 70b3d59cd00009f6
+2025-08-26 15:30:37.169 INFO TLSServer
+   Tracking request for correlation with response
+2025-08-26 15:30:37.169 INFO TLSServer
+   Awaiting response from base station...
+2025-08-26 15:30:37.169 INFO TLSServer
+   =====================================
+2025-08-26 15:30:37.182 INFO TLSServer
+   Processing sensor 2/7: FCA84A030000127D
+2025-08-26 15:30:37.183 INFO TLSServer
+📤 BSSCI ATTACH REQUEST INITIATED
+2025-08-26 15:30:37.183 INFO TLSServer
+   =====================================
+2025-08-26 15:30:37.183 INFO TLSServer
+   Sensor EUI: FCA84A030000127D
+2025-08-26 15:30:37.183 INFO TLSServer
+   Target Base Station: 9c65f9fffe6be145
+2025-08-26 15:30:37.183 INFO TLSServer
+   Operation ID: -5
+2025-08-26 15:30:37.184 INFO TLSServer
+   Timestamp: 2025-08-26 15:30:37.184
+2025-08-26 15:30:37.184 INFO TLSServer
+   ✓ EUI format valid: FCA84A030000127D
+2025-08-26 15:30:37.184 WARNING TLSServer
+   ⚠️  Network key too long, truncating: 0011223344556677889AABBCCDDEEFF00 -> 0011223344556677889AABBCCDDEEFF0
+2025-08-26 15:30:37.184 INFO TLSServer
+   ✓ Short address format valid: 127D
+2025-08-26 15:30:37.184 INFO TLSServer
+   ✓ Bidirectional flag: False
+2025-08-26 15:30:37.184 WARNING TLSServer
+   ⚠️  Network key truncated from 33 to 32 characters
+2025-08-26 15:30:37.184 INFO TLSServer
+   ✅ All validations passed
+2025-08-26 15:30:37.185 INFO TLSServer
+   📋 Final parameters:
+2025-08-26 15:30:37.185 INFO TLSServer
+     EUI: FCA84A030000127D
+2025-08-26 15:30:37.185 INFO TLSServer
+     Network Key: 00112233...CDDEEFF0
+2025-08-26 15:30:37.185 INFO TLSServer
+     Short Address: 127D
+2025-08-26 15:30:37.185 INFO TLSServer
+     Bidirectional: False
+2025-08-26 15:30:37.185 DEBUG TLSServer
+   📝 Built attach message: {'command': 'attPrp', 'opId': -5, 'epEui': 18205882870390592125, 'bidi': False, 'nwkSnKey': [0, 17, 34, 51, 68, 85, 102, 119, 136, 154, 171, 188, 205, 222, 239, 240], 'shAddr': 4733, 'lastPacketCnt': 0, 'dualChan': True, 'repetition': False, 'wideCarrOff': False, 'longBlkDist': False}
+2025-08-26 15:30:37.186 INFO TLSServer
+   📤 Transmitting attach request...
+2025-08-26 15:30:37.186 INFO TLSServer
+     Message size: 164 bytes
+2025-08-26 15:30:37.186 INFO TLSServer
+     Payload size: 152 bytes
+2025-08-26 15:30:37.186 INFO TLSServer
+✅ BSSCI ATTACH REQUEST TRANSMITTED
+2025-08-26 15:30:37.187 INFO TLSServer
+   Operation ID -5 sent to base station 9c65f9fffe6be145
+2025-08-26 15:30:37.187 INFO TLSServer
+   Tracking request for correlation with response
+2025-08-26 15:30:37.187 INFO TLSServer
+   Awaiting response from base station...
+2025-08-26 15:30:37.188 INFO TLSServer
+   =====================================
