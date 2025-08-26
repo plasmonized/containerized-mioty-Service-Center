@@ -17,9 +17,9 @@ fi
 
 # Check if running with web UI or just the service
 if [ "${RUN_MODE}" = "service-only" ]; then
-    echo "Starting BSSCI service only..."
-    exec python -u main.py
+    echo "Starting synchronous BSSCI service..."
+    exec python -u sync_main.py
 else
-    echo "Starting BSSCI service with Web UI..."
-    exec python -u web_main.py
+    echo "Starting synchronous BSSCI service..."
+    exec python -u sync_main.py
 fi

@@ -7,7 +7,6 @@ services:
     container_name: bssci-service-center-prod
     ports:
       - "16018:16018"  # Direct TLS port mapping for production
-      - "80:5000"      # Web UI on standard HTTP port
     volumes:
       - ./certs:/app/certs:ro
       - ./endpoints.json:/app/endpoints.json
@@ -25,7 +24,7 @@ services:
         max-size: "50m"
         max-file: "5"
     healthcheck:
-      test: ["CMD", "python", "-c", "import socket; s1 = socket.create_connection(('localhost', 16018), timeout=5); s2 = socket.create_connection(('localhost', 5000), timeout=5); s1.close(); s2.close()"]
+      test: ["CMD", "python", "-c", "import socket; s = socket.create_connection(('localhost', 16018), timeout=5); s.close()"]
       interval: 30s
       timeout: 10s
       retries: 3
