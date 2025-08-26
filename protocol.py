@@ -2,6 +2,8 @@ from typing import Any
 
 import msgpack
 
+IDENTIFIER = bytes("MIOTYB01", "utf-8")
+
 
 def decode_messages(data: bytes) -> list[dict[str, Any]]:
     messages = []
