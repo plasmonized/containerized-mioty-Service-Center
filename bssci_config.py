@@ -1,5 +1,5 @@
 LISTEN_HOST = "0.0.0.0"
-LISTEN_PORT = 16019  # Internal container port
+LISTEN_PORT = 16018  # Internal container port
 
 CERT_FILE = "certs/service_center_cert.pem"
 KEY_FILE = "certs/service_center_key.pem"
