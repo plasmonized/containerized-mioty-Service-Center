@@ -27,7 +27,7 @@ class MQTTClient:
         self.mqtt_in_queue = mqtt_in_queue
 
     async def start(self) -> None:
-        """Start MQTT client with retry logic"""
+        """Start MQTT client with simple connection pattern"""
         retry_delay = 5.0
         max_delay = 60.0
 
@@ -42,20 +42,17 @@ class MQTTClient:
                 logger.info(f"🎯 Config Topic: {self.config_topic}")
                 logger.info(f"🏠 Base Topic: {self.base_topic}")
 
-                # Simple client creation like the working version, but with auth
+                # Use the working simple pattern with authentication
                 logger.info("🔧 Creating MQTT client...")
                 
                 async with Client(
                     hostname=self.broker_host, 
                     port=MQTT_PORT, 
                     username=MQTT_USERNAME, 
-                    password=MQTT_PASSWORD,
-                    keepalive=60,
-                    timeout=10
+                    password=MQTT_PASSWORD
                 ) as client:
                     logger.info("✅ MQTT CLIENT CONNECTION SUCCESSFUL!")
                     logger.info("✅ Authentication completed successfully")
-                    logger.info("🚀 Starting MQTT message handlers...")
 
                     # Reset retry delay on successful connection
                     retry_delay = 5.0
@@ -67,12 +64,8 @@ class MQTTClient:
                     await client.publish(test_topic, test_payload)
                     logger.info("✅ MQTT ping successful - connection is stable")
 
-                    # Run both handlers like the working version
+                    # Run both handlers using the working pattern
                     logger.info("🎭 Starting concurrent MQTT handlers...")
-                    logger.info("📊 MQTT STARTUP DIAGNOSTICS:")
-                    logger.info(f"   Outgoing queue size: {self.mqtt_out_queue.qsize()}")
-                    logger.info(f"   Incoming queue size: {self.mqtt_in_queue.qsize()}")
-                    logger.info("✅ Starting handler tasks...")
                     
                     await asyncio.gather(
                         self._handle_incoming(client), 
@@ -147,9 +140,9 @@ class MQTTClient:
                     logger.info(f"   Topic: {topic}")
                     logger.info(f"   Payload Size: {len(msg['payload'])} bytes")
 
-                    # Simple publish like the working version
+                    # Use the working simple publish pattern
                     print(f"{topic}:\n\t{msg['payload']}")  # Keep the original print
-                    await client.publish(topic, msg["payload"], qos=0)
+                    await client.publish(topic, msg["payload"])
 
                     logger.info("✅ MQTT MESSAGE PUBLISHED SUCCESSFULLY!")
 
