@@ -273,23 +273,77 @@ def get_logs():
 def get_bssci_service_status():
     """Get the status of the BSSCI service"""
     try:
-        from web_main import get_tls_server
+        from web_main import get_tls_server, get_mqtt_client
+        
+        # TLS Server Status
         tls_server = get_tls_server()
+        tls_status = {
+            'active': tls_server is not None,
+            'listening_port': bssci_config.LISTEN_PORT if tls_server else None,
+            'connected_base_stations': 0,
+            'total_sensors': 0,
+            'registered_sensors': 0,
+            'pending_requests': 0
+        }
+        
         if tls_server:
             bs_status = tls_server.get_base_station_status()
             sensor_status = tls_server.get_sensor_registration_status()
             
-            return {
-                'running': True,
-                'base_stations': bs_status,
+            tls_status.update({
+                'connected_base_stations': bs_status['total_connected'],
                 'total_sensors': len(sensor_status),
                 'registered_sensors': len([s for s in sensor_status.values() if s['registered']]),
                 'pending_requests': len(tls_server.pending_attach_requests)
-            }
-        else:
-            return {'running': False, 'error': 'TLS server not available'}
+            })
+        
+        # MQTT Status
+        mqtt_client = get_mqtt_client()
+        mqtt_status = {
+            'active': mqtt_client is not None,
+            'broker_host': bssci_config.MQTT_BROKER,
+            'broker_port': bssci_config.MQTT_PORT,
+            'username': bssci_config.MQTT_USERNAME,
+            'base_topic': bssci_config.BASE_TOPIC,
+            'connected': False,
+            'out_queue_size': 0,
+            'in_queue_size': 0
+        }
+        
+        if mqtt_client:
+            mqtt_status.update({
+                'connected': True,  # Assume connected if client exists
+                'out_queue_size': mqtt_client.mqtt_out_queue.qsize() if hasattr(mqtt_client, 'mqtt_out_queue') else 0,
+                'in_queue_size': mqtt_client.mqtt_in_queue.qsize() if hasattr(mqtt_client, 'mqtt_in_queue') else 0
+            })
+        
+        # HTTP Forwarding Status
+        http_status = {
+            'enabled': getattr(bssci_config, 'HTTP_FORWARD_ENABLED', False),
+            'target_url': getattr(bssci_config, 'HTTP_FORWARD_URL', 'Not configured')
+        }
+        
+        return {
+            'running': tls_status['active'] and mqtt_status['active'],
+            'tls_server': tls_status,
+            'mqtt_broker': mqtt_status,
+            'http_forwarding': http_status,
+            'uptime_seconds': int(time.time() - (getattr(get_bssci_service_status, 'start_time', time.time()))),
+            'last_updated': time.time()
+        }
+        
     except Exception as e:
-        return {'running': False, 'error': str(e)}
+        return {
+            'running': False,
+            'error': str(e),
+            'tls_server': {'active': False},
+            'mqtt_broker': {'active': False},
+            'http_forwarding': {'enabled': False}
+        }
+
+# Initialize start time for uptime calculation
+if not hasattr(get_bssci_service_status, 'start_time'):
+    get_bssci_service_status.start_time = time.time()
 
 @app.route('/api/logs/clear', methods=['POST'])
 def clear_logs():
@@ -493,11 +547,26 @@ def get_base_stations():
     """Get status of connected base stations"""
     try:
         # Import here to avoid circular import
-        from web_main import get_tls_server
+        from web_main import get_tls_server, get_mqtt_client
         tls_server = get_tls_server()
         
         if tls_server:
             status = tls_server.get_base_station_status()
+            
+            # Add additional status info
+            status['last_updated'] = time.time()
+            status['tls_server_running'] = True
+            
+            # Add MQTT status if available
+            try:
+                mqtt_client = get_mqtt_client()
+                if mqtt_client:
+                    status['mqtt_status'] = 'connected'
+                else:
+                    status['mqtt_status'] = 'disconnected'
+            except:
+                status['mqtt_status'] = 'unknown'
+            
             return jsonify(status)
         else:
             return jsonify({
@@ -505,6 +574,8 @@ def get_base_stations():
                 "connecting": [],
                 "total_connected": 0,
                 "total_connecting": 0,
+                "tls_server_running": False,
+                "mqtt_status": "unknown",
                 "error": "TLS server not initialized"
             })
     except Exception as e:
@@ -513,6 +584,8 @@ def get_base_stations():
             "connecting": [],
             "total_connected": 0,
             "total_connecting": 0,
+            "tls_server_running": False,
+            "mqtt_status": "unknown",
             "error": str(e)
         })
 
