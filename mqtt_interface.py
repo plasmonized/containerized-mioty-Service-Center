@@ -26,6 +26,12 @@ class MQTTClient:
         self.mqtt_out_queue = mqtt_out_queue
         self.mqtt_in_queue = mqtt_in_queue
 
+    def log_queue_info(self) -> None:
+        """Log queue information for debugging"""
+        logger.info(f"🔍 MQTT Client Queue Information:")
+        logger.info(f"   mqtt_out_queue ID: {id(self.mqtt_out_queue)}, size: {self.mqtt_out_queue.qsize()}")
+        logger.info(f"   mqtt_in_queue ID: {id(self.mqtt_in_queue)}, size: {self.mqtt_in_queue.qsize()}")
+
     async def start(self) -> None:
         """Start MQTT client with simple connection pattern"""
         retry_delay = 5.0

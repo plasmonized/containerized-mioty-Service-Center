@@ -21,11 +21,38 @@ async def main():
     logger.info("Initializing BSSCI Service Center...")
     logger.info(f"Config: TLS Port {LISTEN_PORT}, MQTT Broker {MQTT_BROKER}:{MQTT_PORT}")
 
+    # Setup queue logging to monitor queue usage
+    from queue_logger import setup_queue_logging, log_all_queue_stats
+    queue_loggers = setup_queue_logging({
+        'mqtt_out_queue': mqtt_out_queue,
+        'mqtt_in_queue': mqtt_in_queue
+    })
+
+    logger.info("🔍 Queue Instance Analysis:")
+    logger.info(f"   mqtt_out_queue ID: {id(mqtt_out_queue)}")
+    logger.info(f"   mqtt_in_queue ID: {id(mqtt_in_queue)}")
+
+    # Fixed parameter order - both should use the same queue instances consistently
     tls_server = TLSServer(
-        bssci_config.SENSOR_CONFIG_FILE, mqtt_in_queue, mqtt_out_queue
+        bssci_config.SENSOR_CONFIG_FILE, mqtt_out_queue, mqtt_in_queue
     )
     tls_server_instance = tls_server  # Store global reference
     mqtt_client = MQTTClient(mqtt_out_queue, mqtt_in_queue)
+
+    logger.info("🔍 Queue Assignment Verification:")
+    logger.info(f"   TLS Server mqtt_out_queue ID: {id(tls_server.mqtt_out_queue)}")
+    logger.info(f"   TLS Server mqtt_in_queue ID: {id(tls_server.mqtt_in_queue)}")
+    logger.info(f"   MQTT Client mqtt_out_queue ID: {id(mqtt_client.mqtt_out_queue)}")
+    logger.info(f"   MQTT Client mqtt_in_queue ID: {id(mqtt_client.mqtt_in_queue)}")
+
+    # Periodic queue statistics
+    async def queue_stats_reporter():
+        while True:
+            await asyncio.sleep(60)  # Log stats every minute
+            log_all_queue_stats(queue_loggers)
+
+    # Start the stats reporter task
+    asyncio.create_task(queue_stats_reporter())
 
     logger.info("Starting BSSCI Service Center...")
     logger.info("✓ Both TLS Server and MQTT Interface are starting...")

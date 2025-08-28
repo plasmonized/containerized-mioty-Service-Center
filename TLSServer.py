@@ -37,6 +37,12 @@ class TLSServer:
         except Exception:
             self.sensor_config = []
 
+    def log_queue_info(self) -> None:
+        """Log queue information for debugging"""
+        logger.info(f"🔍 TLS Server Queue Information:")
+        logger.info(f"   mqtt_out_queue ID: {id(self.mqtt_out_queue)}, size: {self.mqtt_out_queue.qsize()}")
+        logger.info(f"   mqtt_in_queue ID: {id(self.mqtt_in_queue)}, size: {self.mqtt_in_queue.qsize()}")
+
     async def start_server(self) -> None:
         logger.info("🔐 Setting up SSL/TLS context for BSSCI server...")
         logger.info(f"   Certificate file: {bssci_config.CERT_FILE}")
