@@ -210,7 +210,8 @@ def config():
         'MQTT_USERNAME': bssci_config.MQTT_USERNAME,
         'MQTT_PASSWORD': bssci_config.MQTT_PASSWORD,
         'BASE_TOPIC': bssci_config.BASE_TOPIC,
-        'STATUS_INTERVAL': bssci_config.STATUS_INTERVAL
+        'STATUS_INTERVAL': bssci_config.STATUS_INTERVAL,
+        'DEDUPLICATION_DELAY': bssci_config.DEDUPLICATION_DELAY
     }
     return render_template('config.html', config=config_data)
 
@@ -232,6 +233,7 @@ BASE_TOPIC = "{data['BASE_TOPIC']}"
 
 SENSOR_CONFIG_FILE = "endpoints.json"
 STATUS_INTERVAL = {data['STATUS_INTERVAL']}  # seconds
+DEDUPLICATION_DELAY = {data['DEDUPLICATION_DELAY']}  # seconds to wait for duplicate messages before forwarding
 '''
     
     try:

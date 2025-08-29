@@ -25,6 +25,11 @@
                         <label for="STATUS_INTERVAL" class="form-label">Status Interval (seconds)</label>
                         <input type="number" class="form-control" id="STATUS_INTERVAL" value="{{ config.STATUS_INTERVAL }}">
                     </div>
+                    <div class="mb-3">
+                        <label for="DEDUPLICATION_DELAY" class="form-label">Message Deduplication Delay (seconds)</label>
+                        <input type="number" step="0.1" min="0.5" max="10" class="form-control" id="DEDUPLICATION_DELAY" value="{{ config.DEDUPLICATION_DELAY }}">
+                        <div class="form-text">Time to wait for duplicate messages before forwarding the best one (0.5-10 seconds)</div>
+                    </div>
                 </div>
 
                 <div class="col-md-6">
@@ -77,6 +82,7 @@ function saveConfig() {
         MQTT_PASSWORD: document.getElementById('MQTT_PASSWORD').value,
         BASE_TOPIC: document.getElementById('BASE_TOPIC').value,
         STATUS_INTERVAL: parseInt(document.getElementById('STATUS_INTERVAL').value),
+        DEDUPLICATION_DELAY: parseFloat(document.getElementById('DEDUPLICATION_DELAY').value),
     };
 
     fetch('/api/config', {
