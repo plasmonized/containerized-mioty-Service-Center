@@ -34,8 +34,8 @@ RUN useradd -m -u 1000 bssci
 # Set ownership of all files to bssci user
 RUN chown -R bssci:bssci /app
 
-# Ensure configuration files are writable
-RUN chmod 664 endpoints.json bssci_config.py
+# Ensure configuration files are writable and properly owned
+RUN chown bssci:bssci endpoints.json bssci_config.py && chmod 664 endpoints.json bssci_config.py
 
 # Switch to non-root user
 USER bssci
