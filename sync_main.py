@@ -16,7 +16,7 @@ class TimezoneFormatter(logging.Formatter):
     def __init__(self, fmt, datefmt=None):
         super().__init__(fmt, datefmt)
         self.timezone_offset = timedelta(hours=2)  # +2 hours from UTC
-    
+
     def formatTime(self, record, datefmt=None):
         utc_time = datetime.fromtimestamp(record.created, tz=timezone.utc)
         local_time = utc_time + self.timezone_offset

@@ -120,19 +120,19 @@ function refreshServiceStatus() {
                         </div>
                         <div class="col-md-3">
                             <div class="text-center">
-                                <strong>${data.base_stations.total_connected}</strong>
+                                <strong>${data.base_stations ? data.base_stations.total_connected : 0}</strong>
                                 <div class="small text-muted">Base Stations</div>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="text-center">
-                                <strong>${data.registered_sensors}/${data.total_sensors}</strong>
+                                <strong>${data.tls_server ? data.tls_server.registered_sensors : 0}/${data.tls_server ? data.tls_server.total_sensors : 0}</strong>
                                 <div class="small text-muted">Registered Sensors</div>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="text-center">
-                                <strong>${data.pending_requests}</strong>
+                                <strong>${data.tls_server ? data.tls_server.pending_requests : 0}</strong>
                                 <div class="small text-muted">Pending Requests</div>
                             </div>
                         </div>

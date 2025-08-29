@@ -6,6 +6,7 @@ import time
 from datetime import datetime, timezone, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from typing import List, Dict, Any
+from collections import deque
 import bssci_config
 
 app = Flask(__name__)
@@ -16,7 +17,6 @@ log_entries: List[Dict[str, Any]] = []
 max_log_entries = 1000
 
 # Custom log handler to capture all logs
-# Consolidated WebUILogHandler - single definition to avoid duplicates
 
 class WebUILogHandler(logging.Handler):
     def __init__(self):
@@ -738,7 +738,96 @@ def clear_logs():
 
 @app.route('/api/bssci/status')
 def bssci_status():
-    return jsonify(get_bssci_service_status())
+    """Get comprehensive BSSCI service status including base stations and sensors"""
+    try:
+        status = get_bssci_service_status()
+        
+        # Add base station details to the response
+        try:
+            # Try to get from async service first
+            try:
+                from web_main import get_tls_server
+                tls_server = get_tls_server()
+                if tls_server and hasattr(tls_server, 'get_base_station_status'):
+                    bs_status = tls_server.get_base_station_status()
+                    status['base_stations'] = {
+                        'total_connected': bs_status.get('total_connected', 0),
+                        'total_connecting': bs_status.get('total_connecting', 0),
+                        'connected': bs_status.get('connected', []),
+                        'connecting': bs_status.get('connecting', [])
+                    }
+                elif tls_server and hasattr(tls_server, 'connected_base_stations'):
+                    # Fallback for older async versions
+                    connected_stations = list(set(tls_server.connected_base_stations.values()))
+                    connecting_stations = list(set(tls_server.connecting_base_stations.values())) if hasattr(tls_server, 'connecting_base_stations') else []
+                    status['base_stations'] = {
+                        'total_connected': len(connected_stations),
+                        'total_connecting': len(connecting_stations),
+                        'connected': [{'eui': eui, 'status': 'connected'} for eui in connected_stations],
+                        'connecting': [{'eui': eui, 'status': 'connecting'} for eui in connecting_stations]
+                    }
+            except Exception as e:
+                logging.debug(f"Could not get base station status from async service: {e}")
+                pass
+
+            # Try sync service if async not available
+            if 'base_stations' not in status:
+                try:
+                    import sync_main
+                    if hasattr(sync_main, 'tls_server_instance') and sync_main.tls_server_instance:
+                        if hasattr(sync_main.tls_server_instance, 'get_base_station_status'):
+                            bs_status = sync_main.tls_server_instance.get_base_station_status()
+                            status['base_stations'] = {
+                                'total_connected': bs_status.get('total_connected', 0),
+                                'total_connecting': bs_status.get('total_connecting', 0),
+                                'connected': bs_status.get('connected', []),
+                                'connecting': bs_status.get('connecting', [])
+                            }
+                        elif hasattr(sync_main.tls_server_instance, 'connected_base_stations'):
+                            connected_stations = list(set(sync_main.tls_server_instance.connected_base_stations.values()))
+                            connecting_stations = list(set(sync_main.tls_server_instance.connecting_base_stations.values())) if hasattr(sync_main.tls_server_instance, 'connecting_base_stations') else []
+                            status['base_stations'] = {
+                                'total_connected': len(connected_stations),
+                                'total_connecting': len(connecting_stations),
+                                'connected': [{'eui': eui, 'status': 'connected'} for eui in connected_stations],
+                                'connecting': [{'eui': eui, 'status': 'connecting'} for eui in connecting_stations]
+                            }
+                except Exception as e:
+                    logging.debug(f"Could not get base station status from sync service: {e}")
+                    pass
+
+            # Default base station status if none found
+            if 'base_stations' not in status:
+                status['base_stations'] = {
+                    'total_connected': 0,
+                    'total_connecting': 0,
+                    'connected': [],
+                    'connecting': []
+                }
+
+        except Exception as e:
+            logging.error(f"Error getting base station status: {e}")
+            status['base_stations'] = {
+                'total_connected': 0,
+                'total_connecting': 0,
+                'connected': [],
+                'connecting': []
+            }
+
+        return jsonify(status)
+        
+    except Exception as e:
+        logging.error(f"Error in bssci_status: {e}")
+        return jsonify({
+            'running': False,
+            'error': str(e),
+            'base_stations': {
+                'total_connected': 0,
+                'total_connecting': 0,
+                'connected': [],
+                'connecting': []
+            }
+        }), 500
 
 
 
@@ -753,15 +842,20 @@ def get_base_stations():
             if tls_server and hasattr(tls_server, 'get_base_station_status'):
                 status = tls_server.get_base_station_status()
                 return jsonify(status)
-            elif tls_server and hasattr(tls_server, 'connected_base_stations'): # Fallback for older async versions
-                 # Get unique base stations only
+            elif tls_server and hasattr(tls_server, 'connected_base_stations'):
+                # Get unique base stations only
                 connected_stations = list(set(tls_server.connected_base_stations.values()))
-                connecting_stations = list(set(tls_server.connecting_base_stations.values()))
+                connecting_stations = list(set(tls_server.connecting_base_stations.values())) if hasattr(tls_server, 'connecting_base_stations') else []
+                
+                # Format for web UI
+                connected_list = [{'eui': eui, 'status': 'connected'} for eui in connected_stations]
+                connecting_list = [{'eui': eui, 'status': 'connecting'} for eui in connecting_stations]
+                
                 return jsonify({
-                    'connected': connected_stations,
-                    'connecting': connecting_stations,
-                    'connected_count': len(connected_stations),
-                    'connecting_count': len(connecting_stations)
+                    'connected': connected_list,
+                    'connecting': connecting_list,
+                    'total_connected': len(connected_stations),
+                    'total_connecting': len(connecting_stations)
                 })
         except Exception as e:
             logging.debug(f"Could not get base station status from async service: {e}")
@@ -774,13 +868,19 @@ def get_base_stations():
                 if hasattr(sync_main.tls_server_instance, 'get_base_station_status'):
                     status = sync_main.tls_server_instance.get_base_station_status()
                     return jsonify(status)
-                elif hasattr(sync_main.tls_server_instance, 'connected_base_stations'): # Fallback for older sync versions
+                elif hasattr(sync_main.tls_server_instance, 'connected_base_stations'):
                     connected_stations = list(set(sync_main.tls_server_instance.connected_base_stations.values()))
+                    connecting_stations = list(set(sync_main.tls_server_instance.connecting_base_stations.values())) if hasattr(sync_main.tls_server_instance, 'connecting_base_stations') else []
+                    
+                    # Format for web UI
+                    connected_list = [{'eui': eui, 'status': 'connected'} for eui in connected_stations]
+                    connecting_list = [{'eui': eui, 'status': 'connecting'} for eui in connecting_stations]
+                    
                     return jsonify({
-                        'connected': connected_stations,
-                        'connecting': [], # Sync version might not track connecting separately
-                        'connected_count': len(connected_stations),
-                        'connecting_count': 0
+                        'connected': connected_list,
+                        'connecting': connecting_list,
+                        'total_connected': len(connected_stations),
+                        'total_connecting': len(connecting_stations)
                     })
         except Exception as e:
             logging.debug(f"Could not get base station status from sync service: {e}")
@@ -791,8 +891,8 @@ def get_base_stations():
         return jsonify({
             'connected': [],
             'connecting': [],
-            'connected_count': 0,
-            'connecting_count': 0,
+            'total_connected': 0,
+            'total_connecting': 0,
             'error': 'No base station status information available'
         })
 
@@ -801,8 +901,8 @@ def get_base_stations():
         return jsonify({
             'connected': [],
             'connecting': [],
-            'connected_count': 0,
-            'connecting_count': 0,
+            'total_connected': 0,
+            'total_connecting': 0,
             'error': str(e)
         }), 500
 

@@ -97,30 +97,46 @@ function updateServiceStatus() {
         }
 
 function loadBaseStationStatus() {
-    // Fetch from '/api/bssci/status' as per the intention of the changes snippet.
-    // The original code fetched from '/api/base_stations'.
     fetch('/api/bssci/status')
         .then(response => response.json())
         .then(data => {
-            // Update connected count using the data property suggested by the changes snippet.
-            // The original code used 'data.total_connected'.
-            const connectedCount = data.tls_server ? data.tls_server.connected_base_stations : 0;
+            const connectedCount = data.base_stations ? data.base_stations.total_connected : 0;
+            const connectingCount = data.base_stations ? data.base_stations.total_connecting : 0;
+            
             document.getElementById('connected-count').textContent = connectedCount;
+            document.getElementById('connecting-count').textContent = connectingCount;
 
-            // The changes snippet does not provide logic for 'connecting-count' or the lists of stations.
-            // Also, the API endpoint has changed, so the old data structure might not be available.
-            // Therefore, we will update 'connecting-count' and the lists to reflect that this information
-            // might not be available from the new API endpoint, or set a placeholder.
-            // We are omitting the update for 'base-station-message' as this element does not exist in the original HTML.
-
-            // Setting placeholder/default values for connecting stations as no update logic was provided in the snippet.
-            document.getElementById('connecting-count').textContent = 'N/A';
-            document.getElementById('connecting-stations').innerHTML = '<small class="text-muted">Connecting station info not available</small>';
-
-            // Similarly, for connected stations list.
+            // Update connected stations list
             const connectedDiv = document.getElementById('connected-stations');
-            connectedDiv.innerHTML = '<small class="text-muted">Detailed connected station lists not available</small>';
-        })
+            if (data.base_stations && data.base_stations.connected && data.base_stations.connected.length > 0) {
+                let html = '<ul class="list-unstyled small">';
+                data.base_stations.connected.forEach(station => {
+                    html += `<li><strong>EUI:</strong> ${station.eui}</li>`;
+                    if (station.address) {
+                        html += `<li><small class="text-muted">Address: ${station.address}</small></li>`;
+                    }
+                });
+                html += '</ul>';
+                connectedDiv.innerHTML = html;
+            } else {
+                connectedDiv.innerHTML = '<small class="text-muted">No connected base stations</small>';
+            }
+
+            // Update connecting stations list
+            const connectingDiv = document.getElementById('connecting-stations');
+            if (data.base_stations && data.base_stations.connecting && data.base_stations.connecting.length > 0) {
+                let html = '<ul class="list-unstyled small">';
+                data.base_stations.connecting.forEach(station => {
+                    html += `<li><strong>EUI:</strong> ${station.eui}</li>`;
+                    if (station.address) {
+                        html += `<li><small class="text-muted">Address: ${station.address}</small></li>`;
+                    }
+                });
+                html += '</ul>';
+                connectingDiv.innerHTML = html;
+            } else {
+                connectingDiv.innerHTML = '<small class="text-muted">No connecting base stations</small>';
+            } })
         .catch(error => {
             console.error('Error fetching base station status:', error);
             document.getElementById('connected-count').textContent = '0';
