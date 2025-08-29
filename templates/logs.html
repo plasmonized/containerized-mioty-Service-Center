@@ -174,9 +174,13 @@ function refreshLogs() {
             const statsContainer = document.getElementById('log-stats');
 
             // Update stats
+            const totalLogs = data.total_logs || 0;
+            const filteredLogs = data.filtered_logs || data.logs.length;
+            const currentLogs = data.logs.length;
+            
             statsContainer.innerHTML = `
-                Showing ${data.logs.length} of ${data.filtered_logs} filtered logs 
-                (${data.total_logs} total)
+                Showing ${currentLogs} of ${filteredLogs} filtered logs 
+                (${totalLogs} total) - Source: ${data.source || 'unknown'}
             `;
 
             if (data.logs.length === 0) {
@@ -186,12 +190,19 @@ function refreshLogs() {
 
             let html = '';
             data.logs.forEach(log => {
-                const levelColor = getLevelColor(log.level);
+                const timestamp = log.timestamp || 'No timestamp';
+                const level = log.level || 'INFO';
+                const logger = log.logger || 'unknown';
+                const message = log.message || 'No message';
+                const source = log.source || '';
+                
+                const levelColor = getLevelColor(level);
                 html += `<div class="log-entry p-2" style="border-bottom: 1px solid #333;">
-                    <span style="color: #888;">${log.timestamp}</span>
-                    <span style="background-color: ${levelColor}; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 8px;">${log.level}</span>
-                    <span style="color: #569cd6; margin-left: 8px;">${log.logger}</span>
-                    <div style="margin-left: 16px; margin-top: 2px; white-space: pre-wrap;">${escapeHtml(log.message)}</div>
+                    <span style="color: #888;">${timestamp}</span>
+                    <span style="background-color: ${levelColor}; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 8px;">${level}</span>
+                    <span style="color: #569cd6; margin-left: 8px;">${logger}</span>
+                    ${source ? `<span style="color: #666; margin-left: 8px; font-size: 10px;">[${source}]</span>` : ''}
+                    <div style="margin-left: 16px; margin-top: 2px; white-space: pre-wrap;">${escapeHtml(message)}</div>
                 </div>`;
             });
 

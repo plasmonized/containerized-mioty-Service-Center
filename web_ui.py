@@ -371,10 +371,43 @@ def extract_timestamp(line):
 
 @app.route('/api/logs')
 def get_logs():
-    """Get recent log entries"""
+    """Get recent log entries with proper filtering and structure"""
     try:
+        # Get filter parameters
+        level_filter = request.args.get('level', 'all')
+        logger_filter = request.args.get('logger', 'all')
+        limit = int(request.args.get('limit', 100))
+        
+        # First try to get logs from memory (WebUILogHandler)
+        memory_logs = []
+        if log_entries:
+            for entry in log_entries[-limit:]:
+                # Apply filters
+                if level_filter != 'all' and entry.get('level', '') != level_filter:
+                    continue
+                if logger_filter != 'all' and logger_filter not in entry.get('logger', ''):
+                    continue
+                    
+                memory_logs.append({
+                    'message': entry.get('message', ''),
+                    'timestamp': entry.get('timestamp', ''),
+                    'level': entry.get('level', 'INFO'),
+                    'logger': entry.get('logger', 'unknown'),
+                    'source': 'memory'
+                })
+        
+        # If we have memory logs, use them
+        if memory_logs:
+            return jsonify({
+                'logs': memory_logs[-limit:],
+                'total_logs': len(log_entries),
+                'filtered_logs': len(memory_logs),
+                'source': 'memory'
+            })
+        
+        # Fall back to file logs if no memory logs
         log_files = ['logs/bssci.log', 'logs/bssci_sync.log']
-        logs = []
+        file_logs = []
 
         for log_file in log_files:
             if not os.path.exists(log_file):
@@ -384,52 +417,91 @@ def get_logs():
                 with open(log_file, 'r') as f:
                     lines = f.readlines()
 
-                # Get the last 50 lines from each file
-                recent_lines = lines[-50:] if len(lines) > 50 else lines
+                # Get recent lines
+                recent_lines = lines[-100:] if len(lines) > 100 else lines
 
                 for line in recent_lines:
                     line = line.strip()
-                    if line:
-                        logs.append({
-                            'message': line,
-                            'timestamp': extract_timestamp(line),
-                            'source': os.path.basename(log_file)
-                        })
-            except PermissionError:
-                logging.warning(f"Permission denied reading {log_file}")
-                continue
+                    if not line:
+                        continue
+                        
+                    # Parse log level from line
+                    log_level = 'INFO'
+                    if ' ERROR ' in line:
+                        log_level = 'ERROR'
+                    elif ' WARNING ' in line or ' WARN ' in line:
+                        log_level = 'WARNING'
+                    elif ' DEBUG ' in line:
+                        log_level = 'DEBUG'
+                    
+                    # Parse logger from line  
+                    logger_name = 'unknown'
+                    parts = line.split(' ', 4)
+                    if len(parts) >= 4:
+                        logger_name = parts[3]
+                    
+                    # Apply filters
+                    if level_filter != 'all' and log_level != level_filter:
+                        continue
+                    if logger_filter != 'all' and logger_filter not in logger_name:
+                        continue
+                        
+                    file_logs.append({
+                        'message': line,
+                        'timestamp': extract_timestamp(line),
+                        'level': log_level,
+                        'logger': logger_name,
+                        'source': os.path.basename(log_file)
+                    })
             except Exception as e:
                 logging.error(f"Error reading {log_file}: {e}")
                 continue
 
-        # Sort by timestamp if available, handle None values properly
+        # Sort by timestamp
         def sort_key(log_entry):
-            timestamp = log_entry.get('timestamp')
-            if timestamp is None or timestamp == '':
-                return '0000-00-00 00:00:00'  # Put entries without timestamps at the beginning
+            timestamp = log_entry.get('timestamp', '')
+            if not timestamp:
+                return '0000-00-00 00:00:00'
             return timestamp
         
-        logs.sort(key=sort_key, reverse=True)
+        file_logs.sort(key=sort_key, reverse=True)
+        file_logs = file_logs[:limit]
 
-        # Limit to 100 most recent
-        logs = logs[:100]
-
-        if not logs:
+        # Return appropriate response
+        if not file_logs and not memory_logs:
             return jsonify({
-                'logs': [{'message': 'No log files accessible or logs are empty', 'timestamp': '', 'source': 'system'}],
-                'total': 1,
-                'message': 'Log files may have permission issues'
+                'logs': [{
+                    'message': 'No recent logs available', 
+                    'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'level': 'INFO',
+                    'logger': 'system',
+                    'source': 'system'
+                }],
+                'total_logs': 0,
+                'filtered_logs': 0,
+                'source': 'none'
             })
 
         return jsonify({
-            'logs': logs,
-            'total': len(logs)
+            'logs': file_logs,
+            'total_logs': len(file_logs),
+            'filtered_logs': len(file_logs),
+            'source': 'files'
         })
+        
     except Exception as e:
+        logging.error(f"Error in get_logs: {e}")
         return jsonify({
             'error': f'Failed to read logs: {str(e)}',
-            'logs': [{'message': f'Log access error: {str(e)}', 'timestamp': '', 'source': 'error'}],
-            'total': 1
+            'logs': [{
+                'message': f'Log access error: {str(e)}', 
+                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                'level': 'ERROR',
+                'logger': 'web_ui',
+                'source': 'error'
+            }],
+            'total_logs': 0,
+            'filtered_logs': 0
         }), 500
 
 def get_bssci_service_status():
