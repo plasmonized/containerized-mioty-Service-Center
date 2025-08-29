@@ -1,0 +1,37 @@
+
+version: '3.8'
+
+services:
+  bssci-service-center:
+    build: .
+    container_name: bssci-service-center
+    user: "${UID:-1000}:${GID:-1000}"  # Use host user ID or fallback to 1000
+    init: true
+    ports:
+      - "16019:16018"  # TLS Server port
+      - "5056:5000"    # Web UI port
+    volumes:
+      - ./certs:/app/certs:ro
+      - ./endpoints.json:/app/endpoints.json
+      - ./bssci_config.py:/app/bssci_config.py
+      - ./logs:/app/logs
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - bssci-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s1 = socket.create_connection(('localhost', 16018), timeout=5); s2 = socket.create_connection(('localhost', 5000), timeout=5); s1.close(); s2.close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  bssci-network:
+    driver: bridge
