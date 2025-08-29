@@ -341,25 +341,33 @@ def logs():
 # Helper function to extract timestamp from log lines if they follow a specific format
 def extract_timestamp(line):
     try:
-        # Example format: 'YYYY-MM-DD HH:MM:SS.ms' or 'YYYY-MM-DD HH:MM:SS'
-        # This is a basic attempt and might need refinement based on actual log formats.
-        parts = line.split(' ', 3) # Split into at least 4 parts: date, time, logger, message
+        # Handle various log formats
+        parts = line.split(' ', 3)
         if len(parts) >= 2:
             timestamp_str = parts[0] + ' ' + parts[1]
-            # Try to parse with milliseconds
-            try:
-                datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S.%f')
-                return timestamp_str
-            except ValueError:
-                # Try to parse without milliseconds
+            
+            # Try different timestamp formats
+            formats = [
+                '%Y-%m-%d %H:%M:%S.%f',  # With microseconds
+                '%Y-%m-%d %H:%M:%S,%f',  # With comma separator
+                '%Y-%m-%d %H:%M:%S'      # Without microseconds
+            ]
+            
+            for fmt in formats:
                 try:
-                    datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+                    datetime.strptime(timestamp_str, fmt)
                     return timestamp_str
                 except ValueError:
-                    return None # Not a recognized timestamp format
-        return None
+                    continue
+        
+        # If no timestamp found in expected format, return current time as fallback
+        from datetime import datetime
+        return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
     except Exception:
-        return None # Return None if any error occurs during parsing
+        # Fallback to current time if anything fails
+        from datetime import datetime
+        return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
 @app.route('/api/logs')
 def get_logs():
@@ -394,8 +402,14 @@ def get_logs():
                 logging.error(f"Error reading {log_file}: {e}")
                 continue
 
-        # Sort by timestamp if available
-        logs.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+        # Sort by timestamp if available, handle None values properly
+        def sort_key(log_entry):
+            timestamp = log_entry.get('timestamp')
+            if timestamp is None or timestamp == '':
+                return '0000-00-00 00:00:00'  # Put entries without timestamps at the beginning
+            return timestamp
+        
+        logs.sort(key=sort_key, reverse=True)
 
         # Limit to 100 most recent
         logs = logs[:100]
