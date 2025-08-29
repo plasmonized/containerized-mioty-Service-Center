@@ -65,45 +65,29 @@ function updateServiceStatus() {
             fetch('/api/bssci/status')
                 .then(response => response.json())
                 .then(data => {
-                    const statusDiv = document.getElementById('service-status');
-                    const detailsDiv = document.getElementById('service-details');
+                    document.getElementById('service-status').className = 
+                        data.running ? 'alert alert-success' : 'alert alert-warning';
 
-                    if (data.running) {
-                        statusDiv.className = 'alert alert-success';
+                    const serviceTypeText = data.service_type ? 
+                        ` (${data.service_type.charAt(0).toUpperCase() + data.service_type.slice(1)} Mode)` : '';
 
-                        let statusHtml = `
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <strong>TLS Server:</strong><br>
-                                    <span class="badge bg-${data.tls_server.active ? 'success' : 'danger'}">
-                                        ${data.tls_server.active ? 'Active' : 'Inactive'}
-                                    </span><br>
-                                    <small>Port: ${data.tls_server.listening_port || 'N/A'}</small><br>
-                                    <small>Base Stations: ${data.tls_server.connected_base_stations}</small><br>
-                                    <small>Sensors: ${data.tls_server.registered_sensors}/${data.tls_server.total_sensors}</small>
-                                </div>
-                                <div class="col-md-4">
-                                    <strong>MQTT Broker:</strong><br>
-                                    <span class="badge bg-${data.mqtt_broker.connected ? 'success' : 'danger'}">
-                                        ${data.mqtt_broker.connected ? 'Connected' : 'Disconnected'}
-                                    </span><br>
-                                    <small>${data.mqtt_broker.broker_host}:${data.mqtt_broker.broker_port}</small><br>
-                                    <small>Topic: ${data.mqtt_broker.base_topic}</small><br>
-                                    <small>Queues: ${data.mqtt_broker.out_queue_size}/${data.mqtt_broker.in_queue_size}</small>
-                                </div>
-                            </div>
-                        `;
-                        detailsDiv.innerHTML = statusHtml;
-                    } else {
-                        statusDiv.className = 'alert alert-danger';
-                        detailsDiv.innerHTML = `
-                            <strong>Service Error:</strong> ${data.error || 'Unknown error'}
+                    document.getElementById('service-details').innerHTML = data.running ? 
+                        `The BSSCI Service Center is running and ready to accept base station connections${serviceTypeText}.
+                            <ul class="list-unstyled mt-2 mb-0">
+                                <li><strong>TLS Server:</strong> ${data.tls_server.active ? 
+                                    `Listening on port ${data.tls_server.listening_port}` : 'Inactive'}</li>
+                                <li><strong>MQTT Broker:</strong> ${data.mqtt_broker.active ? 
+                                    `Connected to ${data.mqtt_broker.broker_host}:${data.mqtt_broker.broker_port}` : 'Inactive'}</li>
+                                <li><strong>Base Stations:</strong> ${data.tls_server.connected_base_stations || 0} connected</li>
+                                <li><strong>Sensors:</strong> ${data.tls_server.total_sensors || 0} configured, ${data.tls_server.registered_sensors || 0} registered</li>
+                            </ul>` : 
+                        `Service Center has issues - check configuration and logs${serviceTypeText}.
                             <div class="mt-2">
                                 <small>TLS Server: ${data.tls_server.active ? 'Active' : 'Inactive'}</small><br>
                                 <small>MQTT Broker: ${data.mqtt_broker.active ? 'Active' : 'Inactive'}</small>
+                                ${data.error ? `<br><small class="text-danger">Error: ${data.error}</small>` : ''}
                             </div>
                         `;
-                    }
                 })
                 .catch(error => {
                     console.error('Error fetching service status:', error);

@@ -80,17 +80,49 @@ def sensors():
 @app.route('/api/sensors', methods=['GET'])
 def get_sensors():
     try:
-        # Also reload TLS server config to sync
+        # Try async service first
+        tls_server = None
         try:
             from web_main import get_tls_server
             tls_server = get_tls_server()
             if tls_server:
-                tls_server.reload_sensor_config()
-                # Get registration status
-                return jsonify(tls_server.get_sensor_registration_status())
+                if hasattr(tls_server, 'reload_sensor_config'):
+                    tls_server.reload_sensor_config()
+                if hasattr(tls_server, 'get_sensor_registration_status'):
+                    return jsonify(tls_server.get_sensor_registration_status())
         except:
-            pass  # Fallback to file only
+            pass
         
+        # Try sync service if async not available
+        if not tls_server:
+            try:
+                import sync_main
+                if hasattr(sync_main, 'tls_server_instance'):
+                    tls_server = sync_main.tls_server_instance
+                    if tls_server and hasattr(tls_server, 'sensor_config'):
+                        # For sync version, build registration status from sensor config
+                        sensor_status = {}
+                        for sensor in tls_server.sensor_config:
+                            eui = sensor['eui'].lower()
+                            sensor_status[eui] = {
+                                'eui': sensor['eui'],
+                                'nwKey': sensor['nwKey'],
+                                'shortAddr': sensor['shortAddr'],
+                                'bidi': sensor['bidi'],
+                                'registered': len(getattr(tls_server, 'connected_base_stations', {})) > 0,  # Consider registered if base stations connected
+                                'registration_info': {
+                                    'status': 'registered' if len(getattr(tls_server, 'connected_base_stations', {})) > 0 else 'not_registered',
+                                    'base_stations': list(getattr(tls_server, 'connected_base_stations', {}).values()),
+                                    'total_registrations': len(getattr(tls_server, 'connected_base_stations', {}))
+                                },
+                                'base_stations': list(getattr(tls_server, 'connected_base_stations', {}).values()),
+                                'total_registrations': len(getattr(tls_server, 'connected_base_stations', {}))
+                            }
+                        return jsonify(sensor_status)
+            except:
+                pass
+        
+        # Fallback to file only
         with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
             sensors = json.load(f)
             # Convert to registration status format
@@ -103,10 +135,13 @@ def get_sensors():
                     'shortAddr': sensor['shortAddr'],
                     'bidi': sensor['bidi'],
                     'registered': False,
-                    'registration_info': {}
+                    'registration_info': {},
+                    'base_stations': [],
+                    'total_registrations': 0
                 }
             return jsonify(sensor_status)
-    except:
+    except Exception as e:
+        logger.error(f"Error getting sensors: {e}")
         return jsonify({})
 
 @app.route('/api/sensors', methods=['POST'])
@@ -266,52 +301,105 @@ def get_logs():
 def get_bssci_service_status():
     """Get the status of the BSSCI service"""
     try:
-        from web_main import get_tls_server, get_mqtt_client
+        # Try to get async service instances first
+        try:
+            from web_main import get_tls_server, get_mqtt_client
+            tls_server = get_tls_server()
+            mqtt_client = get_mqtt_client()
+            service_type = "async"
+        except:
+            tls_server = None
+            mqtt_client = None
+            service_type = "unknown"
+        
+        # Try to get sync service instances if async not available
+        sync_tls_server = None
+        sync_mqtt_client = None
+        if not tls_server or not mqtt_client:
+            try:
+                import sync_main
+                if hasattr(sync_main, 'tls_server_instance'):
+                    sync_tls_server = sync_main.tls_server_instance
+                if hasattr(sync_main, 'mqtt_client_instance'):
+                    sync_mqtt_client = sync_main.mqtt_client_instance
+                if sync_tls_server or sync_mqtt_client:
+                    service_type = "sync"
+            except:
+                pass
+        
+        # Use whichever service instances we found
+        active_tls = tls_server or sync_tls_server
+        active_mqtt = mqtt_client or sync_mqtt_client
         
         # TLS Server Status
-        tls_server = get_tls_server()
         tls_status = {
-            'active': tls_server is not None,
-            'listening_port': bssci_config.LISTEN_PORT if tls_server else None,
+            'active': active_tls is not None,
+            'service_type': service_type,
+            'listening_port': bssci_config.LISTEN_PORT if active_tls else None,
             'connected_base_stations': 0,
             'total_sensors': 0,
             'registered_sensors': 0,
             'pending_requests': 0
         }
         
-        if tls_server:
-            bs_status = tls_server.get_base_station_status()
-            sensor_status = tls_server.get_sensor_registration_status()
-            
-            tls_status.update({
-                'connected_base_stations': bs_status['total_connected'],
-                'total_sensors': len(sensor_status),
-                'registered_sensors': len([s for s in sensor_status.values() if s['registered']]),
-                'pending_requests': len(tls_server.pending_attach_requests)
-            })
+        if active_tls:
+            try:
+                if hasattr(active_tls, 'get_base_station_status'):
+                    bs_status = active_tls.get_base_station_status()
+                    tls_status['connected_base_stations'] = bs_status.get('total_connected', len(getattr(active_tls, 'connected_base_stations', {})))
+                else:
+                    # For sync version, count connected base stations directly
+                    tls_status['connected_base_stations'] = len(getattr(active_tls, 'connected_base_stations', {}))
+                
+                if hasattr(active_tls, 'get_sensor_registration_status'):
+                    sensor_status = active_tls.get_sensor_registration_status()
+                    tls_status.update({
+                        'total_sensors': len(sensor_status),
+                        'registered_sensors': len([s for s in sensor_status.values() if s.get('registered', False)])
+                    })
+                else:
+                    # For sync version, use sensor config
+                    sensor_config = getattr(active_tls, 'sensor_config', [])
+                    tls_status.update({
+                        'total_sensors': len(sensor_config),
+                        'registered_sensors': len(sensor_config)  # Assume all configured sensors are registered in sync version
+                    })
+                
+                if hasattr(active_tls, 'pending_attach_requests'):
+                    tls_status['pending_requests'] = len(active_tls.pending_attach_requests)
+            except Exception as e:
+                logger.debug(f"Error getting TLS server details: {e}")
         
         # MQTT Status
-        mqtt_client = get_mqtt_client()
         mqtt_status = {
-            'active': mqtt_client is not None,
+            'active': active_mqtt is not None,
+            'service_type': service_type,
             'broker_host': bssci_config.MQTT_BROKER,
             'broker_port': bssci_config.MQTT_PORT,
             'username': bssci_config.MQTT_USERNAME,
             'base_topic': bssci_config.BASE_TOPIC,
-            'connected': False,
+            'connected': active_mqtt is not None,
             'out_queue_size': 0,
             'in_queue_size': 0
         }
         
-        if mqtt_client:
-            mqtt_status.update({
-                'connected': True,  # Assume connected if client exists
-                'out_queue_size': mqtt_client.mqtt_out_queue.qsize() if hasattr(mqtt_client, 'mqtt_out_queue') else 0,
-                'in_queue_size': mqtt_client.mqtt_in_queue.qsize() if hasattr(mqtt_client, 'mqtt_in_queue') else 0
-            })
+        if active_mqtt:
+            try:
+                if hasattr(active_mqtt, 'mqtt_out_queue'):
+                    mqtt_status['out_queue_size'] = active_mqtt.mqtt_out_queue.qsize()
+                if hasattr(active_mqtt, 'mqtt_in_queue'):
+                    mqtt_status['in_queue_size'] = active_mqtt.mqtt_in_queue.qsize()
+                # For sync version, try to get queue sizes differently
+                elif hasattr(active_mqtt, 'out_queue'):
+                    mqtt_status['out_queue_size'] = active_mqtt.out_queue.qsize()
+                elif hasattr(active_mqtt, 'in_queue'):
+                    mqtt_status['in_queue_size'] = active_mqtt.in_queue.qsize()
+            except Exception as e:
+                logger.debug(f"Error getting MQTT queue sizes: {e}")
         
         return {
             'running': tls_status['active'] and mqtt_status['active'],
+            'service_type': service_type,
             'tls_server': tls_status,
             'mqtt_broker': mqtt_status,
             'uptime_seconds': int(time.time() - (getattr(get_bssci_service_status, 'start_time', time.time()))),
@@ -319,9 +407,11 @@ def get_bssci_service_status():
         }
         
     except Exception as e:
+        logger.error(f"Error getting BSSCI service status: {e}")
         return {
             'running': False,
             'error': str(e),
+            'service_type': 'error',
             'tls_server': {'active': False},
             'mqtt_broker': {'active': False}
         }
@@ -346,26 +436,79 @@ def bssci_status():
 def get_base_stations():
     """Get status of connected base stations"""
     try:
-        # Import here to avoid circular import
-        from web_main import get_tls_server, get_mqtt_client
-        tls_server = get_tls_server()
+        # Try async service first
+        tls_server = None
+        mqtt_client = None
+        
+        try:
+            from web_main import get_tls_server, get_mqtt_client
+            tls_server = get_tls_server()
+            mqtt_client = get_mqtt_client()
+        except:
+            pass
+        
+        # Try sync service if async not available
+        if not tls_server:
+            try:
+                import sync_main
+                if hasattr(sync_main, 'tls_server_instance'):
+                    tls_server = sync_main.tls_server_instance
+                if hasattr(sync_main, 'mqtt_client_instance'):
+                    mqtt_client = sync_main.mqtt_client_instance
+            except:
+                pass
         
         if tls_server:
-            status = tls_server.get_base_station_status()
+            # Try to use the get_base_station_status method if available
+            if hasattr(tls_server, 'get_base_station_status'):
+                status = tls_server.get_base_station_status()
+            else:
+                # For sync version, manually build status from connected_base_stations
+                connected_stations = []
+                connecting_stations = []
+                
+                # Get connected base stations
+                for addr, bs_eui in getattr(tls_server, 'connected_base_stations', {}).items():
+                    if hasattr(addr, '__iter__') and len(addr) >= 2:
+                        address_str = f"{addr[0]}:{addr[1]}"
+                    else:
+                        address_str = str(addr)
+                    
+                    connected_stations.append({
+                        "eui": bs_eui,
+                        "address": address_str,
+                        "status": "connected"
+                    })
+                
+                # Get connecting base stations
+                for addr, bs_eui in getattr(tls_server, 'connecting_base_stations', {}).items():
+                    if hasattr(addr, '__iter__') and len(addr) >= 2:
+                        address_str = f"{addr[0]}:{addr[1]}"
+                    else:
+                        address_str = str(addr)
+                    
+                    connecting_stations.append({
+                        "eui": bs_eui,
+                        "address": address_str,
+                        "status": "connecting"
+                    })
+                
+                status = {
+                    "connected": connected_stations,
+                    "connecting": connecting_stations,
+                    "total_connected": len(connected_stations),
+                    "total_connecting": len(connecting_stations)
+                }
             
             # Add additional status info
             status['last_updated'] = time.time()
             status['tls_server_running'] = True
             
             # Add MQTT status if available
-            try:
-                mqtt_client = get_mqtt_client()
-                if mqtt_client:
-                    status['mqtt_status'] = 'connected'
-                else:
-                    status['mqtt_status'] = 'disconnected'
-            except:
-                status['mqtt_status'] = 'unknown'
+            if mqtt_client:
+                status['mqtt_status'] = 'connected'
+            else:
+                status['mqtt_status'] = 'disconnected'
             
             return jsonify(status)
         else:
@@ -379,6 +522,7 @@ def get_base_stations():
                 "error": "TLS server not initialized"
             })
     except Exception as e:
+        logger.error(f"Error getting base station status: {e}")
         return jsonify({
             "connected": [],
             "connecting": [],
