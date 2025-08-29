@@ -55,8 +55,12 @@ def run_bssci_service():
 
 def get_tls_server():
     """Get the TLS server instance"""
-    from main import tls_server_instance
-    return tls_server_instance
+    try:
+        import main
+        return getattr(main, 'tls_server_instance', None)
+    except Exception as e:
+        print(f"Error getting TLS server: {e}")
+        return None
 
 if __name__ == "__main__":
     logger.info("Starting BSSCI Service Center with Web UI")

@@ -1,4 +1,3 @@
-
 import asyncio
 import logging
 
@@ -42,7 +41,10 @@ for handler in logging.root.handlers:
     handler.setFormatter(timezone_formatter)
 logger = logging.getLogger(__name__)
 
-async def main():
+# Global TLS server instance for web UI access
+tls_server_instance = None
+
+async def main() -> None:
     global tls_server_instance
     mqtt_out_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
     mqtt_in_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
@@ -97,11 +99,8 @@ async def main():
         logger.info("Shutting down BSSCI Service Center...")
     except Exception as e:
         logger.error(f"Service error: {e}")
-    
-    logger.info("✓ BSSCI Service Center shut down complete")
 
-# Global TLS server instance for web UI access
-tls_server_instance = None
+    logger.info("✓ BSSCI Service Center shut down complete")
 
 
 if __name__ == "__main__":

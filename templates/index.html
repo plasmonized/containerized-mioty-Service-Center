@@ -102,7 +102,7 @@ function loadBaseStationStatus() {
         .then(data => {
             const connectedCount = data.base_stations ? data.base_stations.total_connected : 0;
             const connectingCount = data.base_stations ? data.base_stations.total_connecting : 0;
-            
+
             document.getElementById('connected-count').textContent = connectedCount;
             document.getElementById('connecting-count').textContent = connectingCount;
 

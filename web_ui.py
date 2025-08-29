@@ -303,13 +303,14 @@ def get_bssci_service_status():
                 'tls_server': {
                     'total_sensors': len(sensor_status),
                     'registered_sensors': len([s for s in sensor_status.values() if s['registered']]),
-                    'pending_requests': len(tls_server.pending_attach_requests)
+                    'pending_requests': len(tls_server.pending_attach_requests) if hasattr(tls_server, 'pending_attach_requests') else 0
                 }
             }
         else:
             return {'running': False, 'error': 'TLS server not available'}
     except Exception as e:
-        return {'running': False, 'error': str(e)}
+        import traceback
+        return {'running': False, 'error': f'{type(e).__name__}: {str(e)}', 'traceback': traceback.format_exc()}
 
 @app.route('/api/logs/clear', methods=['POST'])
 def clear_logs():
