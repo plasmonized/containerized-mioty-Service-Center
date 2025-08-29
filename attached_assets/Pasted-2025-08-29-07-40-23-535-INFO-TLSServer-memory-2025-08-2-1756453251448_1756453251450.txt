@@ -1,0 +1,1000 @@
+2025-08-29 07:40:23.535 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.539 INFO TLSServer [memory]
+   Processing sensor 6/7: fca84a030000127d
+2025-08-29 07:40:23.539 INFO TLSServer [memory]
+📤 BSSCI ATTACH REQUEST INITIATED
+2025-08-29 07:40:23.539 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.539 INFO TLSServer [memory]
+   Sensor EUI: fca84a030000127d
+2025-08-29 07:40:23.539 INFO TLSServer [memory]
+   Target Base Station: 70b3d59cd00009f6
+2025-08-29 07:40:23.539 INFO TLSServer [memory]
+   Operation ID: -11
+2025-08-29 07:40:23.539 INFO TLSServer [memory]
+   Timestamp: 2025-08-29 07:40:23.539
+2025-08-29 07:40:23.539 INFO TLSServer [memory]
+   ✓ EUI format valid: fca84a030000127d
+2025-08-29 07:40:23.540 INFO TLSServer [memory]
+   ✓ Network key format valid: 67069B9E...C6444007
+2025-08-29 07:40:23.540 INFO TLSServer [memory]
+   ✓ Short address format valid: 127D
+2025-08-29 07:40:23.540 INFO TLSServer [memory]
+   ✓ Bidirectional flag: False
+2025-08-29 07:40:23.540 INFO TLSServer [memory]
+   ✅ All validations passed
+2025-08-29 07:40:23.540 INFO TLSServer [memory]
+   📋 Final parameters:
+2025-08-29 07:40:23.540 INFO TLSServer [memory]
+     EUI: fca84a030000127d
+2025-08-29 07:40:23.540 INFO TLSServer [memory]
+     Network Key: 67069B9E...C6444007
+2025-08-29 07:40:23.540 INFO TLSServer [memory]
+     Short Address: 127D
+2025-08-29 07:40:23.541 INFO TLSServer [memory]
+     Bidirectional: False
+2025-08-29 07:40:23.541 DEBUG TLSServer [memory]
+   📝 Built attach message: {'command': 'attPrp', 'opId': -11, 'epEui': 18205882870390592125, 'bidi': False, 'nwkSnKey': [103, 6, 155, 158, 135, 3, 87, 158, 23, 81, 2, 147, 198, 68, 64, 7], 'shAddr': 4733, 'lastPacketCnt': 0, 'dualChan': True, 'repetition': False, 'wideCarrOff': False, 'longBlkDist': False}
+2025-08-29 07:40:23.541 INFO TLSServer [memory]
+   📤 Transmitting attach request...
+2025-08-29 07:40:23.541 INFO TLSServer [memory]
+     Message size: 162 bytes
+2025-08-29 07:40:23.541 INFO TLSServer [memory]
+     Payload size: 150 bytes
+2025-08-29 07:40:23.542 INFO TLSServer [memory]
+✅ BSSCI ATTACH REQUEST TRANSMITTED
+2025-08-29 07:40:23.542 INFO TLSServer [memory]
+   Operation ID -11 sent to base station 70b3d59cd00009f6
+2025-08-29 07:40:23.542 INFO TLSServer [memory]
+   Tracking request for correlation with response
+2025-08-29 07:40:23.542 INFO TLSServer [memory]
+   Awaiting response from base station...
+2025-08-29 07:40:23.542 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.637 INFO TLSServer [memory]
+   Processing sensor 6/7: fca84a030000127d
+2025-08-29 07:40:23.637 INFO TLSServer [memory]
+📤 BSSCI ATTACH REQUEST INITIATED
+2025-08-29 07:40:23.637 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.637 INFO TLSServer [memory]
+   Sensor EUI: fca84a030000127d
+2025-08-29 07:40:23.638 INFO TLSServer [memory]
+   Target Base Station: 9c65f9fffe6be145
+2025-08-29 07:40:23.638 INFO TLSServer [memory]
+   Operation ID: -12
+2025-08-29 07:40:23.638 INFO TLSServer [memory]
+   Timestamp: 2025-08-29 07:40:23.638
+2025-08-29 07:40:23.639 INFO TLSServer [memory]
+   ✓ EUI format valid: fca84a030000127d
+2025-08-29 07:40:23.639 INFO TLSServer [memory]
+   ✓ Network key format valid: 67069B9E...C6444007
+2025-08-29 07:40:23.639 INFO TLSServer [memory]
+   ✓ Short address format valid: 127D
+2025-08-29 07:40:23.639 INFO TLSServer [memory]
+   ✓ Bidirectional flag: False
+2025-08-29 07:40:23.639 INFO TLSServer [memory]
+   ✅ All validations passed
+2025-08-29 07:40:23.639 INFO TLSServer [memory]
+   📋 Final parameters:
+2025-08-29 07:40:23.640 INFO TLSServer [memory]
+     EUI: fca84a030000127d
+2025-08-29 07:40:23.640 INFO TLSServer [memory]
+     Network Key: 67069B9E...C6444007
+2025-08-29 07:40:23.640 INFO TLSServer [memory]
+     Short Address: 127D
+2025-08-29 07:40:23.640 INFO TLSServer [memory]
+     Bidirectional: False
+2025-08-29 07:40:23.640 DEBUG TLSServer [memory]
+   📝 Built attach message: {'command': 'attPrp', 'opId': -12, 'epEui': 18205882870390592125, 'bidi': False, 'nwkSnKey': [103, 6, 155, 158, 135, 3, 87, 158, 23, 81, 2, 147, 198, 68, 64, 7], 'shAddr': 4733, 'lastPacketCnt': 0, 'dualChan': True, 'repetition': False, 'wideCarrOff': False, 'longBlkDist': False}
+2025-08-29 07:40:23.640 INFO TLSServer [memory]
+   📤 Transmitting attach request...
+2025-08-29 07:40:23.640 INFO TLSServer [memory]
+     Message size: 162 bytes
+2025-08-29 07:40:23.640 INFO TLSServer [memory]
+     Payload size: 150 bytes
+2025-08-29 07:40:23.641 INFO TLSServer [memory]
+✅ BSSCI ATTACH REQUEST TRANSMITTED
+2025-08-29 07:40:23.641 INFO TLSServer [memory]
+   Operation ID -12 sent to base station 9c65f9fffe6be145
+2025-08-29 07:40:23.641 INFO TLSServer [memory]
+   Tracking request for correlation with response
+2025-08-29 07:40:23.641 INFO TLSServer [memory]
+   Awaiting response from base station...
+2025-08-29 07:40:23.641 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.643 INFO TLSServer [memory]
+   Processing sensor 7/7: fca84a030000127b
+2025-08-29 07:40:23.643 INFO TLSServer [memory]
+📤 BSSCI ATTACH REQUEST INITIATED
+2025-08-29 07:40:23.643 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.643 INFO TLSServer [memory]
+   Sensor EUI: fca84a030000127b
+2025-08-29 07:40:23.643 INFO TLSServer [memory]
+   Target Base Station: 70b3d59cd00009f6
+2025-08-29 07:40:23.643 INFO TLSServer [memory]
+   Operation ID: -13
+2025-08-29 07:40:23.644 INFO TLSServer [memory]
+   Timestamp: 2025-08-29 07:40:23.643
+2025-08-29 07:40:23.644 INFO TLSServer [memory]
+   ✓ EUI format valid: fca84a030000127b
+2025-08-29 07:40:23.644 INFO TLSServer [memory]
+   ✓ Network key format valid: 1BC3E308...DB87B291
+2025-08-29 07:40:23.644 INFO TLSServer [memory]
+   ✓ Short address format valid: 127B
+2025-08-29 07:40:23.644 INFO TLSServer [memory]
+   ✓ Bidirectional flag: False
+2025-08-29 07:40:23.644 INFO TLSServer [memory]
+   ✅ All validations passed
+2025-08-29 07:40:23.644 INFO TLSServer [memory]
+   📋 Final parameters:
+2025-08-29 07:40:23.644 INFO TLSServer [memory]
+     EUI: fca84a030000127b
+2025-08-29 07:40:23.644 INFO TLSServer [memory]
+     Network Key: 1BC3E308...DB87B291
+2025-08-29 07:40:23.645 INFO TLSServer [memory]
+     Short Address: 127B
+2025-08-29 07:40:23.645 INFO TLSServer [memory]
+     Bidirectional: False
+2025-08-29 07:40:23.645 DEBUG TLSServer [memory]
+   📝 Built attach message: {'command': 'attPrp', 'opId': -13, 'epEui': 18205882870390592123, 'bidi': False, 'nwkSnKey': [27, 195, 227, 8, 240, 78, 14, 212, 137, 186, 72, 30, 219, 135, 178, 145], 'shAddr': 4731, 'lastPacketCnt': 0, 'dualChan': True, 'repetition': False, 'wideCarrOff': False, 'longBlkDist': False}
+2025-08-29 07:40:23.645 INFO TLSServer [memory]
+   📤 Transmitting attach request...
+2025-08-29 07:40:23.645 INFO TLSServer [memory]
+     Message size: 166 bytes
+2025-08-29 07:40:23.645 INFO TLSServer [memory]
+     Payload size: 154 bytes
+2025-08-29 07:40:23.646 INFO TLSServer [memory]
+✅ BSSCI ATTACH REQUEST TRANSMITTED
+2025-08-29 07:40:23.646 INFO TLSServer [memory]
+   Operation ID -13 sent to base station 70b3d59cd00009f6
+2025-08-29 07:40:23.646 INFO TLSServer [memory]
+   Tracking request for correlation with response
+2025-08-29 07:40:23.646 INFO TLSServer [memory]
+   Awaiting response from base station...
+2025-08-29 07:40:23.646 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.742 INFO TLSServer [memory]
+   Processing sensor 7/7: fca84a030000127b
+2025-08-29 07:40:23.743 INFO TLSServer [memory]
+📤 BSSCI ATTACH REQUEST INITIATED
+2025-08-29 07:40:23.743 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.743 INFO TLSServer [memory]
+   Sensor EUI: fca84a030000127b
+2025-08-29 07:40:23.743 INFO TLSServer [memory]
+   Target Base Station: 9c65f9fffe6be145
+2025-08-29 07:40:23.743 INFO TLSServer [memory]
+   Operation ID: -14
+2025-08-29 07:40:23.743 INFO TLSServer [memory]
+   Timestamp: 2025-08-29 07:40:23.743
+2025-08-29 07:40:23.743 INFO TLSServer [memory]
+   ✓ EUI format valid: fca84a030000127b
+2025-08-29 07:40:23.744 INFO TLSServer [memory]
+   ✓ Network key format valid: 1BC3E308...DB87B291
+2025-08-29 07:40:23.744 INFO TLSServer [memory]
+   ✓ Short address format valid: 127B
+2025-08-29 07:40:23.744 INFO TLSServer [memory]
+   ✓ Bidirectional flag: False
+2025-08-29 07:40:23.744 INFO TLSServer [memory]
+   ✅ All validations passed
+2025-08-29 07:40:23.744 INFO TLSServer [memory]
+   📋 Final parameters:
+2025-08-29 07:40:23.744 INFO TLSServer [memory]
+     EUI: fca84a030000127b
+2025-08-29 07:40:23.744 INFO TLSServer [memory]
+     Network Key: 1BC3E308...DB87B291
+2025-08-29 07:40:23.745 INFO TLSServer [memory]
+     Short Address: 127B
+2025-08-29 07:40:23.745 INFO TLSServer [memory]
+     Bidirectional: False
+2025-08-29 07:40:23.745 DEBUG TLSServer [memory]
+   📝 Built attach message: {'command': 'attPrp', 'opId': -14, 'epEui': 18205882870390592123, 'bidi': False, 'nwkSnKey': [27, 195, 227, 8, 240, 78, 14, 212, 137, 186, 72, 30, 219, 135, 178, 145], 'shAddr': 4731, 'lastPacketCnt': 0, 'dualChan': True, 'repetition': False, 'wideCarrOff': False, 'longBlkDist': False}
+2025-08-29 07:40:23.745 INFO TLSServer [memory]
+   📤 Transmitting attach request...
+2025-08-29 07:40:23.745 INFO TLSServer [memory]
+     Message size: 166 bytes
+2025-08-29 07:40:23.745 INFO TLSServer [memory]
+     Payload size: 154 bytes
+2025-08-29 07:40:23.747 INFO TLSServer [memory]
+✅ BSSCI ATTACH REQUEST TRANSMITTED
+2025-08-29 07:40:23.747 INFO TLSServer [memory]
+   Operation ID -14 sent to base station 9c65f9fffe6be145
+2025-08-29 07:40:23.747 INFO TLSServer [memory]
+   Tracking request for correlation with response
+2025-08-29 07:40:23.747 INFO TLSServer [memory]
+   Awaiting response from base station...
+2025-08-29 07:40:23.748 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.748 INFO TLSServer [memory]
+✅ BATCH SENSOR ATTACHMENT completed for base station 70b3d59cd00009f6
+2025-08-29 07:40:23.748 INFO TLSServer [memory]
+   Successful: 7
+2025-08-29 07:40:23.749 INFO TLSServer [memory]
+   Failed: 0
+2025-08-29 07:40:23.749 INFO TLSServer [memory]
+   Total processed: 7
+2025-08-29 07:40:23.749 INFO TLSServer [memory]
+📊 Starting periodic status request task for all base stations
+2025-08-29 07:40:23.749 INFO TLSServer [memory]
+📨 BSSCI message #3 received from ('192.168.144.1', 59508)
+2025-08-29 07:40:23.749 INFO TLSServer [memory]
+   Message type: attPrpRsp
+2025-08-29 07:40:23.750 DEBUG TLSServer [memory]
+   Full message: {'command': 'attPrpRsp', 'opId': -1}
+2025-08-29 07:40:23.750 INFO TLSServer [memory]
+📨 BSSCI ATTACH RESPONSE received from base station 70b3d59cd00009f6
+2025-08-29 07:40:23.750 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.750 INFO TLSServer [memory]
+   Operation ID: -1
+2025-08-29 07:40:23.750 INFO TLSServer [memory]
+   Raw message: {'command': 'attPrpRsp', 'opId': -1}
+2025-08-29 07:40:23.750 INFO TLSServer [memory]
+   Note: Per BSSCI spec, attach response contains only command and opId
+2025-08-29 07:40:23.750 INFO TLSServer [memory]
+✅ ATTACH RESPONSE CORRELATED with pending request
+2025-08-29 07:40:23.750 INFO TLSServer [memory]
+   Sensor EUI: 74731d000000008f
+2025-08-29 07:40:23.751 INFO TLSServer [memory]
+   Base station: 70b3d59cd00009f6
+2025-08-29 07:40:23.751 INFO TLSServer [memory]
+   Processing duration: 0.741 seconds
+2025-08-29 07:40:23.751 INFO TLSServer [memory]
+   Sensor Configuration:
+2025-08-29 07:40:23.751 INFO TLSServer [memory]
+     EUI: 74731d000000008f
+2025-08-29 07:40:23.751 INFO TLSServer [memory]
+     Network Key: 9093303B...BE961538
+2025-08-29 07:40:23.751 INFO TLSServer [memory]
+     Short Address: 0000
+2025-08-29 07:40:23.751 INFO TLSServer [memory]
+     Bidirectional: False
+2025-08-29 07:40:23.751 INFO TLSServer [memory]
+✅ SENSOR REGISTRATION SUCCESSFUL
+2025-08-29 07:40:23.752 INFO TLSServer [memory]
+   Sensor 74731d000000008f is now REGISTERED to base station 70b3d59cd00009f6
+2025-08-29 07:40:23.752 INFO TLSServer [memory]
+   Registration completed at: 2025-08-29 07:40:23.752
+2025-08-29 07:40:23.752 INFO TLSServer [memory]
+   Total base stations for this sensor: 1
+2025-08-29 07:40:23.752 INFO TLSServer [memory]
+   All base stations for sensor: ['70b3d59cd00009f6']
+2025-08-29 07:40:23.752 INFO TLSServer [memory]
+   Total registered sensors: 1
+2025-08-29 07:40:23.753 INFO TLSServer [memory]
+   Response received at: 2025-08-29 07:40:23.752
+2025-08-29 07:40:23.753 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.753 DEBUG TLSServer [memory]
+📤 BSSCI ATTACH COMPLETE sent for opID -1
+2025-08-29 07:40:23.753 INFO TLSServer [memory]
+📨 BSSCI message #4 received from ('192.168.144.1', 59508)
+2025-08-29 07:40:23.753 INFO TLSServer [memory]
+   Message type: attPrpRsp
+2025-08-29 07:40:23.753 DEBUG TLSServer [memory]
+   Full message: {'command': 'attPrpRsp', 'opId': -3}
+2025-08-29 07:40:23.754 INFO TLSServer [memory]
+📨 BSSCI ATTACH RESPONSE received from base station 70b3d59cd00009f6
+2025-08-29 07:40:23.754 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.755 INFO TLSServer [memory]
+   Operation ID: -3
+2025-08-29 07:40:23.755 INFO TLSServer [memory]
+   Raw message: {'command': 'attPrpRsp', 'opId': -3}
+2025-08-29 07:40:23.755 INFO TLSServer [memory]
+   Note: Per BSSCI spec, attach response contains only command and opId
+2025-08-29 07:40:23.756 INFO TLSServer [memory]
+✅ ATTACH RESPONSE CORRELATED with pending request
+2025-08-29 07:40:23.756 INFO TLSServer [memory]
+   Sensor EUI: fca84a090000000a
+2025-08-29 07:40:23.756 INFO TLSServer [memory]
+   Base station: 70b3d59cd00009f6
+2025-08-29 07:40:23.756 INFO TLSServer [memory]
+   Processing duration: 0.637 seconds
+2025-08-29 07:40:23.756 INFO TLSServer [memory]
+   Sensor Configuration:
+2025-08-29 07:40:23.756 INFO TLSServer [memory]
+     EUI: fca84a090000000a
+2025-08-29 07:40:23.756 INFO TLSServer [memory]
+     Network Key: 128EA6CC...BFD17704
+2025-08-29 07:40:23.757 INFO TLSServer [memory]
+     Short Address: 000A
+2025-08-29 07:40:23.757 INFO TLSServer [memory]
+     Bidirectional: False
+2025-08-29 07:40:23.757 INFO TLSServer [memory]
+✅ SENSOR REGISTRATION SUCCESSFUL
+2025-08-29 07:40:23.757 INFO TLSServer [memory]
+   Sensor fca84a090000000a is now REGISTERED to base station 70b3d59cd00009f6
+2025-08-29 07:40:23.757 INFO TLSServer [memory]
+   Registration completed at: 2025-08-29 07:40:23.757
+2025-08-29 07:40:23.757 INFO TLSServer [memory]
+   Total base stations for this sensor: 1
+2025-08-29 07:40:23.758 INFO TLSServer [memory]
+   All base stations for sensor: ['70b3d59cd00009f6']
+2025-08-29 07:40:23.758 INFO TLSServer [memory]
+   Total registered sensors: 2
+2025-08-29 07:40:23.758 INFO TLSServer [memory]
+   Response received at: 2025-08-29 07:40:23.758
+2025-08-29 07:40:23.758 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.758 DEBUG TLSServer [memory]
+📤 BSSCI ATTACH COMPLETE sent for opID -3
+2025-08-29 07:40:23.759 INFO TLSServer [memory]
+📨 BSSCI message #5 received from ('192.168.144.1', 59508)
+2025-08-29 07:40:23.759 INFO TLSServer [memory]
+   Message type: attPrpRsp
+2025-08-29 07:40:23.759 DEBUG TLSServer [memory]
+   Full message: {'command': 'attPrpRsp', 'opId': -5}
+2025-08-29 07:40:23.759 INFO TLSServer [memory]
+📨 BSSCI ATTACH RESPONSE received from base station 70b3d59cd00009f6
+2025-08-29 07:40:23.759 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.759 INFO TLSServer [memory]
+   Operation ID: -5
+2025-08-29 07:40:23.759 INFO TLSServer [memory]
+   Raw message: {'command': 'attPrpRsp', 'opId': -5}
+2025-08-29 07:40:23.760 INFO TLSServer [memory]
+   Note: Per BSSCI spec, attach response contains only command and opId
+2025-08-29 07:40:23.760 INFO TLSServer [memory]
+✅ ATTACH RESPONSE CORRELATED with pending request
+2025-08-29 07:40:23.760 INFO TLSServer [memory]
+   Sensor EUI: 74731d0000000016
+2025-08-29 07:40:23.760 INFO TLSServer [memory]
+   Base station: 70b3d59cd00009f6
+2025-08-29 07:40:23.760 INFO TLSServer [memory]
+   Processing duration: 0.533 seconds
+2025-08-29 07:40:23.760 INFO TLSServer [memory]
+   Sensor Configuration:
+2025-08-29 07:40:23.761 INFO TLSServer [memory]
+     EUI: 74731d0000000016
+2025-08-29 07:40:23.761 INFO TLSServer [memory]
+     Network Key: BBE81045...311357D2
+2025-08-29 07:40:23.761 INFO TLSServer [memory]
+     Short Address: 0000
+2025-08-29 07:40:23.761 INFO TLSServer [memory]
+     Bidirectional: False
+2025-08-29 07:40:23.761 INFO TLSServer [memory]
+✅ SENSOR REGISTRATION SUCCESSFUL
+2025-08-29 07:40:23.761 INFO TLSServer [memory]
+   Sensor 74731d0000000016 is now REGISTERED to base station 70b3d59cd00009f6
+2025-08-29 07:40:23.761 INFO TLSServer [memory]
+   Registration completed at: 2025-08-29 07:40:23.761
+2025-08-29 07:40:23.762 INFO TLSServer [memory]
+   Total base stations for this sensor: 1
+2025-08-29 07:40:23.762 INFO TLSServer [memory]
+   All base stations for sensor: ['70b3d59cd00009f6']
+2025-08-29 07:40:23.762 INFO TLSServer [memory]
+   Total registered sensors: 3
+2025-08-29 07:40:23.762 INFO TLSServer [memory]
+   Response received at: 2025-08-29 07:40:23.762
+2025-08-29 07:40:23.762 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.763 DEBUG TLSServer [memory]
+📤 BSSCI ATTACH COMPLETE sent for opID -5
+2025-08-29 07:40:23.763 INFO TLSServer [memory]
+📨 BSSCI message #6 received from ('192.168.144.1', 59508)
+2025-08-29 07:40:23.763 INFO TLSServer [memory]
+   Message type: attPrpRsp
+2025-08-29 07:40:23.763 DEBUG TLSServer [memory]
+   Full message: {'command': 'attPrpRsp', 'opId': -7}
+2025-08-29 07:40:23.763 INFO TLSServer [memory]
+📨 BSSCI ATTACH RESPONSE received from base station 70b3d59cd00009f6
+2025-08-29 07:40:23.763 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.763 INFO TLSServer [memory]
+   Operation ID: -7
+2025-08-29 07:40:23.764 INFO TLSServer [memory]
+   Raw message: {'command': 'attPrpRsp', 'opId': -7}
+2025-08-29 07:40:23.764 INFO TLSServer [memory]
+   Note: Per BSSCI spec, attach response contains only command and opId
+2025-08-29 07:40:23.764 INFO TLSServer [memory]
+✅ ATTACH RESPONSE CORRELATED with pending request
+2025-08-29 07:40:23.764 INFO TLSServer [memory]
+   Sensor EUI: fca84a030000127c
+2025-08-29 07:40:23.764 INFO TLSServer [memory]
+   Base station: 70b3d59cd00009f6
+2025-08-29 07:40:23.764 INFO TLSServer [memory]
+   Processing duration: 0.433 seconds
+2025-08-29 07:40:23.764 INFO TLSServer [memory]
+   Sensor Configuration:
+2025-08-29 07:40:23.765 INFO TLSServer [memory]
+     EUI: fca84a030000127c
+2025-08-29 07:40:23.765 INFO TLSServer [memory]
+     Network Key: 79ABF643...0D9E33E9
+2025-08-29 07:40:23.765 INFO TLSServer [memory]
+     Short Address: 127C
+2025-08-29 07:40:23.766 INFO TLSServer [memory]
+     Bidirectional: False
+2025-08-29 07:40:23.766 INFO TLSServer [memory]
+✅ SENSOR REGISTRATION SUCCESSFUL
+2025-08-29 07:40:23.766 INFO TLSServer [memory]
+   Sensor fca84a030000127c is now REGISTERED to base station 70b3d59cd00009f6
+2025-08-29 07:40:23.766 INFO TLSServer [memory]
+   Registration completed at: 2025-08-29 07:40:23.766
+2025-08-29 07:40:23.766 INFO TLSServer [memory]
+   Total base stations for this sensor: 1
+2025-08-29 07:40:23.766 INFO TLSServer [memory]
+   All base stations for sensor: ['70b3d59cd00009f6']
+2025-08-29 07:40:23.767 INFO TLSServer [memory]
+   Total registered sensors: 4
+2025-08-29 07:40:23.767 INFO TLSServer [memory]
+   Response received at: 2025-08-29 07:40:23.767
+2025-08-29 07:40:23.767 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.767 DEBUG TLSServer [memory]
+📤 BSSCI ATTACH COMPLETE sent for opID -7
+2025-08-29 07:40:23.767 INFO TLSServer [memory]
+📨 BSSCI message #7 received from ('192.168.144.1', 59508)
+2025-08-29 07:40:23.767 INFO TLSServer [memory]
+   Message type: attPrpRsp
+2025-08-29 07:40:23.768 DEBUG TLSServer [memory]
+   Full message: {'command': 'attPrpRsp', 'opId': -9}
+2025-08-29 07:40:23.768 INFO TLSServer [memory]
+📨 BSSCI ATTACH RESPONSE received from base station 70b3d59cd00009f6
+2025-08-29 07:40:23.768 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.768 INFO TLSServer [memory]
+   Operation ID: -9
+2025-08-29 07:40:23.768 INFO TLSServer [memory]
+   Raw message: {'command': 'attPrpRsp', 'opId': -9}
+2025-08-29 07:40:23.768 INFO TLSServer [memory]
+   Note: Per BSSCI spec, attach response contains only command and opId
+2025-08-29 07:40:23.769 INFO TLSServer [memory]
+✅ ATTACH RESPONSE CORRELATED with pending request
+2025-08-29 07:40:23.769 INFO TLSServer [memory]
+   Sensor EUI: fca84a0300001276
+2025-08-29 07:40:23.769 INFO TLSServer [memory]
+   Base station: 70b3d59cd00009f6
+2025-08-29 07:40:23.769 INFO TLSServer [memory]
+   Processing duration: 0.333 seconds
+2025-08-29 07:40:23.769 INFO TLSServer [memory]
+   Sensor Configuration:
+2025-08-29 07:40:23.770 INFO TLSServer [memory]
+     EUI: fca84a0300001276
+2025-08-29 07:40:23.770 INFO TLSServer [memory]
+     Network Key: FB1A4EBC...18BB775E
+2025-08-29 07:40:23.770 INFO TLSServer [memory]
+     Short Address: 1276
+2025-08-29 07:40:23.770 INFO TLSServer [memory]
+     Bidirectional: False
+2025-08-29 07:40:23.770 INFO TLSServer [memory]
+✅ SENSOR REGISTRATION SUCCESSFUL
+2025-08-29 07:40:23.770 INFO TLSServer [memory]
+   Sensor fca84a0300001276 is now REGISTERED to base station 70b3d59cd00009f6
+2025-08-29 07:40:23.771 INFO TLSServer [memory]
+   Registration completed at: 2025-08-29 07:40:23.770
+2025-08-29 07:40:23.771 INFO TLSServer [memory]
+   Total base stations for this sensor: 1
+2025-08-29 07:40:23.771 INFO TLSServer [memory]
+   All base stations for sensor: ['70b3d59cd00009f6']
+2025-08-29 07:40:23.771 INFO TLSServer [memory]
+   Total registered sensors: 5
+2025-08-29 07:40:23.771 INFO TLSServer [memory]
+   Response received at: 2025-08-29 07:40:23.771
+2025-08-29 07:40:23.771 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.772 DEBUG TLSServer [memory]
+📤 BSSCI ATTACH COMPLETE sent for opID -9
+2025-08-29 07:40:23.772 INFO TLSServer [memory]
+📨 BSSCI message #8 received from ('192.168.144.1', 59508)
+2025-08-29 07:40:23.772 INFO TLSServer [memory]
+   Message type: attPrpRsp
+2025-08-29 07:40:23.772 DEBUG TLSServer [memory]
+   Full message: {'command': 'attPrpRsp', 'opId': -11}
+2025-08-29 07:40:23.772 INFO TLSServer [memory]
+📨 BSSCI ATTACH RESPONSE received from base station 70b3d59cd00009f6
+2025-08-29 07:40:23.772 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.772 INFO TLSServer [memory]
+   Operation ID: -11
+2025-08-29 07:40:23.772 INFO TLSServer [memory]
+   Raw message: {'command': 'attPrpRsp', 'opId': -11}
+2025-08-29 07:40:23.773 INFO TLSServer [memory]
+   Note: Per BSSCI spec, attach response contains only command and opId
+2025-08-29 07:40:23.773 INFO TLSServer [memory]
+✅ ATTACH RESPONSE CORRELATED with pending request
+2025-08-29 07:40:23.773 INFO TLSServer [memory]
+   Sensor EUI: fca84a030000127d
+2025-08-29 07:40:23.773 INFO TLSServer [memory]
+   Base station: 70b3d59cd00009f6
+2025-08-29 07:40:23.773 INFO TLSServer [memory]
+   Processing duration: 0.231 seconds
+2025-08-29 07:40:23.773 INFO TLSServer [memory]
+   Sensor Configuration:
+2025-08-29 07:40:23.773 INFO TLSServer [memory]
+     EUI: fca84a030000127d
+2025-08-29 07:40:23.773 INFO TLSServer [memory]
+     Network Key: 67069B9E...C6444007
+2025-08-29 07:40:23.774 INFO TLSServer [memory]
+     Short Address: 127D
+2025-08-29 07:40:23.774 INFO TLSServer [memory]
+     Bidirectional: False
+2025-08-29 07:40:23.774 INFO TLSServer [memory]
+✅ SENSOR REGISTRATION SUCCESSFUL
+2025-08-29 07:40:23.774 INFO TLSServer [memory]
+   Sensor fca84a030000127d is now REGISTERED to base station 70b3d59cd00009f6
+2025-08-29 07:40:23.774 INFO TLSServer [memory]
+   Registration completed at: 2025-08-29 07:40:23.774
+2025-08-29 07:40:23.774 INFO TLSServer [memory]
+   Total base stations for this sensor: 1
+2025-08-29 07:40:23.774 INFO TLSServer [memory]
+   All base stations for sensor: ['70b3d59cd00009f6']
+2025-08-29 07:40:23.774 INFO TLSServer [memory]
+   Total registered sensors: 6
+2025-08-29 07:40:23.775 INFO TLSServer [memory]
+   Response received at: 2025-08-29 07:40:23.775
+2025-08-29 07:40:23.775 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.775 DEBUG TLSServer [memory]
+📤 BSSCI ATTACH COMPLETE sent for opID -11
+2025-08-29 07:40:23.775 INFO TLSServer [memory]
+📨 BSSCI message #9 received from ('192.168.144.1', 59508)
+2025-08-29 07:40:23.775 INFO TLSServer [memory]
+   Message type: attPrpRsp
+2025-08-29 07:40:23.775 DEBUG TLSServer [memory]
+   Full message: {'command': 'attPrpRsp', 'opId': -13}
+2025-08-29 07:40:23.776 INFO TLSServer [memory]
+📨 BSSCI ATTACH RESPONSE received from base station 70b3d59cd00009f6
+2025-08-29 07:40:23.776 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.776 INFO TLSServer [memory]
+   Operation ID: -13
+2025-08-29 07:40:23.776 INFO TLSServer [memory]
+   Raw message: {'command': 'attPrpRsp', 'opId': -13}
+2025-08-29 07:40:23.776 INFO TLSServer [memory]
+   Note: Per BSSCI spec, attach response contains only command and opId
+2025-08-29 07:40:23.776 INFO TLSServer [memory]
+✅ ATTACH RESPONSE CORRELATED with pending request
+2025-08-29 07:40:23.776 INFO TLSServer [memory]
+   Sensor EUI: fca84a030000127b
+2025-08-29 07:40:23.777 INFO TLSServer [memory]
+   Base station: 70b3d59cd00009f6
+2025-08-29 07:40:23.777 INFO TLSServer [memory]
+   Processing duration: 0.130 seconds
+2025-08-29 07:40:23.777 INFO TLSServer [memory]
+   Sensor Configuration:
+2025-08-29 07:40:23.777 INFO TLSServer [memory]
+     EUI: fca84a030000127b
+2025-08-29 07:40:23.777 INFO TLSServer [memory]
+     Network Key: 1BC3E308...DB87B291
+2025-08-29 07:40:23.777 INFO TLSServer [memory]
+     Short Address: 127B
+2025-08-29 07:40:23.777 INFO TLSServer [memory]
+     Bidirectional: False
+2025-08-29 07:40:23.778 INFO TLSServer [memory]
+✅ SENSOR REGISTRATION SUCCESSFUL
+2025-08-29 07:40:23.778 INFO TLSServer [memory]
+   Sensor fca84a030000127b is now REGISTERED to base station 70b3d59cd00009f6
+2025-08-29 07:40:23.778 INFO TLSServer [memory]
+   Registration completed at: 2025-08-29 07:40:23.778
+2025-08-29 07:40:23.778 INFO TLSServer [memory]
+   Total base stations for this sensor: 1
+2025-08-29 07:40:23.778 INFO TLSServer [memory]
+   All base stations for sensor: ['70b3d59cd00009f6']
+2025-08-29 07:40:23.778 INFO TLSServer [memory]
+   Total registered sensors: 7
+2025-08-29 07:40:23.779 INFO TLSServer [memory]
+   Response received at: 2025-08-29 07:40:23.778
+2025-08-29 07:40:23.779 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.779 DEBUG TLSServer [memory]
+📤 BSSCI ATTACH COMPLETE sent for opID -13
+2025-08-29 07:40:23.779 INFO TLSServer [memory]
+📊 STATUS REQUEST TASK STARTED
+2025-08-29 07:40:23.779 INFO TLSServer [memory]
+   Status request interval: 30 seconds
+2025-08-29 07:40:23.850 INFO TLSServer [memory]
+✅ BATCH SENSOR ATTACHMENT completed for base station 9c65f9fffe6be145
+2025-08-29 07:40:23.850 INFO TLSServer [memory]
+   Successful: 7
+2025-08-29 07:40:23.850 INFO TLSServer [memory]
+   Failed: 0
+2025-08-29 07:40:23.850 INFO TLSServer [memory]
+   Total processed: 7
+2025-08-29 07:40:23.850 INFO TLSServer [memory]
+📊 Status request task already running, will include this base station
+2025-08-29 07:40:23.851 INFO TLSServer [memory]
+📨 BSSCI message #3 received from ('192.168.144.1', 59510)
+2025-08-29 07:40:23.851 INFO TLSServer [memory]
+   Message type: attPrpRsp
+2025-08-29 07:40:23.851 DEBUG TLSServer [memory]
+   Full message: {'command': 'attPrpRsp', 'opId': -2}
+2025-08-29 07:40:23.851 INFO TLSServer [memory]
+📨 BSSCI ATTACH RESPONSE received from base station 9c65f9fffe6be145
+2025-08-29 07:40:23.851 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.851 INFO TLSServer [memory]
+   Operation ID: -2
+2025-08-29 07:40:23.851 INFO TLSServer [memory]
+   Raw message: {'command': 'attPrpRsp', 'opId': -2}
+2025-08-29 07:40:23.852 INFO TLSServer [memory]
+   Note: Per BSSCI spec, attach response contains only command and opId
+2025-08-29 07:40:23.852 INFO TLSServer [memory]
+✅ ATTACH RESPONSE CORRELATED with pending request
+2025-08-29 07:40:23.852 INFO TLSServer [memory]
+   Sensor EUI: 74731d000000008f
+2025-08-29 07:40:23.852 INFO TLSServer [memory]
+   Base station: 9c65f9fffe6be145
+2025-08-29 07:40:23.852 INFO TLSServer [memory]
+   Processing duration: 0.736 seconds
+2025-08-29 07:40:23.852 INFO TLSServer [memory]
+   Sensor Configuration:
+2025-08-29 07:40:23.852 INFO TLSServer [memory]
+     EUI: 74731d000000008f
+2025-08-29 07:40:23.852 INFO TLSServer [memory]
+     Network Key: 9093303B...BE961538
+2025-08-29 07:40:23.853 INFO TLSServer [memory]
+     Short Address: 0000
+2025-08-29 07:40:23.853 INFO TLSServer [memory]
+     Bidirectional: False
+2025-08-29 07:40:23.853 INFO TLSServer [memory]
+✅ SENSOR REGISTRATION SUCCESSFUL
+2025-08-29 07:40:23.853 INFO TLSServer [memory]
+   Sensor 74731d000000008f is now REGISTERED to base station 9c65f9fffe6be145
+2025-08-29 07:40:23.853 INFO TLSServer [memory]
+   Registration completed at: 2025-08-29 07:40:23.853
+2025-08-29 07:40:23.853 INFO TLSServer [memory]
+   Total base stations for this sensor: 2
+2025-08-29 07:40:23.853 INFO TLSServer [memory]
+   All base stations for sensor: ['70b3d59cd00009f6', '9c65f9fffe6be145']
+2025-08-29 07:40:23.853 INFO TLSServer [memory]
+   Total registered sensors: 7
+2025-08-29 07:40:23.854 INFO TLSServer [memory]
+   Response received at: 2025-08-29 07:40:23.854
+2025-08-29 07:40:23.854 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.855 DEBUG TLSServer [memory]
+📤 BSSCI ATTACH COMPLETE sent for opID -2
+2025-08-29 07:40:23.855 INFO TLSServer [memory]
+📨 BSSCI message #4 received from ('192.168.144.1', 59510)
+2025-08-29 07:40:23.855 INFO TLSServer [memory]
+   Message type: attPrpRsp
+2025-08-29 07:40:23.855 DEBUG TLSServer [memory]
+   Full message: {'command': 'attPrpRsp', 'opId': -4}
+2025-08-29 07:40:23.855 INFO TLSServer [memory]
+📨 BSSCI ATTACH RESPONSE received from base station 9c65f9fffe6be145
+2025-08-29 07:40:23.855 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.856 INFO TLSServer [memory]
+   Operation ID: -4
+2025-08-29 07:40:23.856 INFO TLSServer [memory]
+   Raw message: {'command': 'attPrpRsp', 'opId': -4}
+2025-08-29 07:40:23.856 INFO TLSServer [memory]
+   Note: Per BSSCI spec, attach response contains only command and opId
+2025-08-29 07:40:23.857 INFO TLSServer [memory]
+✅ ATTACH RESPONSE CORRELATED with pending request
+2025-08-29 07:40:23.857 INFO TLSServer [memory]
+   Sensor EUI: fca84a090000000a
+2025-08-29 07:40:23.857 INFO TLSServer [memory]
+   Base station: 9c65f9fffe6be145
+2025-08-29 07:40:23.857 INFO TLSServer [memory]
+   Processing duration: 0.636 seconds
+2025-08-29 07:40:23.857 INFO TLSServer [memory]
+   Sensor Configuration:
+2025-08-29 07:40:23.858 INFO TLSServer [memory]
+     EUI: fca84a090000000a
+2025-08-29 07:40:23.858 INFO TLSServer [memory]
+     Network Key: 128EA6CC...BFD17704
+2025-08-29 07:40:23.858 INFO TLSServer [memory]
+     Short Address: 000A
+2025-08-29 07:40:23.858 INFO TLSServer [memory]
+     Bidirectional: False
+2025-08-29 07:40:23.858 INFO TLSServer [memory]
+✅ SENSOR REGISTRATION SUCCESSFUL
+2025-08-29 07:40:23.858 INFO TLSServer [memory]
+   Sensor fca84a090000000a is now REGISTERED to base station 9c65f9fffe6be145
+2025-08-29 07:40:23.858 INFO TLSServer [memory]
+   Registration completed at: 2025-08-29 07:40:23.858
+2025-08-29 07:40:23.859 INFO TLSServer [memory]
+   Total base stations for this sensor: 2
+2025-08-29 07:40:23.859 INFO TLSServer [memory]
+   All base stations for sensor: ['70b3d59cd00009f6', '9c65f9fffe6be145']
+2025-08-29 07:40:23.859 INFO TLSServer [memory]
+   Total registered sensors: 7
+2025-08-29 07:40:23.859 INFO TLSServer [memory]
+   Response received at: 2025-08-29 07:40:23.859
+2025-08-29 07:40:23.859 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.860 DEBUG TLSServer [memory]
+📤 BSSCI ATTACH COMPLETE sent for opID -4
+2025-08-29 07:40:23.861 INFO TLSServer [memory]
+📨 BSSCI message #5 received from ('192.168.144.1', 59510)
+2025-08-29 07:40:23.861 INFO TLSServer [memory]
+   Message type: attPrpRsp
+2025-08-29 07:40:23.861 DEBUG TLSServer [memory]
+   Full message: {'command': 'attPrpRsp', 'opId': -6}
+2025-08-29 07:40:23.861 INFO TLSServer [memory]
+📨 BSSCI ATTACH RESPONSE received from base station 9c65f9fffe6be145
+2025-08-29 07:40:23.861 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.862 INFO TLSServer [memory]
+   Operation ID: -6
+2025-08-29 07:40:23.862 INFO TLSServer [memory]
+   Raw message: {'command': 'attPrpRsp', 'opId': -6}
+2025-08-29 07:40:23.862 INFO TLSServer [memory]
+   Note: Per BSSCI spec, attach response contains only command and opId
+2025-08-29 07:40:23.862 INFO TLSServer [memory]
+✅ ATTACH RESPONSE CORRELATED with pending request
+2025-08-29 07:40:23.862 INFO TLSServer [memory]
+   Sensor EUI: 74731d0000000016
+2025-08-29 07:40:23.862 INFO TLSServer [memory]
+   Base station: 9c65f9fffe6be145
+2025-08-29 07:40:23.862 INFO TLSServer [memory]
+   Processing duration: 0.536 seconds
+2025-08-29 07:40:23.862 INFO TLSServer [memory]
+   Sensor Configuration:
+2025-08-29 07:40:23.863 INFO TLSServer [memory]
+     EUI: 74731d0000000016
+2025-08-29 07:40:23.863 INFO TLSServer [memory]
+     Network Key: BBE81045...311357D2
+2025-08-29 07:40:23.863 INFO TLSServer [memory]
+     Short Address: 0000
+2025-08-29 07:40:23.863 INFO TLSServer [memory]
+     Bidirectional: False
+2025-08-29 07:40:23.863 INFO TLSServer [memory]
+✅ SENSOR REGISTRATION SUCCESSFUL
+2025-08-29 07:40:23.863 INFO TLSServer [memory]
+   Sensor 74731d0000000016 is now REGISTERED to base station 9c65f9fffe6be145
+2025-08-29 07:40:23.863 INFO TLSServer [memory]
+   Registration completed at: 2025-08-29 07:40:23.863
+2025-08-29 07:40:23.864 INFO TLSServer [memory]
+   Total base stations for this sensor: 2
+2025-08-29 07:40:23.864 INFO TLSServer [memory]
+   All base stations for sensor: ['70b3d59cd00009f6', '9c65f9fffe6be145']
+2025-08-29 07:40:23.864 INFO TLSServer [memory]
+   Total registered sensors: 7
+2025-08-29 07:40:23.864 INFO TLSServer [memory]
+   Response received at: 2025-08-29 07:40:23.864
+2025-08-29 07:40:23.864 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.865 DEBUG TLSServer [memory]
+📤 BSSCI ATTACH COMPLETE sent for opID -6
+2025-08-29 07:40:23.865 INFO TLSServer [memory]
+📨 BSSCI message #6 received from ('192.168.144.1', 59510)
+2025-08-29 07:40:23.865 INFO TLSServer [memory]
+   Message type: attPrpRsp
+2025-08-29 07:40:23.865 DEBUG TLSServer [memory]
+   Full message: {'command': 'attPrpRsp', 'opId': -8}
+2025-08-29 07:40:23.865 INFO TLSServer [memory]
+📨 BSSCI ATTACH RESPONSE received from base station 9c65f9fffe6be145
+2025-08-29 07:40:23.866 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.866 INFO TLSServer [memory]
+   Operation ID: -8
+2025-08-29 07:40:23.866 INFO TLSServer [memory]
+   Raw message: {'command': 'attPrpRsp', 'opId': -8}
+2025-08-29 07:40:23.866 INFO TLSServer [memory]
+   Note: Per BSSCI spec, attach response contains only command and opId
+2025-08-29 07:40:23.866 INFO TLSServer [memory]
+✅ ATTACH RESPONSE CORRELATED with pending request
+2025-08-29 07:40:23.866 INFO TLSServer [memory]
+   Sensor EUI: fca84a030000127c
+2025-08-29 07:40:23.866 INFO TLSServer [memory]
+   Base station: 9c65f9fffe6be145
+2025-08-29 07:40:23.867 INFO TLSServer [memory]
+   Processing duration: 0.436 seconds
+2025-08-29 07:40:23.867 INFO TLSServer [memory]
+   Sensor Configuration:
+2025-08-29 07:40:23.867 INFO TLSServer [memory]
+     EUI: fca84a030000127c
+2025-08-29 07:40:23.867 INFO TLSServer [memory]
+     Network Key: 79ABF643...0D9E33E9
+2025-08-29 07:40:23.867 INFO TLSServer [memory]
+     Short Address: 127C
+2025-08-29 07:40:23.867 INFO TLSServer [memory]
+     Bidirectional: False
+2025-08-29 07:40:23.867 INFO TLSServer [memory]
+✅ SENSOR REGISTRATION SUCCESSFUL
+2025-08-29 07:40:23.867 INFO TLSServer [memory]
+   Sensor fca84a030000127c is now REGISTERED to base station 9c65f9fffe6be145
+2025-08-29 07:40:23.868 INFO TLSServer [memory]
+   Registration completed at: 2025-08-29 07:40:23.867
+2025-08-29 07:40:23.868 INFO TLSServer [memory]
+   Total base stations for this sensor: 2
+2025-08-29 07:40:23.868 INFO TLSServer [memory]
+   All base stations for sensor: ['70b3d59cd00009f6', '9c65f9fffe6be145']
+2025-08-29 07:40:23.868 INFO TLSServer [memory]
+   Total registered sensors: 7
+2025-08-29 07:40:23.868 INFO TLSServer [memory]
+   Response received at: 2025-08-29 07:40:23.868
+2025-08-29 07:40:23.868 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.869 DEBUG root [memory]
+Could not get sync service instances: [Errno 13] Permission denied: '/app/logs/mqtt_detailed.log'
+2025-08-29 07:40:23.870 DEBUG TLSServer [memory]
+📤 BSSCI ATTACH COMPLETE sent for opID -8
+2025-08-29 07:40:23.870 INFO TLSServer [memory]
+📨 BSSCI message #7 received from ('192.168.144.1', 59510)
+2025-08-29 07:40:23.870 INFO TLSServer [memory]
+   Message type: attPrpRsp
+2025-08-29 07:40:23.870 DEBUG TLSServer [memory]
+   Full message: {'command': 'attPrpRsp', 'opId': -10}
+2025-08-29 07:40:23.870 INFO TLSServer [memory]
+📨 BSSCI ATTACH RESPONSE received from base station 9c65f9fffe6be145
+2025-08-29 07:40:23.870 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.871 INFO TLSServer [memory]
+   Operation ID: -10
+2025-08-29 07:40:23.871 INFO TLSServer [memory]
+   Raw message: {'command': 'attPrpRsp', 'opId': -10}
+2025-08-29 07:40:23.871 INFO TLSServer [memory]
+   Note: Per BSSCI spec, attach response contains only command and opId
+2025-08-29 07:40:23.871 INFO TLSServer [memory]
+✅ ATTACH RESPONSE CORRELATED with pending request
+2025-08-29 07:40:23.871 INFO TLSServer [memory]
+   Sensor EUI: fca84a0300001276
+2025-08-29 07:40:23.871 INFO TLSServer [memory]
+   Base station: 9c65f9fffe6be145
+2025-08-29 07:40:23.871 INFO TLSServer [memory]
+   Processing duration: 0.336 seconds
+2025-08-29 07:40:23.872 INFO TLSServer [memory]
+   Sensor Configuration:
+2025-08-29 07:40:23.872 INFO TLSServer [memory]
+     EUI: fca84a0300001276
+2025-08-29 07:40:23.872 INFO TLSServer [memory]
+     Network Key: FB1A4EBC...18BB775E
+2025-08-29 07:40:23.872 INFO TLSServer [memory]
+     Short Address: 1276
+2025-08-29 07:40:23.872 INFO TLSServer [memory]
+     Bidirectional: False
+2025-08-29 07:40:23.872 INFO TLSServer [memory]
+✅ SENSOR REGISTRATION SUCCESSFUL
+2025-08-29 07:40:23.872 INFO TLSServer [memory]
+   Sensor fca84a0300001276 is now REGISTERED to base station 9c65f9fffe6be145
+2025-08-29 07:40:23.873 INFO TLSServer [memory]
+   Registration completed at: 2025-08-29 07:40:23.873
+2025-08-29 07:40:23.873 INFO TLSServer [memory]
+   Total base stations for this sensor: 2
+2025-08-29 07:40:23.873 INFO TLSServer [memory]
+   All base stations for sensor: ['70b3d59cd00009f6', '9c65f9fffe6be145']
+2025-08-29 07:40:23.873 INFO TLSServer [memory]
+   Total registered sensors: 7
+2025-08-29 07:40:23.873 INFO TLSServer [memory]
+   Response received at: 2025-08-29 07:40:23.873
+2025-08-29 07:40:23.873 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.874 DEBUG TLSServer [memory]
+📤 BSSCI ATTACH COMPLETE sent for opID -10
+2025-08-29 07:40:23.874 INFO TLSServer [memory]
+📨 BSSCI message #8 received from ('192.168.144.1', 59510)
+2025-08-29 07:40:23.874 INFO TLSServer [memory]
+   Message type: attPrpRsp
+2025-08-29 07:40:23.874 DEBUG TLSServer [memory]
+   Full message: {'command': 'attPrpRsp', 'opId': -12}
+2025-08-29 07:40:23.874 INFO TLSServer [memory]
+📨 BSSCI ATTACH RESPONSE received from base station 9c65f9fffe6be145
+2025-08-29 07:40:23.874 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.875 INFO TLSServer [memory]
+   Operation ID: -12
+2025-08-29 07:40:23.875 INFO TLSServer [memory]
+   Raw message: {'command': 'attPrpRsp', 'opId': -12}
+2025-08-29 07:40:23.875 INFO TLSServer [memory]
+   Note: Per BSSCI spec, attach response contains only command and opId
+2025-08-29 07:40:23.875 INFO TLSServer [memory]
+✅ ATTACH RESPONSE CORRELATED with pending request
+2025-08-29 07:40:23.875 INFO TLSServer [memory]
+   Sensor EUI: fca84a030000127d
+2025-08-29 07:40:23.875 INFO TLSServer [memory]
+   Base station: 9c65f9fffe6be145
+2025-08-29 07:40:23.875 INFO TLSServer [memory]
+   Processing duration: 0.234 seconds
+2025-08-29 07:40:23.876 INFO TLSServer [memory]
+   Sensor Configuration:
+2025-08-29 07:40:23.876 INFO TLSServer [memory]
+     EUI: fca84a030000127d
+2025-08-29 07:40:23.876 INFO TLSServer [memory]
+     Network Key: 67069B9E...C6444007
+2025-08-29 07:40:23.876 INFO TLSServer [memory]
+     Short Address: 127D
+2025-08-29 07:40:23.876 INFO TLSServer [memory]
+     Bidirectional: False
+2025-08-29 07:40:23.876 INFO TLSServer [memory]
+✅ SENSOR REGISTRATION SUCCESSFUL
+2025-08-29 07:40:23.876 INFO TLSServer [memory]
+   Sensor fca84a030000127d is now REGISTERED to base station 9c65f9fffe6be145
+2025-08-29 07:40:23.876 INFO TLSServer [memory]
+   Registration completed at: 2025-08-29 07:40:23.876
+2025-08-29 07:40:23.877 INFO TLSServer [memory]
+   Total base stations for this sensor: 2
+2025-08-29 07:40:23.877 INFO TLSServer [memory]
+   All base stations for sensor: ['70b3d59cd00009f6', '9c65f9fffe6be145']
+2025-08-29 07:40:23.877 INFO TLSServer [memory]
+   Total registered sensors: 7
+2025-08-29 07:40:23.877 INFO TLSServer [memory]
+   Response received at: 2025-08-29 07:40:23.877
+2025-08-29 07:40:23.877 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.878 DEBUG TLSServer [memory]
+📤 BSSCI ATTACH COMPLETE sent for opID -12
+2025-08-29 07:40:23.878 INFO TLSServer [memory]
+📨 BSSCI message #9 received from ('192.168.144.1', 59510)
+2025-08-29 07:40:23.878 INFO TLSServer [memory]
+   Message type: attPrpRsp
+2025-08-29 07:40:23.878 DEBUG TLSServer [memory]
+   Full message: {'command': 'attPrpRsp', 'opId': -14}
+2025-08-29 07:40:23.878 INFO TLSServer [memory]
+📨 BSSCI ATTACH RESPONSE received from base station 9c65f9fffe6be145
+2025-08-29 07:40:23.878 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.878 INFO TLSServer [memory]
+   Operation ID: -14
+2025-08-29 07:40:23.879 INFO TLSServer [memory]
+   Raw message: {'command': 'attPrpRsp', 'opId': -14}
+2025-08-29 07:40:23.879 INFO TLSServer [memory]
+   Note: Per BSSCI spec, attach response contains only command and opId
+2025-08-29 07:40:23.879 INFO TLSServer [memory]
+✅ ATTACH RESPONSE CORRELATED with pending request
+2025-08-29 07:40:23.879 INFO TLSServer [memory]
+   Sensor EUI: fca84a030000127b
+2025-08-29 07:40:23.879 INFO TLSServer [memory]
+   Base station: 9c65f9fffe6be145
+2025-08-29 07:40:23.880 INFO TLSServer [memory]
+   Processing duration: 0.132 seconds
+2025-08-29 07:40:23.880 INFO TLSServer [memory]
+   Sensor Configuration:
+2025-08-29 07:40:23.880 INFO TLSServer [memory]
+     EUI: fca84a030000127b
+2025-08-29 07:40:23.880 INFO TLSServer [memory]
+     Network Key: 1BC3E308...DB87B291
+2025-08-29 07:40:23.880 INFO TLSServer [memory]
+     Short Address: 127B
+2025-08-29 07:40:23.880 INFO TLSServer [memory]
+     Bidirectional: False
+2025-08-29 07:40:23.880 INFO TLSServer [memory]
+✅ SENSOR REGISTRATION SUCCESSFUL
+2025-08-29 07:40:23.880 INFO TLSServer [memory]
+   Sensor fca84a030000127b is now REGISTERED to base station 9c65f9fffe6be145
+2025-08-29 07:40:23.881 INFO TLSServer [memory]
+   Registration completed at: 2025-08-29 07:40:23.881
+2025-08-29 07:40:23.881 INFO TLSServer [memory]
+   Total base stations for this sensor: 2
+2025-08-29 07:40:23.881 INFO TLSServer [memory]
+   All base stations for sensor: ['70b3d59cd00009f6', '9c65f9fffe6be145']
+2025-08-29 07:40:23.881 INFO TLSServer [memory]
+   Total registered sensors: 7
+2025-08-29 07:40:23.881 INFO TLSServer [memory]
+   Response received at: 2025-08-29 07:40:23.881
+2025-08-29 07:40:23.881 INFO TLSServer [memory]
+   =====================================
+2025-08-29 07:40:23.882 DEBUG TLSServer [memory]
+📤 BSSCI ATTACH COMPLETE sent for opID -14
+2025-08-29 07:40:26.865 DEBUG root [memory]
+Could not get sync service instances: [Errno 13] Permission denied: '/app/logs/mqtt_detailed.log'
+2025-08-29 07:40:28.794 INFO TLSServer [memory]
+📨 BSSCI message #10 received from ('192.168.144.1', 59508)
+2025-08-29 07:40:28.794 INFO TLSServer [memory]
+   Message type: ping
+2025-08-29 07:40:28.794 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 1}
+2025-08-29 07:40:28.794 DEBUG TLSServer [memory]
+Ping request received from ('192.168.144.1', 59508)
+2025-08-29 07:40:28.796 INFO TLSServer [memory]
+📨 BSSCI message #11 received from ('192.168.144.1', 59508)
+2025-08-29 07:40:28.796 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-29 07:40:28.796 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 1}
+2025-08-29 07:40:28.796 DEBUG TLSServer [memory]
+Ping complete received from ('192.168.144.1', 59508)
+2025-08-29 07:40:28.904 INFO TLSServer [memory]
+📨 BSSCI message #10 received from ('192.168.144.1', 59510)
+2025-08-29 07:40:28.904 INFO TLSServer [memory]
+   Message type: ping
+2025-08-29 07:40:28.904 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 1}
+2025-08-29 07:40:28.905 DEBUG TLSServer [memory]
+Ping request received from ('192.168.144.1', 59510)
+2025-08-29 07:40:28.908 INFO TLSServer [memory]
+📨 BSSCI message #11 received from ('192.168.144.1', 59510)
+2025-08-29 07:40:28.908 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-29 07:40:28.908 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 1}
+2025-08-29 07:40:28.909 DEBUG TLSServer [memory]
+Ping complete received from ('192.168.144.1', 59510)
+2025-08-29 07:40:29.853 DEBUG root [memory]
+Could not get sync service instances: [Errno 13] Permission denied: '/app/logs/mqtt_detailed.log'
