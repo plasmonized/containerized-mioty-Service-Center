@@ -12,8 +12,5 @@ MQTT_PASSWORD = "test=1234"
 BASE_TOPIC = "bssci/"
 
 SENSOR_CONFIG_FILE = "endpoints.json"
-# Status request interval (in seconds)
-STATUS_INTERVAL = 30
-
-# Message deduplication settings
-MESSAGE_DEDUPLICATION_DELAY = 2.0  # Wait time in seconds for duplicate messages
+STATUS_INTERVAL = 30  # seconds
+DEDUPLICATION_DELAY = 2  # seconds to wait for duplicate messages before forwarding

@@ -672,7 +672,15 @@ class TLSServer:
                         if is_duplicate:
                             existing_message = self.deduplication_buffer[message_key]
                             if snr > existing_message['snr']:
-                                logger.info(f"🔄 Received duplicate message for {message_key} with better SNR ({snr:.2f} dB > {existing_message['snr']:.2f} dB)")
+                                logger.info(f"🔄 DEDUPLICATION: Better signal found for {eui}")
+                                logger.info(f"   Message counter: {packet_cnt}")
+                                logger.info(f"   Previous SNR: {existing_message['snr']:.2f} dB (via {existing_message['bs_eui']})")
+                                logger.info(f"   New SNR: {snr:.2f} dB (via {bs_eui})")
+                                logger.info(f"   Updating preferred path: {existing_message['bs_eui']} → {bs_eui}")
+                                
+                                # Update preferred downlink path in sensor config
+                                self.update_preferred_downlink_path(eui, bs_eui, snr)
+                                
                                 self.deduplication_buffer[message_key] = {
                                     'message': message,
                                     'timestamp': asyncio.get_event_loop().time(),
@@ -680,12 +688,29 @@ class TLSServer:
                                     'bs_eui': bs_eui
                                 }
                             else:
-                                logger.debug(f"   Filtered duplicate message for {message_key} with lower SNR ({snr:.2f} dB <= {existing_message['snr']:.2f} dB)")
+                                logger.debug(f"   🔽 DEDUPLICATION: Filtered duplicate message for {eui} with lower SNR ({snr:.2f} dB <= {existing_message['snr']:.2f} dB)")
                                 self.deduplication_stats['duplicate_messages'] += 1
+                                
+                                # Send acknowledgment but don't queue for MQTT
+                                msg_pack = encode_message(
+                                    messages.build_ul_response(message.get("opId", ""))
+                                )
+                                writer.write(
+                                    IDENTIFIER
+                                    + len(msg_pack).to_bytes(4, byteorder="little")
+                                    + msg_pack
+                                )
+                                await writer.drain()
                                 continue  # Skip processing this duplicate
 
                         else:
-                            logger.debug(f"New message received for {message_key}")
+                            logger.debug(f"📨 DEDUPLICATION: New message received for {eui}")
+                            logger.debug(f"   Message counter: {packet_cnt}")
+                            logger.debug(f"   SNR: {snr:.2f} dB (via {bs_eui})")
+                            
+                            # Update preferred downlink path for new messages too
+                            self.update_preferred_downlink_path(eui, bs_eui, snr)
+                            
                             self.deduplication_buffer[message_key] = {
                                 'message': message,
                                 'timestamp': asyncio.get_event_loop().time(),
@@ -700,7 +725,7 @@ class TLSServer:
                         except:
                             rx_time_str = str(rx_time)
 
-                        logger.info(f"📡 UPLINK DATA RECEIVED")
+                        logger.info(f"📡 UPLINK DATA BUFFERED FOR DEDUPLICATION")
                         logger.info(f"   =================================")
                         logger.info(f"   Endpoint EUI: {eui}")
                         logger.info(f"   Via Base Station: {bs_eui}")
@@ -727,54 +752,11 @@ class TLSServer:
                             logger.warning(f"   Registration Status: ⚠️  NOT REGISTERED")
                             logger.warning(f"     This sensor may not be configured in endpoints.json")
 
-                        data_dict = {
-                            "bs_eui": bs_eui,
-                            "rxTime": rx_time,
-                            "snr": snr,
-                            "rssi": message["rssi"],
-                            "cnt": packet_cnt,
-                            "data": message["userData"],
-                        }
-
-                        mqtt_topic = f"ep/{eui}/ul"
-                        payload_json = json.dumps(data_dict)
-
-                        logger.info(f"📤 MQTT PUBLICATION - SENSOR UPLINK DATA")
-                        logger.info(f"   =====================================")
-                        logger.info(f"   Full Topic: {bssci_config.BASE_TOPIC.rstrip('/')}/{mqtt_topic}")
-                        logger.info(f"   Sensor EUI: {eui}")
-                        logger.info(f"   Base Station: {bs_eui}")
-                        logger.info(f"   Payload Size: {len(payload_json)} bytes")
-                        logger.info(f"   Data Preview: SNR={data_dict['snr']:.1f}dB, RSSI={data_dict['rssi']:.1f}dBm, Count={data_dict['cnt']}")
-                        logger.info(f"   Queue size before add: {self.mqtt_out_queue.qsize()}")
-                        logger.debug(f"   Full Payload: {payload_json}")
-
-                        try:
-                            await self.mqtt_out_queue.put(
-                                {"topic": mqtt_topic, "payload": payload_json}
-                            )
-                            logger.info(f"✅ MQTT message queued successfully")
-                            logger.info(f"   Queue size after add: {self.mqtt_out_queue.qsize()}")
-
-                            # Update statistics
-                            self.deduplication_stats['published_messages'] += 1
-                            total_msg = self.deduplication_stats['total_messages']
-                            dup_msg = self.deduplication_stats['duplicate_messages']
-                            pub_msg = self.deduplication_stats['published_messages']
-                            dup_rate = (dup_msg / total_msg * 100) if total_msg > 0 else 0
-
-                            logger.info(f"📊 DEDUPLICATION STATISTICS:")
-                            logger.info(f"   Total messages received: {total_msg}")
-                            logger.info(f"   Duplicate messages filtered: {dup_msg}")
-                            logger.info(f"   Messages published: {pub_msg}")
-                            logger.info(f"   Duplication rate: {dup_rate:.1f}%")
-
-                        except Exception as mqtt_err:
-                            logger.error(f"❌ FAILED to queue MQTT message")
-                            logger.error(f"   Error: {type(mqtt_err).__name__}: {mqtt_err}")
-                            logger.error(f"   Topic: {mqtt_topic}")
-                            logger.error(f"   Payload: {payload_json}")
-                        logger.info(f"   =======================================")
+                        # Message will be published after deduplication delay
+                        logger.info(f"⏳ Message queued for deduplication processing")
+                        logger.info(f"   Will be published in {self.deduplication_delay} seconds if no better signal received")
+                        logger.info(f"   Buffer size: {len(self.deduplication_buffer)} messages")
+                        logger.info(f"   =================================")
 
                         msg_pack = encode_message(
                             messages.build_ul_response(message.get("opId", ""))
@@ -1056,6 +1038,39 @@ class TLSServer:
             logger.info(f"All sensor configurations and registration status cleared")
         except Exception as e:
             logger.error(f"Failed to clear sensor configurations: {e}")
+
+    def update_preferred_downlink_path(self, eui: str, bs_eui: str, snr: float) -> None:
+        """Update the preferred downlink path for a sensor based on signal quality"""
+        eui_lower = eui.lower()
+        
+        # Find the sensor in configuration
+        for sensor in self.sensor_config:
+            if sensor["eui"].lower() == eui_lower:
+                # Update preferred downlink path
+                if "preferredDownlinkPath" not in sensor:
+                    sensor["preferredDownlinkPath"] = {}
+                
+                sensor["preferredDownlinkPath"] = {
+                    "baseStation": bs_eui,
+                    "snr": round(snr, 2),
+                    "lastUpdated": self._get_local_time(),
+                    "messageCount": sensor["preferredDownlinkPath"].get("messageCount", 0) + 1
+                }
+                
+                logger.info(f"📊 PREFERRED PATH UPDATED for sensor {eui}")
+                logger.info(f"   Base Station: {bs_eui}")
+                logger.info(f"   SNR: {snr:.2f} dB")
+                logger.info(f"   Total messages: {sensor['preferredDownlinkPath']['messageCount']}")
+                
+                # Save configuration
+                try:
+                    with open(self.sensor_config_file, "w") as f:
+                        json.dump(self.sensor_config, f, indent=4)
+                except Exception as e:
+                    logger.error(f"Failed to save preferred downlink path: {e}")
+                break
+        else:
+            logger.warning(f"⚠️  Sensor {eui} not found in configuration for preferred path update")
 
     def update_or_add_entry(self, msg: dict[str, Any]) -> None:
         # Update existing entry or add new one

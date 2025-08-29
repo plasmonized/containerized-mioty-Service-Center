@@ -115,7 +115,8 @@ def get_sensors():
                     'shortAddr': sensor['shortAddr'],
                     'bidi': sensor['bidi'],
                     'registered': False,
-                    'registration_info': {}
+                    'registration_info': {},
+                    'preferredDownlinkPath': sensor.get('preferredDownlinkPath', None)
                 }
             return jsonify(sensor_status)
     except:

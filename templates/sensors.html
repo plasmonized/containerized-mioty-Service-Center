@@ -28,6 +28,7 @@
                         <th>Short Address</th>
                         <th>Bidirectional</th>
                         <th>Registration Status</th>
+                        <th>Preferred Downlink Path</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -98,11 +99,15 @@ function loadSensors() {
                     <td>
                         ${sensor.registered ? 
                             `<span class="badge bg-success">Registered</span>
-<br><small>Base Stations (${sensor.total_registrations || 0}):</small>
-<br><small>${sensor.base_stations ? sensor.base_stations.join(', ') : 'N/A'}</small>` : 
-                            '<span class="badge bg-warning">Not Registered</span>'
-                        }
-                    </td>
+                            <br><small>Base Stations (${sensor.total_registrations || 0}):</small>
+                            <br><small>${sensor.base_stations ? sensor.base_stations.join(', ') : 'N/A'}</small>` : 
+                            '<span class="badge bg-warning">Not Registered</span>'}</td>
+                    <td>${sensor.preferredDownlinkPath ? 
+                            `<strong>BS:</strong> ${sensor.preferredDownlinkPath.baseStation}
+                            <br><small><strong>SNR:</strong> ${sensor.preferredDownlinkPath.snr} dB</small>
+                            <br><small><strong>Messages:</strong> ${sensor.preferredDownlinkPath.messageCount}</small>
+                            <br><small><strong>Updated:</strong> ${new Date(sensor.preferredDownlinkPath.lastUpdated).toLocaleString()}</small>` : 
+                            '<span class="text-muted">No data received</span>'}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary" onclick="editSensor('${sensor.eui}')">Edit</button>
                         <button class="btn btn-sm btn-outline-danger" onclick="deleteSensor('${sensor.eui}')">Delete</button>
