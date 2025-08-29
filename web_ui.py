@@ -89,18 +89,21 @@ def get_sensors():
                     tls_server.reload_sensor_config()
                 if hasattr(tls_server, 'get_sensor_registration_status'):
                     return jsonify(tls_server.get_sensor_registration_status())
-        except:
-            pass
+        except Exception as async_e:
+            logging.debug(f"Async service not available: {async_e}")
 
         # Try sync service if async not available
         if not tls_server:
             try:
                 import sync_main
-                if hasattr(sync_main, 'tls_server_instance'):
+                if hasattr(sync_main, 'tls_server_instance') and sync_main.tls_server_instance:
                     tls_server = sync_main.tls_server_instance
-                    if tls_server and hasattr(tls_server, 'sensor_config'):
+                    if hasattr(tls_server, 'sensor_config'):
                         # For sync version, build registration status from sensor config
                         sensor_status = {}
+                        connected_stations = getattr(tls_server, 'connected_base_stations', {})
+                        base_station_list = list(set(connected_stations.values()))  # Remove duplicates
+                        
                         for sensor in tls_server.sensor_config:
                             eui = sensor['eui'].lower()
                             sensor_status[eui] = {
@@ -108,22 +111,28 @@ def get_sensors():
                                 'nwKey': sensor['nwKey'],
                                 'shortAddr': sensor['shortAddr'],
                                 'bidi': sensor['bidi'],
-                                'registered': len(getattr(tls_server, 'connected_base_stations', {})) > 0,  # Consider registered if base stations connected
+                                'registered': len(connected_stations) > 0,
                                 'registration_info': {
-                                    'status': 'registered' if len(getattr(tls_server, 'connected_base_stations', {})) > 0 else 'not_registered',
-                                    'base_stations': list(getattr(tls_server, 'connected_base_stations', {}).values()),
-                                    'total_registrations': len(getattr(tls_server, 'connected_base_stations', {}))
+                                    'status': 'registered' if len(connected_stations) > 0 else 'not_registered',
+                                    'base_stations': base_station_list,
+                                    'total_registrations': len(base_station_list)
                                 },
-                                'base_stations': list(getattr(tls_server, 'connected_base_stations', {}).values()),
-                                'total_registrations': len(getattr(tls_server, 'connected_base_stations', {}))
+                                'base_stations': base_station_list,
+                                'total_registrations': len(base_station_list)
                             }
                         return jsonify(sensor_status)
-            except:
-                pass
+            except Exception as sync_e:
+                logging.debug(f"Sync service not available: {sync_e}")
 
         # Fallback to file only
-        with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
-            sensors = json.load(f)
+        try:
+            with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
+                content = f.read().strip()
+                if content:
+                    sensors = json.loads(content)
+                else:
+                    sensors = []
+            
             # Convert to registration status format
             sensor_status = {}
             for sensor in sensors:
@@ -139,9 +148,13 @@ def get_sensors():
                     'total_registrations': 0
                 }
             return jsonify(sensor_status)
+        except Exception as file_e:
+            logging.error(f"Failed to read sensor config file: {file_e}")
+            return jsonify({})
+            
     except Exception as e:
-        logger.error(f"Error getting sensors: {e}")
-        return jsonify({})
+        logging.error(f"Error getting sensors: {e}")
+        return jsonify({'error': 'Failed to load sensors', 'message': str(e)}), 500
 
 @app.route('/api/sensors', methods=['POST'])
 def add_sensor():
