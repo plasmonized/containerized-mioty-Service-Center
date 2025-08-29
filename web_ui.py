@@ -37,7 +37,7 @@ class WebUILogHandler(logging.Handler):
             last_entry = log_entries[-1]
             time_diff = abs(record.created - datetime.strptime(last_entry['timestamp'], '%Y-%m-%d %H:%M:%S.%f').timestamp())
             if (time_diff < 1.0 and  # Within 1 second
-                last_entry['message'] == message and 
+                last_entry['message'] == message and
                 last_entry['logger'] == record.name):
                 return  # Skip duplicate message
 
@@ -103,7 +103,7 @@ def get_sensors():
                         sensor_status = {}
                         connected_stations = getattr(tls_server, 'connected_base_stations', {})
                         base_station_list = list(set(connected_stations.values()))  # Remove duplicates
-                        
+
                         for sensor in tls_server.sensor_config:
                             eui = sensor['eui'].lower()
                             sensor_status[eui] = {
@@ -132,7 +132,7 @@ def get_sensors():
                     sensors = json.loads(content)
                 else:
                     sensors = []
-            
+
             # Convert to registration status format
             sensor_status = {}
             for sensor in sensors:
@@ -151,7 +151,7 @@ def get_sensors():
         except Exception as file_e:
             logging.error(f"Failed to read sensor config file: {file_e}")
             return jsonify({})
-            
+
     except Exception as e:
         logging.error(f"Error getting sensors: {e}")
         return jsonify({'error': 'Failed to load sensors', 'message': str(e)}), 500
@@ -444,69 +444,51 @@ def bssci_status():
 
 @app.route('/api/base_stations')
 def get_base_stations():
-    """Get status of connected base stations"""
+    """Get base station status"""
     try:
-        # Try to get async service instance first
-        base_stations = []
-        total_connected = 0
-
+        # Try to get from async service first
         try:
             from web_main import get_tls_server
             tls_server = get_tls_server()
+            if tls_server and hasattr(tls_server, 'connected_base_stations'):
+                # Get unique base stations only
+                connected_stations = list(set(tls_server.connected_base_stations.values()))
+                connecting_stations = list(set(tls_server.connecting_base_stations.values()))
+                return jsonify({
+                    'connected': connected_stations,
+                    'connecting': connecting_stations,
+                    'connected_count': len(connected_stations),
+                    'connecting_count': len(connecting_stations)
+                })
         except:
-            tls_server = None
+            pass
 
-        # Try sync service instance if async not available
-        if not tls_server:
-            try:
-                import sync_main
-                if hasattr(sync_main, 'tls_server_instance'):
-                    tls_server = sync_main.tls_server_instance
-            except:
-                pass
-
-        if tls_server:
-            if hasattr(tls_server, 'connected_base_stations'):
-                # Async TLS server
-                for writer, bs_eui in tls_server.connected_base_stations.items():
-                    try:
-                        addr = writer.get_extra_info('peername') if hasattr(writer, 'get_extra_info') else 'Unknown'
-                    except:
-                        addr = 'Unknown'
-
-                    base_stations.append({
-                        'eui': bs_eui,
-                        'address': f"{addr[0]}:{addr[1]}" if isinstance(addr, tuple) else str(addr),
-                        'status': 'connected',
-                        'connection_type': 'TLS'
-                    })
-                total_connected = len(base_stations)
-
-            elif hasattr(tls_server, 'stats') and 'connected_clients' in tls_server.stats:
-                # Sync TLS server
-                total_connected = tls_server.stats.get('connected_clients', 0)
-                # For sync server, we don't have detailed connection info readily available
-                for i in range(total_connected):
-                    base_stations.append({
-                        'eui': f'sync_bs_{i+1}',
-                        'address': 'Sync connection',
-                        'status': 'connected',
-                        'connection_type': 'TLS (Sync)'
-                    })
+        # Try to get from sync service
+        try:
+            import sync_main
+            if hasattr(sync_main, 'tls_server_instance') and sync_main.tls_server_instance:
+                status = sync_main.tls_server_instance.get_base_station_status()
+                return jsonify(status)
+        except:
+            pass
 
         return jsonify({
-            'base_stations': base_stations,
-            'total_connected': total_connected,
-            'timestamp': time.time()
+            'connected': [],
+            'connecting': [],
+            'connected_count': 0,
+            'connecting_count': 0,
+            'error': 'No TLS server instance available'
         })
 
     except Exception as e:
-        logger.error(f"Error getting base station info: {e}")
+        logger.error(f"Error getting base station status: {e}")
         return jsonify({
-            'error': str(e),
-            'base_stations': [],
-            'total_connected': 0
-        })
+            'connected': [],
+            'connecting': [],
+            'connected_count': 0,
+            'connecting_count': 0,
+            'error': str(e)
+        }), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

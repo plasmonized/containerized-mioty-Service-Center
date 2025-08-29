@@ -2,6 +2,7 @@ import asyncio
 import json
 import logging
 import ssl
+import time
 from datetime import datetime
 from typing import Any, Dict
 
@@ -30,6 +31,7 @@ class TLSServer:
         self.registered_sensors: Dict[str, Dict[str, Any]] = {}  # EUI -> {status, base_stations: [], timestamp}
         self.pending_attach_requests: Dict[int, Dict[str, Any]] = {}  # opID -> {sensor_eui, timestamp, base_station}
         self._status_task_running = False  # Track if status request task is running
+        self._status_task = None # Task for send_status_requests
         try:
             with open(sensor_config_file, "r") as f:
                 self.sensor_config = json.load(f)
@@ -353,6 +355,7 @@ class TLSServer:
 
         connection_start_time = asyncio.get_event_loop().time()
         messages_processed = 0
+        start_time = time.time() # Need to define start_time for the conCmp handler
 
         try:
             while True:
@@ -389,45 +392,64 @@ class TLSServer:
 
                     elif msg_type == "conCmp":
                         logger.info(f"📨 BSSCI CONNECTION COMPLETE received from {addr}")
-                        if (
-                            writer in self.connecting_base_stations
-                            and writer not in self.connected_base_stations
-                        ):
-                            bs_eui = self.connecting_base_stations.pop(writer)  # Remove from connecting
+
+                        if writer in self.connecting_base_stations:
+                            bs_eui = self.connecting_base_stations.pop(writer)
+
+                            # Check if this EUI is already connected
+                            already_connected = False
+                            existing_writer = None
+                            for existing_writer_key, existing_eui in self.connected_base_stations.items():
+                                if existing_eui == bs_eui:
+                                    already_connected = True
+                                    existing_writer = existing_writer_key
+                                    break
+
+                            if already_connected:
+                                logger.warning(f"⚠️  Base station {bs_eui} already connected, rejecting duplicate connection")
+                                try:
+                                    writer.close()
+                                    await writer.wait_closed()
+                                except Exception as e:
+                                    logger.error(f"Error closing duplicate connection for {bs_eui}: {e}")
+                                continue
+
+                            # Add new connection
                             self.connected_base_stations[writer] = bs_eui
-                            connection_time = asyncio.get_event_loop().time() - connection_start_time
+                            connection_count = len(self.connected_base_stations)
 
                             logger.info(f"✅ BSSCI CONNECTION ESTABLISHED with base station {bs_eui}")
                             logger.info(f"   =====================================")
                             logger.info(f"   Base Station EUI: {bs_eui}")
-                            logger.info(f"   Connection established at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
-                            logger.info(f"   Connection setup duration: {connection_time:.2f} seconds")
+                            logger.info(f"   Connection established at: {datetime.now()}")
+                            logger.info(f"   Connection setup duration: {time.time() - start_time:.2f} seconds")
                             logger.info(f"   Client address: {addr}")
-                            logger.info(f"   Total connected base stations: {len(self.connected_base_stations)}")
-                            logger.info(f"   All connected stations: {list(self.connected_base_stations.values())}")
+                            logger.info(f"   Total connected base stations: {connection_count}")
+
+                            # Get list of unique connected stations for logging
+                            unique_stations = list(set(self.connected_base_stations.values()))
+                            logger.info(f"   All connected stations: {unique_stations}")
 
                             logger.info(f"🔗 INITIATING SENSOR ATTACHMENT PROCESS")
                             logger.info(f"   Total sensors to attach: {len(self.sensor_config)}")
-                            if self.sensor_config:
-                                logger.info(f"   Sensors to be attached:")
-                                for i, sensor in enumerate(self.sensor_config, 1):
-                                    logger.info(f"     {i:2d}. EUI: {sensor['eui']}, Short Addr: {sensor['shortAddr']}")
-                            else:
+
+                            if len(self.sensor_config) == 0:
                                 logger.warning(f"   ⚠️  No sensors configured for attachment")
+
                             logger.info(f"   =====================================")
 
-                            # Start attachment process
+                            # Send attach requests for all configured sensors
                             await self.attach_file(writer)
 
-                            # Always ensure status request task is running
-                            if not hasattr(self, '_status_task_running') or not self._status_task_running:
-                                logger.info(f"📊 Starting periodic status request task for all base stations")
-                                self._status_task_running = True
-                                asyncio.create_task(self.send_status_requests())
+                            # Start status request task if not already running
+                            if self._status_task is None or self._status_task.done():
+                                logger.info("📊 Starting periodic status request task for all base stations")
+                                self._status_task = asyncio.create_task(self.send_status_requests())
                             else:
-                                logger.info(f"📊 Status request task already running, will include this base station")
+                                logger.info("📊 Status request task already running, will include this base station")
+
                         else:
-                            logger.warning(f"⚠️  Received connection complete from unknown or already connected base station")
+                            logger.warning("⚠️  Received connection complete from unknown base station")
 
                     elif msg_type == "ping":
                         logger.debug(f"Ping request received from {addr}")
