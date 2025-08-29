@@ -35,11 +35,22 @@ class WebUILogHandler(logging.Handler):
         # Check if this exact message was logged in the last second (duplicate detection)
         if log_entries:
             last_entry = log_entries[-1]
-            time_diff = abs(record.created - datetime.strptime(last_entry['timestamp'], '%Y-%m-%d %H:%M:%S.%f').timestamp())
-            if (time_diff < 1.0 and  # Within 1 second
-                last_entry['message'] == message and
-                last_entry['logger'] == record.name):
-                return  # Skip duplicate message
+            try:
+                # Parse timestamp more carefully
+                last_timestamp = last_entry['timestamp']
+                if '.' in last_timestamp:
+                    last_time = datetime.strptime(last_timestamp, '%Y-%m-%d %H:%M:%S.%f')
+                else:
+                    last_time = datetime.strptime(last_timestamp, '%Y-%m-%d %H:%M:%S')
+                
+                time_diff = abs(record.created - last_time.timestamp())
+                if (time_diff < 1.0 and  # Within 1 second
+                    last_entry['message'] == message and
+                    last_entry['logger'] == record.name):
+                    return  # Skip duplicate message
+            except (ValueError, KeyError):
+                # If timestamp parsing fails, don't skip - better to show duplicate than miss log
+                pass
 
         log_entry = {
             'timestamp': current_time,
@@ -341,8 +352,18 @@ def logs():
 # Helper function to extract timestamp from log lines if they follow a specific format
 def extract_timestamp(line):
     try:
-        # Handle various log formats
-        parts = line.split(' ', 3)
+        # Handle various log formats - look for timestamp at start of line
+        import re
+        
+        # Pattern for timestamps like "2025-08-29 07:36:35.909"
+        timestamp_pattern = r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,6})?)'
+        match = re.match(timestamp_pattern, line.strip())
+        
+        if match:
+            return match.group(1)
+        
+        # Fallback: try splitting and parsing
+        parts = line.strip().split(' ')
         if len(parts) >= 2:
             timestamp_str = parts[0] + ' ' + parts[1]
             
@@ -360,14 +381,11 @@ def extract_timestamp(line):
                 except ValueError:
                     continue
         
-        # If no timestamp found in expected format, return current time as fallback
-        from datetime import datetime
-        return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        # Return None instead of current time to avoid confusion
+        return None
         
     except Exception:
-        # Fallback to current time if anything fails
-        from datetime import datetime
-        return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        return None
 
 @app.route('/api/logs')
 def get_logs():
@@ -424,21 +442,52 @@ def get_logs():
                     line = line.strip()
                     if not line:
                         continue
-                        
-                    # Parse log level from line
-                    log_level = 'INFO'
-                    if ' ERROR ' in line:
-                        log_level = 'ERROR'
-                    elif ' WARNING ' in line or ' WARN ' in line:
-                        log_level = 'WARNING'
-                    elif ' DEBUG ' in line:
-                        log_level = 'DEBUG'
                     
-                    # Parse logger from line  
-                    logger_name = 'unknown'
-                    parts = line.split(' ', 4)
-                    if len(parts) >= 4:
-                        logger_name = parts[3]
+                    # Extract timestamp first
+                    timestamp = extract_timestamp(line)
+                    if not timestamp:
+                        continue  # Skip lines without valid timestamps
+                    
+                    # Parse log components using regex for better accuracy
+                    import re
+                    
+                    # Pattern: YYYY-MM-DD HH:MM:SS.mmm LEVEL logger [source] message
+                    log_pattern = r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,6})?)\s+(\w+)\s+(\w+)\s+(?:\[([^\]]+)\])?\s*(.*)$'
+                    match = re.match(log_pattern, line)
+                    
+                    if match:
+                        timestamp_part, log_level, logger_name, source_part, message = match.groups()
+                        
+                        # Clean up the message
+                        if message.startswith('- '):
+                            message = message[2:]  # Remove leading "- "
+                            
+                        # Use extracted source or fall back to filename
+                        source = source_part if source_part else os.path.basename(log_file)
+                    else:
+                        # Fallback parsing for non-standard format
+                        parts = line.split(' - ', 1)
+                        if len(parts) >= 2:
+                            message = parts[1]
+                        else:
+                            message = line
+                            
+                        # Try to extract level from line
+                        log_level = 'INFO'
+                        if ' ERROR ' in line:
+                            log_level = 'ERROR'
+                        elif ' WARNING ' in line or ' WARN ' in line:
+                            log_level = 'WARNING'
+                        elif ' DEBUG ' in line:
+                            log_level = 'DEBUG'
+                        
+                        # Try to extract logger 
+                        logger_name = 'unknown'
+                        log_parts = line.split(' ')
+                        if len(log_parts) >= 4:
+                            logger_name = log_parts[3]
+                            
+                        source = os.path.basename(log_file)
                     
                     # Apply filters
                     if level_filter != 'all' and log_level != level_filter:
@@ -447,24 +496,28 @@ def get_logs():
                         continue
                         
                     file_logs.append({
-                        'message': line,
-                        'timestamp': extract_timestamp(line),
+                        'message': message,
+                        'timestamp': timestamp,
                         'level': log_level,
                         'logger': logger_name,
-                        'source': os.path.basename(log_file)
+                        'source': source
                     })
             except Exception as e:
                 logging.error(f"Error reading {log_file}: {e}")
                 continue
 
-        # Sort by timestamp
+        # Sort by timestamp, handling None values properly
         def sort_key(log_entry):
-            timestamp = log_entry.get('timestamp', '')
-            if not timestamp:
-                return '0000-00-00 00:00:00'
+            timestamp = log_entry.get('timestamp')
+            if not timestamp or timestamp == '':
+                return '0000-00-00 00:00:00'  # Put entries without timestamps at the beginning
             return timestamp
         
-        file_logs.sort(key=sort_key, reverse=True)
+        try:
+            file_logs.sort(key=sort_key, reverse=True)
+        except Exception as e:
+            logging.warning(f"Error sorting logs: {e}")
+            # If sorting fails, just keep original order
         file_logs = file_logs[:limit]
 
         # Return appropriate response
