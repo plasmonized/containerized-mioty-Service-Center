@@ -92,21 +92,14 @@ def sensors():
 @app.route('/api/sensors', methods=['GET'])
 def get_sensors():
     try:
-        # Try to get data from TLS server first (includes preferred paths)
+        # Try to get data from TLS server first (includes registration status)
         try:
             from web_main import get_tls_server
             tls_server = get_tls_server()
             if tls_server:
                 tls_server.reload_sensor_config()
-                # Get registration status with preferred paths
+                # Get registration status which already includes preferred paths
                 sensor_status = tls_server.get_sensor_registration_status()
-                
-                # Also get preferred downlink paths from the TLS server
-                if hasattr(tls_server, 'preferred_downlink_paths'):
-                    for eui, path_info in tls_server.preferred_downlink_paths.items():
-                        if eui in sensor_status:
-                            sensor_status[eui]['preferredDownlinkPath'] = path_info
-                
                 return jsonify(sensor_status)
         except Exception as e:
             print(f"Error getting data from TLS server: {e}")
@@ -125,10 +118,13 @@ def get_sensors():
                     'bidi': sensor['bidi'],
                     'registered': False,
                     'registration_info': {},
+                    'base_stations': [],
+                    'total_registrations': 0,
                     'preferredDownlinkPath': sensor.get('preferredDownlinkPath', None)
                 }
             return jsonify(sensor_status)
-    except:
+    except Exception as e:
+        print(f"Error in get_sensors: {e}")
         return jsonify({})
 
 @app.route('/api/sensors', methods=['POST'])
@@ -297,20 +293,52 @@ def get_bssci_service_status():
             bs_status = tls_server.get_base_station_status()
             sensor_status = tls_server.get_sensor_registration_status()
             
+            # Get MQTT status - assume active if TLS server is running
+            mqtt_status = {
+                'active': True,
+                'broker_host': getattr(bssci_config, 'MQTT_BROKER', 'localhost'),
+                'broker_port': getattr(bssci_config, 'MQTT_PORT', 1883)
+            }
+            
+            # Get TLS server status
+            tls_status = {
+                'active': True,
+                'listening_port': getattr(bssci_config, 'LISTEN_PORT', 8883),
+                'connected_base_stations': bs_status['total_connected'],
+                'total_sensors': len(sensor_status),
+                'registered_sensors': len([s for s in sensor_status.values() if s['registered']])
+            }
+            
             return {
                 'running': True,
+                'service_type': 'web_ui',
                 'base_stations': bs_status,
-                'tls_server': {
-                    'total_sensors': len(sensor_status),
-                    'registered_sensors': len([s for s in sensor_status.values() if s['registered']]),
-                    'pending_requests': len(tls_server.pending_attach_requests) if hasattr(tls_server, 'pending_attach_requests') else 0
-                }
+                'tls_server': tls_status,
+                'mqtt_broker': mqtt_status,
+                'total_sensors': len(sensor_status),
+                'registered_sensors': len([s for s in sensor_status.values() if s['registered']]),
+                'pending_requests': len(tls_server.pending_attach_requests) if hasattr(tls_server, 'pending_attach_requests') else 0
             }
         else:
-            return {'running': False, 'error': 'TLS server not available'}
+            return {
+                'running': False, 
+                'error': 'TLS server not available',
+                'service_type': 'web_ui',
+                'tls_server': {'active': False},
+                'mqtt_broker': {'active': False},
+                'base_stations': {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []}
+            }
     except Exception as e:
         import traceback
-        return {'running': False, 'error': f'{type(e).__name__}: {str(e)}', 'traceback': traceback.format_exc()}
+        return {
+            'running': False, 
+            'error': f'{type(e).__name__}: {str(e)}',
+            'service_type': 'web_ui',
+            'tls_server': {'active': False},
+            'mqtt_broker': {'active': False},
+            'base_stations': {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []},
+            'traceback': traceback.format_exc()
+        }
 
 @app.route('/api/logs/clear', methods=['POST'])
 def clear_logs():

@@ -1017,8 +1017,10 @@ class TLSServer:
             eui = sensor['eui'].lower()
             reg_info = self.registered_sensors.get(eui, {})
             
-            # Get preferred downlink path for this sensor
-            preferred_path = self.preferred_downlink_paths.get(eui, None)
+            # Get preferred downlink path from sensor config or from instance attribute
+            preferred_path = sensor.get('preferredDownlinkPath', None)
+            if hasattr(self, 'preferred_downlink_paths') and eui in self.preferred_downlink_paths:
+                preferred_path = self.preferred_downlink_paths[eui]
             
             status[eui] = {
                 'eui': sensor['eui'],
