@@ -14,9 +14,3 @@ BASE_TOPIC = "bssci/"
 SENSOR_CONFIG_FILE = "endpoints.json"
 STATUS_INTERVAL = 30  # seconds
 
-# HTTP Forwarding Configuration (optional)
-HTTP_FORWARD_ENABLED = True
-HTTP_FORWARD_URL = "https://mioty-cloud.replit.app"
-
-# Service Center Integration (optional)
-SERVICE_CENTER_URL = "https://your-service-center.replit.app"

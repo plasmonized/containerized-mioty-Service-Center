@@ -68,7 +68,7 @@
                         <input type="url" class="form-control" id="HTTP_FORWARD_URL" value="{{ config.HTTP_FORWARD_URL }}" placeholder="https://example.com">
                         <div class="form-text">URL where BSSCI data will be forwarded via HTTP POST requests</div>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="SERVICE_CENTER_URL" class="form-label">Service Center URL</label>
                         <input type="url" class="form-control" id="SERVICE_CENTER_URL" value="{{ config.SERVICE_CENTER_URL }}" placeholder="https://your-service-center.replit.app">
@@ -100,9 +100,6 @@ function saveConfig() {
         MQTT_PASSWORD: document.getElementById('MQTT_PASSWORD').value,
         BASE_TOPIC: document.getElementById('BASE_TOPIC').value,
         STATUS_INTERVAL: parseInt(document.getElementById('STATUS_INTERVAL').value),
-        HTTP_FORWARD_ENABLED: document.getElementById('HTTP_FORWARD_ENABLED').checked,
-        HTTP_FORWARD_URL: document.getElementById('HTTP_FORWARD_URL').value,
-        SERVICE_CENTER_URL: document.getElementById('SERVICE_CENTER_URL').value
     };
 
     fetch('/api/config', {

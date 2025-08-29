@@ -8,7 +8,6 @@ from typing import Any, Dict
 import bssci_config
 import messages
 from protocol import decode_messages, encode_message
-import aiohttp
 
 logger = logging.getLogger(__name__)
 
@@ -446,29 +445,7 @@ class TLSServer:
                         logger.debug(f"Ping complete received from {addr}")
 
                     elif msg_type == "statusRsp":
-                        bs_eui = self.connected_base_stations[writer]
-                        op_id = message.get("opId", "unknown")
-
-                        logger.info(f"📊 BASE STATION STATUS RESPONSE received from {bs_eui}")
-                        logger.info(f"   Operation ID: {op_id}")
-                        logger.info(f"   Status Code: {message['code']}")
-                        logger.info(f"   Memory Load: {message['memLoad']:.1%}")
-                        logger.info(f"   CPU Load: {message['cpuLoad']:.1%}")
-                        logger.info(f"   Duty Cycle: {message['dutyCycle']:.1%}")
-
-                        # Parse uptime to human readable format
-                        uptime_seconds = message['uptime']
-                        uptime_hours = uptime_seconds // 3600
-                        uptime_minutes = (uptime_seconds % 3600) // 60
-                        uptime_secs = uptime_seconds % 60
-                        logger.info(f"   Uptime: {uptime_hours:02d}:{uptime_minutes:02d}:{uptime_secs:02d} ({uptime_seconds}s)")
-
-                        # Parse timestamp
-                        try:
-                            bs_time = datetime.fromtimestamp(message['time'] / 1_000_000_000)
-                            logger.info(f"   Base Station Time: {bs_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}")
-                        except:
-                            logger.info(f"   Base Station Time: {message['time']} (raw)")
+                        logger.debug(f"📊 Base station status response from {self.connected_base_stations[writer]}")
 
                         data_dict = {
                             "code": message["code"],
@@ -479,51 +456,17 @@ class TLSServer:
                             "uptime": message["uptime"],
                         }
 
-                        mqtt_topic = f"bs/{bs_eui}"
-                        payload = json.dumps(data_dict)
+                        bs_eui = self.connected_base_stations[writer]
 
-                        logger.info(f"📤 MQTT PUBLICATION - BASE STATION STATUS")
-                        logger.info(f"   Topic: bssci/{mqtt_topic}")
-                        logger.info(f"   Base Station EUI: {bs_eui}")
-                        logger.info(f"   Payload size: {len(payload)} bytes")
-                        logger.info(f"   Status data: Code={data_dict['code']}, CPU={data_dict['cpuLoad']:.1%}, Memory={data_dict['memLoad']:.1%}")
+                        # Send to MQTT
+                        await self.mqtt_out_queue.put({
+                            "topic": f"bs/{bs_eui}",
+                            "payload": json.dumps(data_dict)
+                        })
 
-                        # Send base station status to service center via HTTP
-                        if bssci_config.HTTP_FORWARD_ENABLED:
-                            try:
-                                from http_client import ServiceCenterHTTPClient
-                                
-                                async with ServiceCenterHTTPClient(bssci_config.HTTP_FORWARD_URL) as client:
-                                    result = await client.send_base_station_status(bs_eui, data_dict)
-                                    if result:
-                                        logger.info(f"✅ Base station status sent to service center")
-                                    else:
-                                        logger.warning(f"⚠️ Failed to send base station status to service center")
-                            except Exception as http_err:
-                                logger.error(f"❌ Error sending base station status to service center: {http_err}")
-
-                        # Also keep MQTT for backward compatibility if needed
-                        if hasattr(self, 'mqtt_out_queue') and self.mqtt_out_queue:
-                            try:
-                                await self.mqtt_out_queue.put(
-                                    {
-                                        "topic": mqtt_topic,
-                                        "payload": payload,
-                                    }
-                                )
-                                logger.info(f"✅ Base station status queued for MQTT (legacy)")
-                            except Exception as mqtt_err:
-                                logger.debug(f"MQTT legacy support failed: {mqtt_err}")  # Non-critical
-                        msg_pack = encode_message(
-                            messages.build_status_complete(message.get("opId", ""))
-                        )
-                        writer.write(
-                            IDENTIFIER
-                            + len(msg_pack).to_bytes(4, byteorder="little")
-                            + msg_pack
-                        )
+                        msg_pack = encode_message(messages.build_status_complete(message.get("opId", "")))
+                        writer.write(IDENTIFIER + len(msg_pack).to_bytes(4, byteorder="little") + msg_pack)
                         await writer.drain()
-                        logger.debug(f"📤 STATUS COMPLETE sent for opID {op_id}")
 
                     elif msg_type == "attPrpRsp":
                         # Handle attach response according to BSSCI specification
@@ -653,7 +596,7 @@ class TLSServer:
 
                     elif msg_type == "ulData":
                         eui = int(message["epEui"]).to_bytes(8, byteorder="big").hex()
-                        bs_eui = self.connected_base_stations[writer]
+                        bs_eui = self.connected_base_stations.get(writer, "unknown")
                         op_id = message.get("opId", "unknown")
                         rx_time = message["rxTime"]
 
@@ -885,7 +828,7 @@ class TLSServer:
 
         try:
             from http_client import ServiceCenterHTTPClient
-            
+
             async with ServiceCenterHTTPClient(bssci_config.HTTP_FORWARD_URL) as client:
                 result = await client.send_sensor_uplink(eui, data_dict)
                 if result:

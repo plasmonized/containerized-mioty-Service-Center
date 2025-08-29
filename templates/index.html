@@ -91,14 +91,6 @@ function updateServiceStatus() {
                                     <small>Topic: ${data.mqtt_broker.base_topic}</small><br>
                                     <small>Queues: ${data.mqtt_broker.out_queue_size}/${data.mqtt_broker.in_queue_size}</small>
                                 </div>
-                                <div class="col-md-4">
-                                    <strong>HTTP Forward:</strong><br>
-                                    <span class="badge bg-${data.http_forwarding.enabled ? 'success' : 'secondary'}">
-                                        ${data.http_forwarding.enabled ? 'Enabled' : 'Disabled'}
-                                    </span><br>
-                                    <small>Target: ${data.http_forwarding.target_url}</small><br>
-                                    <small>Uptime: ${Math.floor(data.uptime_seconds / 60)}m</small>
-                                </div>
                             </div>
                         `;
                         detailsDiv.innerHTML = statusHtml;
@@ -191,10 +183,11 @@ function loadRecentLogs() {
 
 // Update service status and base stations every 5 seconds
         updateServiceStatus();
-        updateBaseStations();
+        loadBaseStationStatus();
+        loadRecentLogs();
         setInterval(() => {
             updateServiceStatus();
-            updateBaseStations();
+            loadBaseStationStatus();
         }, 5000);
 </script>
 {% endblock %}
