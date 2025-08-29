@@ -541,5 +541,41 @@ def restore_certificates():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
+@app.route('/api/service/restart', methods=['POST'])
+def restart_service():
+    """Restart the BSSCI service"""
+    import subprocess
+    import threading
+    import time
+    
+    def restart_in_background():
+        """Perform the restart operation in a separate thread"""
+        try:
+            time.sleep(1)  # Small delay to allow response to be sent
+            
+            # Kill existing processes
+            subprocess.run(['pkill', '-f', 'python.*web_main.py'], check=False)
+            subprocess.run(['pkill', '-f', 'python.*main.py'], check=False)
+            subprocess.run(['pkill', '-f', 'python.*sync_main.py'], check=False)
+            
+            time.sleep(2)  # Wait for processes to terminate
+            
+            # Start the service again
+            subprocess.Popen(['python', 'web_main.py'], 
+                           stdout=subprocess.DEVNULL, 
+                           stderr=subprocess.DEVNULL)
+        except Exception as e:
+            print(f"Error during restart: {e}")
+    
+    try:
+        # Start restart in background thread
+        restart_thread = threading.Thread(target=restart_in_background)
+        restart_thread.daemon = True
+        restart_thread.start()
+        
+        return jsonify({'success': True, 'message': 'Service restart initiated'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
