@@ -514,7 +514,7 @@ class SyncTLSServer:
         """Stop the TLS server"""
         logger.info("🛑 Stopping synchronous TLS server...")
 
-        self.running = Falseg = False
+        self.running = False
 
         if self.server_socket:
             try:
