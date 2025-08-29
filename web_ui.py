@@ -92,17 +92,26 @@ def sensors():
 @app.route('/api/sensors', methods=['GET'])
 def get_sensors():
     try:
-        # Also reload TLS server config to sync
+        # Try to get data from TLS server first (includes preferred paths)
         try:
             from web_main import get_tls_server
             tls_server = get_tls_server()
             if tls_server:
                 tls_server.reload_sensor_config()
-                # Get registration status
-                return jsonify(tls_server.get_sensor_registration_status())
-        except:
-            pass  # Fallback to file only
+                # Get registration status with preferred paths
+                sensor_status = tls_server.get_sensor_registration_status()
+                
+                # Also get preferred downlink paths from the TLS server
+                if hasattr(tls_server, 'preferred_downlink_paths'):
+                    for eui, path_info in tls_server.preferred_downlink_paths.items():
+                        if eui in sensor_status:
+                            sensor_status[eui]['preferredDownlinkPath'] = path_info
+                
+                return jsonify(sensor_status)
+        except Exception as e:
+            print(f"Error getting data from TLS server: {e}")
         
+        # Fallback to file only
         with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
             sensors = json.load(f)
             # Convert to registration status format

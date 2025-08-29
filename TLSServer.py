@@ -1016,6 +1016,10 @@ class TLSServer:
         for sensor in self.sensor_config:
             eui = sensor['eui'].lower()
             reg_info = self.registered_sensors.get(eui, {})
+            
+            # Get preferred downlink path for this sensor
+            preferred_path = self.preferred_downlink_paths.get(eui, None)
+            
             status[eui] = {
                 'eui': sensor['eui'],
                 'nwKey': sensor['nwKey'],
@@ -1024,7 +1028,8 @@ class TLSServer:
                 'registered': eui in self.registered_sensors,
                 'registration_info': reg_info,
                 'base_stations': reg_info.get('base_stations', []),
-                'total_registrations': len(reg_info.get('base_stations', []))
+                'total_registrations': len(reg_info.get('base_stations', [])),
+                'preferredDownlinkPath': preferred_path
             }
         return status
 
