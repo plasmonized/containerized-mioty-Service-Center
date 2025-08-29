@@ -123,16 +123,10 @@ function loadBaseStationStatus() {
         })
         .catch(error => {
             console.error('Error fetching base station status:', error);
-            // Update connected count with an error message as per the logic from the changes snippet.
-            // The snippet suggests 'Error fetching status' for a non-existent element,
-            // so we adapt it for the existing 'connected-count' element.
-            document.getElementById('connected-count').textContent = '0'; // Default to 0 on error
-
-            // The original error handling updated 'connected-stations' and 'connecting-stations'.
-            // We will adapt this error handling for the modified function.
+            document.getElementById('connected-count').textContent = '0';
             document.getElementById('connecting-count').textContent = 'Error';
-            document.getElementById('connected-stations').innerHTML = '<small class="text-danger">Error loading status</small>';
-            document.getElementById('connecting-stations').innerHTML = '<small class="text-danger">Error loading status</small>';
+            document.getElementById('connected-stations').innerHTML = '<small class="text-danger">Error loading station info</small>';
+            document.getElementById('connecting-stations').innerHTML = '<small class="text-danger">Error loading station info</small>';
         });
 }
 

@@ -72,7 +72,14 @@ def sensors():
     try:
         with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
             sensors = json.load(f)
-    except:
+    except FileNotFoundError:
+        sensors = []
+        logging.warning(f"Sensor config file not found: {bssci_config.SENSOR_CONFIG_FILE}")
+    except json.JSONDecodeError:
+        sensors = []
+        logging.error(f"Error decoding JSON from sensor config file: {bssci_config.SENSOR_CONFIG_FILE}")
+    except Exception as e:
+        logging.error(f"An unexpected error occurred while reading sensor config: {e}")
         sensors = []
     return render_template('sensors.html', sensors=sensors)
 
@@ -148,6 +155,12 @@ def get_sensors():
                     'total_registrations': 0
                 }
             return jsonify(sensor_status)
+        except FileNotFoundError:
+            logging.warning(f"Sensor config file not found: {bssci_config.SENSOR_CONFIG_FILE}")
+            return jsonify({})
+        except json.JSONDecodeError:
+            logging.error(f"Error decoding JSON from sensor config file: {bssci_config.SENSOR_CONFIG_FILE}")
+            return jsonify({})
         except Exception as file_e:
             logging.error(f"Failed to read sensor config file: {file_e}")
             return jsonify({})
@@ -162,7 +175,14 @@ def add_sensor():
     try:
         with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
             sensors = json.load(f)
-    except:
+    except FileNotFoundError:
+        sensors = []
+        logging.warning(f"Sensor config file not found: {bssci_config.SENSOR_CONFIG_FILE}")
+    except json.JSONDecodeError:
+        sensors = []
+        logging.error(f"Error decoding JSON from sensor config file: {bssci_config.SENSOR_CONFIG_FILE}")
+    except Exception as e:
+        logging.error(f"An unexpected error occurred while reading sensor config: {e}")
         sensors = []
 
     # Check if sensor already exists
@@ -180,6 +200,7 @@ def add_sensor():
             json.dump(sensors, f, indent=4)
         return jsonify({'success': True, 'message': 'Sensor saved successfully'})
     except Exception as e:
+        logging.error(f"Failed to write sensor config file: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/sensors/<eui>', methods=['DELETE'])
@@ -187,7 +208,14 @@ def delete_sensor(eui):
     try:
         with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
             sensors = json.load(f)
-    except:
+    except FileNotFoundError:
+        sensors = []
+        logging.warning(f"Sensor config file not found: {bssci_config.SENSOR_CONFIG_FILE}")
+    except json.JSONDecodeError:
+        sensors = []
+        logging.error(f"Error decoding JSON from sensor config file: {bssci_config.SENSOR_CONFIG_FILE}")
+    except Exception as e:
+        logging.error(f"An unexpected error occurred while reading sensor config: {e}")
         sensors = []
 
     sensors = [s for s in sensors if s['eui'].lower() != eui.lower()]
@@ -197,6 +225,7 @@ def delete_sensor(eui):
             json.dump(sensors, f, indent=4)
         return jsonify({'success': True, 'message': 'Sensor deleted successfully'})
     except Exception as e:
+        logging.error(f"Failed to write sensor config file: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/sensors/clear', methods=['POST'])
@@ -213,11 +242,12 @@ def clear_all_sensors():
             tls_server = get_tls_server()
             if tls_server:
                 tls_server.clear_all_sensors()
-        except:
-            pass  # TLS server not available, that's okay
+        except Exception as e:
+            logging.warning(f"Could not clear sensors from TLS server: {e}")
 
         return jsonify({'success': True, 'message': 'All sensors cleared successfully'})
     except Exception as e:
+        logging.error(f"Failed to clear all sensors: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/sensors/reload', methods=['POST'])
@@ -227,11 +257,15 @@ def reload_sensors():
         from web_main import get_tls_server
         tls_server = get_tls_server()
         if tls_server:
-            tls_server.reload_sensor_config()
-            return jsonify({'success': True, 'message': 'Sensor configuration reloaded successfully'})
+            if hasattr(tls_server, 'reload_sensor_config'):
+                tls_server.reload_sensor_config()
+                return jsonify({'success': True, 'message': 'Sensor configuration reloaded successfully'})
+            else:
+                return jsonify({'success': False, 'message': 'TLS server does not support reload_sensor_config'})
         else:
             return jsonify({'success': False, 'message': 'TLS server not available'})
     except Exception as e:
+        logging.error(f"Error reloading sensors: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/config')
@@ -271,10 +305,33 @@ STATUS_INTERVAL = {data['STATUS_INTERVAL']}  # seconds
 '''
 
     try:
+        # Ensure the directory for endpoints.json exists and has correct permissions
+        config_dir = os.path.dirname(bssci_config.SENSOR_CONFIG_FILE)
+        if config_dir and not os.path.exists(config_dir):
+            os.makedirs(config_dir)
+            logging.info(f"Created configuration directory: {config_dir}")
+
         with open('bssci_config.py', 'w') as f:
             f.write(config_content)
+
+        # Set permissions for endpoints.json (assuming it's in the same directory as bssci_config.py)
+        # This is a common place for config files. Adjust if SENSOR_CONFIG_FILE is elsewhere.
+        endpoints_path = bssci_config.SENSOR_CONFIG_FILE
+        if os.path.exists(endpoints_path):
+            # Set read/write permissions for the owner, read for group and others
+            # Adjust mode as needed for your specific environment and security requirements
+            os.chmod(endpoints_path, 0o644)
+            logging.info(f"Set permissions for {endpoints_path} to 0o644")
+        else:
+             # If endpoints.json doesn't exist yet, the first write will create it.
+             # We can set default permissions then, or rely on umask.
+             # For now, let's assume it will be created by a subsequent operation.
+             pass
+
+
         return jsonify({'success': True, 'message': 'Configuration updated successfully. Restart required.'})
     except Exception as e:
+        logging.error(f"Failed to update configuration: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/logs')
@@ -318,7 +375,8 @@ def get_bssci_service_status():
             tls_server = get_tls_server()
             mqtt_client = get_mqtt_client()
             service_type = "async"
-        except:
+        except Exception as e:
+            logging.debug(f"Could not get async service instances: {e}")
             tls_server = None
             mqtt_client = None
             service_type = "unknown"
@@ -335,7 +393,8 @@ def get_bssci_service_status():
                     sync_mqtt_client = sync_main.mqtt_client_instance
                 if sync_tls_server or sync_mqtt_client:
                     service_type = "sync"
-            except:
+            except Exception as e:
+                logging.debug(f"Could not get sync service instances: {e}")
                 pass
 
         # Use whichever service instances we found
@@ -357,7 +416,8 @@ def get_bssci_service_status():
             try:
                 if hasattr(active_tls, 'get_base_station_status'):
                     bs_status = active_tls.get_base_station_status()
-                    tls_status['connected_base_stations'] = bs_status.get('total_connected', len(getattr(active_tls, 'connected_base_stations', {})))
+                    # Use specific keys from the returned status dictionary
+                    tls_status['connected_base_stations'] = bs_status.get('connected_count', 0)
                 else:
                     # For sync version, count connected base stations directly
                     tls_status['connected_base_stations'] = len(getattr(active_tls, 'connected_base_stations', {}))
@@ -379,7 +439,7 @@ def get_bssci_service_status():
                 if hasattr(active_tls, 'pending_attach_requests'):
                     tls_status['pending_requests'] = len(active_tls.pending_attach_requests)
             except Exception as e:
-                logger.debug(f"Error getting TLS server details: {e}")
+                logging.debug(f"Error getting TLS server details: {e}")
 
         # MQTT Status - Get actual connection state
         mqtt_connected = False
@@ -417,7 +477,7 @@ def get_bssci_service_status():
         }
 
     except Exception as e:
-        logger.error(f"Error getting BSSCI service status: {e}")
+        logging.error(f"Error getting BSSCI service status: {e}")
         return {
             'running': False,
             'error': str(e),
@@ -450,8 +510,11 @@ def get_base_stations():
         try:
             from web_main import get_tls_server
             tls_server = get_tls_server()
-            if tls_server and hasattr(tls_server, 'connected_base_stations'):
-                # Get unique base stations only
+            if tls_server and hasattr(tls_server, 'get_base_station_status'):
+                status = tls_server.get_base_station_status()
+                return jsonify(status)
+            elif tls_server and hasattr(tls_server, 'connected_base_stations'): # Fallback for older async versions
+                 # Get unique base stations only
                 connected_stations = list(set(tls_server.connected_base_stations.values()))
                 connecting_stations = list(set(tls_server.connecting_base_stations.values()))
                 return jsonify({
@@ -460,28 +523,41 @@ def get_base_stations():
                     'connected_count': len(connected_stations),
                     'connecting_count': len(connecting_stations)
                 })
-        except:
+        except Exception as e:
+            logging.debug(f"Could not get base station status from async service: {e}")
             pass
 
         # Try to get from sync service
         try:
             import sync_main
             if hasattr(sync_main, 'tls_server_instance') and sync_main.tls_server_instance:
-                status = sync_main.tls_server_instance.get_base_station_status()
-                return jsonify(status)
-        except:
+                if hasattr(sync_main.tls_server_instance, 'get_base_station_status'):
+                    status = sync_main.tls_server_instance.get_base_station_status()
+                    return jsonify(status)
+                elif hasattr(sync_main.tls_server_instance, 'connected_base_stations'): # Fallback for older sync versions
+                    connected_stations = list(set(sync_main.tls_server_instance.connected_base_stations.values()))
+                    return jsonify({
+                        'connected': connected_stations,
+                        'connecting': [], # Sync version might not track connecting separately
+                        'connected_count': len(connected_stations),
+                        'connecting_count': 0
+                    })
+        except Exception as e:
+            logging.debug(f"Could not get base station status from sync service: {e}")
             pass
 
+        # If no services available or they don't provide the status
+        logging.warning("No base station status available from any service.")
         return jsonify({
             'connected': [],
             'connecting': [],
             'connected_count': 0,
             'connecting_count': 0,
-            'error': 'No TLS server instance available'
+            'error': 'No base station status information available'
         })
 
     except Exception as e:
-        logger.error(f"Error getting base station status: {e}")
+        logging.error(f"Error getting base station status: {e}")
         return jsonify({
             'connected': [],
             'connecting': [],

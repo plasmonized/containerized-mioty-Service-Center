@@ -418,11 +418,103 @@ class SyncTLSServer:
                 logger.error(f"❌ Error in status request loop: {e}")
                 await asyncio.sleep(5) # Wait a bit before retrying after an error
 
+    def get_base_station_status(self):
+        """Get status of connected base stations for web UI"""
+        connected_stations = []
+        for writer, bs_eui in self.connected_base_stations.items():
+            try:
+                addr = writer.get_extra_info("peername") if hasattr(writer, 'get_extra_info') else None
+                connected_stations.append({
+                    "eui": bs_eui,
+                    "address": f"{addr[0]}:{addr[1]}" if addr else "unknown",
+                    "status": "connected"
+                })
+            except Exception as e:
+                logger.debug(f"Error getting station info for {bs_eui}: {e}")
+                connected_stations.append({
+                    "eui": bs_eui,
+                    "status": "connected"
+                })
+
+        connecting_stations = []
+        for writer, bs_eui in self.connecting_base_stations.items():
+            try:
+                addr = writer.get_extra_info("peername") if hasattr(writer, 'get_extra_info') else None
+                connecting_stations.append({
+                    "eui": bs_eui,
+                    "address": f"{addr[0]}:{addr[1]}" if addr else "unknown",
+                    "status": "connecting"
+                })
+            except Exception as e:
+                logger.debug(f"Error getting connecting station info for {bs_eui}: {e}")
+                connecting_stations.append({
+                    "eui": bs_eui,
+                    "status": "connecting"
+                })
+
+        # Remove duplicates by EUI
+        unique_connected = []
+        seen_euis = set()
+        for station in connected_stations:
+            if station["eui"] not in seen_euis:
+                unique_connected.append(station)
+                seen_euis.add(station["eui"])
+
+        return {
+            "connected": unique_connected,
+            "connecting": connecting_stations,
+            "total_connected": len(unique_connected),
+            "total_connecting": len(connecting_stations)
+        }
+
+    def get_sensor_registration_status(self):
+        """Get registration status of all sensors for web UI"""
+        status = {}
+        connected_base_stations = list(set(self.connected_base_stations.values()))
+        
+        for sensor in self.sensor_config:
+            eui = sensor['eui'].lower()
+            status[eui] = {
+                'eui': sensor['eui'],
+                'nwKey': sensor['nwKey'],
+                'shortAddr': sensor['shortAddr'],
+                'bidi': sensor['bidi'],
+                'registered': len(connected_base_stations) > 0,
+                'registration_info': {
+                    'status': 'registered' if len(connected_base_stations) > 0 else 'not_registered',
+                    'base_stations': connected_base_stations,
+                    'total_registrations': len(connected_base_stations)
+                },
+                'base_stations': connected_base_stations,
+                'total_registrations': len(connected_base_stations)
+            }
+        return status
+
+    def reload_sensor_config(self):
+        """Reload sensor configuration from file for web UI"""
+        try:
+            with open(self.sensor_config_file, 'r') as f:
+                self.sensor_config = json.load(f)
+            logger.info(f"✅ Sensor configuration reloaded: {len(self.sensor_config)} sensors")
+        except Exception as e:
+            logger.error(f"❌ Failed to reload sensor config: {e}")
+            self.sensor_config = []
+
+    def clear_all_sensors(self):
+        """Clear all sensor configurations for web UI"""
+        self.sensor_config = []
+        try:
+            with open(self.sensor_config_file, "w") as f:
+                json.dump(self.sensor_config, f, indent=4)
+            logger.info(f"All sensor configurations cleared")
+        except Exception as e:
+            logger.error(f"Failed to clear sensor configurations: {e}")
+
     def stop(self):
         """Stop the TLS server"""
         logger.info("🛑 Stopping synchronous TLS server...")
 
-        self.running = False
+        self.running = Falseg = False
 
         if self.server_socket:
             try:
