@@ -1,0 +1,286 @@
+
+{% extends "base.html" %}
+{% block title %}Certificates{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Certificate Management</h1>
+    <div>
+        <button class="btn btn-success" onclick="generateCertificates()" title="Generate new certificates">
+            Generate New Certificates
+        </button>
+    </div>
+</div>
+
+<div class="alert alert-info">
+    <strong>Note:</strong> These are the SSL/TLS certificates used by the BSSCI TLS server. Handle with care and ensure proper backup before making changes.
+</div>
+
+<!-- Certificate Status -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Certificate Status</h5>
+    </div>
+    <div class="card-body">
+        <div id="cert-status">
+            <!-- Status will be loaded here -->
+        </div>
+    </div>
+</div>
+
+<!-- Download Certificates -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Download Certificates</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h6>CA Certificate</h6>
+                        <p class="text-muted">Certificate Authority root certificate</p>
+                        <button class="btn btn-primary btn-sm" onclick="downloadCertificate('ca_cert.pem')">
+                            Download CA Cert
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h6>Service Certificate</h6>
+                        <p class="text-muted">Server certificate for TLS connections</p>
+                        <button class="btn btn-primary btn-sm" onclick="downloadCertificate('service_center_cert.pem')">
+                            Download Service Cert
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h6>Private Key</h6>
+                        <p class="text-muted">Private key for the service certificate</p>
+                        <button class="btn btn-warning btn-sm" onclick="downloadCertificate('service_center_key.pem')">
+                            Download Private Key
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Upload Certificates -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>Upload New Certificates</h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-warning">
+            <strong>Warning:</strong> Uploading new certificates will require a service restart to take effect.
+        </div>
+        
+        <div class="row">
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label for="caCertFile" class="form-label">CA Certificate</label>
+                    <input type="file" class="form-control" id="caCertFile" accept=".pem,.crt,.cer">
+                    <button class="btn btn-secondary btn-sm mt-2" onclick="uploadCertificate('ca', 'caCertFile')">
+                        Upload CA Cert
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label for="serviceCertFile" class="form-label">Service Certificate</label>
+                    <input type="file" class="form-control" id="serviceCertFile" accept=".pem,.crt,.cer">
+                    <button class="btn btn-secondary btn-sm mt-2" onclick="uploadCertificate('service', 'serviceCertFile')">
+                        Upload Service Cert
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="mb-3">
+                    <label for="privateKeyFile" class="form-label">Private Key</label>
+                    <input type="file" class="form-control" id="privateKeyFile" accept=".pem,.key">
+                    <button class="btn btn-warning btn-sm mt-2" onclick="uploadCertificate('key', 'privateKeyFile')">
+                        Upload Private Key
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Certificate Backup -->
+<div class="card">
+    <div class="card-header">
+        <h5>Backup & Restore</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <h6>Backup All Certificates</h6>
+                <p class="text-muted">Download all certificates as a ZIP file</p>
+                <button class="btn btn-info" onclick="backupCertificates()">
+                    Download Backup ZIP
+                </button>
+            </div>
+            <div class="col-md-6">
+                <h6>Restore from Backup</h6>
+                <p class="text-muted">Upload and restore certificates from ZIP backup</p>
+                <input type="file" class="form-control mb-2" id="backupFile" accept=".zip">
+                <button class="btn btn-success" onclick="restoreFromBackup()">
+                    Restore from ZIP
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function loadCertificateStatus() {
+    fetch('/api/certificates/status')
+        .then(response => response.json())
+        .then(data => {
+            const statusDiv = document.getElementById('cert-status');
+            if (data.success) {
+                statusDiv.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            <strong>CA Certificate:</strong><br>
+                            <span class="badge ${data.certificates.ca ? 'bg-success' : 'bg-danger'}">
+                                ${data.certificates.ca ? 'Present' : 'Missing'}
+                            </span>
+                            ${data.certificates.ca ? `<br><small>Expires: ${data.certificates.ca_expires || 'Unknown'}</small>` : ''}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Service Certificate:</strong><br>
+                            <span class="badge ${data.certificates.service ? 'bg-success' : 'bg-danger'}">
+                                ${data.certificates.service ? 'Present' : 'Missing'}
+                            </span>
+                            ${data.certificates.service ? `<br><small>Expires: ${data.certificates.service_expires || 'Unknown'}</small>` : ''}
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Private Key:</strong><br>
+                            <span class="badge ${data.certificates.key ? 'bg-success' : 'bg-danger'}">
+                                ${data.certificates.key ? 'Present' : 'Missing'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                statusDiv.innerHTML = `<div class="alert alert-danger">Error loading certificate status: ${data.message}</div>`;
+            }
+        })
+        .catch(error => {
+            document.getElementById('cert-status').innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+        });
+}
+
+function downloadCertificate(filename) {
+    window.location.href = `/api/certificates/download/${filename}`;
+}
+
+function uploadCertificate(type, fileInputId) {
+    const fileInput = document.getElementById(fileInputId);
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Please select a file to upload.');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('certificate', file);
+    
+    fetch(`/api/certificates/upload/${type}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message);
+            loadCertificateStatus();
+            fileInput.value = '';
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error uploading certificate: ' + error.message);
+    });
+}
+
+function generateCertificates() {
+    if (!confirm('This will generate new certificates and overwrite existing ones. Continue?')) {
+        return;
+    }
+    
+    fetch('/api/certificates/generate', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message + ' Please restart the service for changes to take effect.');
+            loadCertificateStatus();
+        } else {
+            alert('Error generating certificates: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error: ' + error.message);
+    });
+}
+
+function backupCertificates() {
+    window.location.href = '/api/certificates/backup';
+}
+
+function restoreFromBackup() {
+    const fileInput = document.getElementById('backupFile');
+    const file = fileInput.files[0];
+    
+    if (!file) {
+        alert('Please select a backup ZIP file.');
+        return;
+    }
+    
+    if (!confirm('This will replace all existing certificates. Continue?')) {
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('backup', file);
+    
+    fetch('/api/certificates/restore', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message + ' Please restart the service for changes to take effect.');
+            loadCertificateStatus();
+            fileInput.value = '';
+        } else {
+            alert('Error: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Error restoring certificates: ' + error.message);
+    });
+}
+
+// Load certificate status when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadCertificateStatus();
+});
+</script>
+{% endblock %}

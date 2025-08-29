@@ -240,6 +240,10 @@ STATUS_INTERVAL = {data['STATUS_INTERVAL']}  # seconds
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
+@app.route('/certificates')
+def certificates():
+    return render_template('certificates.html')
+
 @app.route('/logs')
 def logs():
     return render_template('logs.html')
@@ -332,6 +336,207 @@ def get_base_stations():
             "total_connecting": 0,
             "error": str(e)
         })
+
+@app.route('/api/certificates/status')
+def get_certificate_status():
+    """Get status of SSL certificates"""
+    import os
+    from datetime import datetime
+    try:
+        cert_files = {
+            'ca': 'certs/ca_cert.pem',
+            'service': 'certs/service_center_cert.pem',
+            'key': 'certs/service_center_key.pem'
+        }
+        
+        status = {'certificates': {}}
+        
+        for cert_type, file_path in cert_files.items():
+            if os.path.exists(file_path):
+                status['certificates'][cert_type] = True
+                # Try to get certificate expiry date
+                try:
+                    if cert_type != 'key':  # Don't try to parse private key as certificate
+                        import ssl
+                        import socket
+                        from cryptography import x509
+                        from cryptography.hazmat.backends import default_backend
+                        
+                        with open(file_path, 'rb') as f:
+                            cert_data = f.read()
+                            cert = x509.load_pem_x509_certificate(cert_data, default_backend())
+                            expiry = cert.not_valid_after
+                            status['certificates'][f'{cert_type}_expires'] = expiry.strftime('%Y-%m-%d %H:%M:%S')
+                except:
+                    pass  # If we can't read the certificate, just mark as present
+            else:
+                status['certificates'][cert_type] = False
+        
+        return jsonify({'success': True, 'certificates': status['certificates']})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/certificates/download/<filename>')
+def download_certificate(filename):
+    """Download a certificate file"""
+    import os
+    from flask import send_file, abort
+    
+    # Security: only allow specific certificate files
+    allowed_files = ['ca_cert.pem', 'service_center_cert.pem', 'service_center_key.pem']
+    if filename not in allowed_files:
+        abort(404)
+    
+    file_path = os.path.join('certs', filename)
+    if not os.path.exists(file_path):
+        abort(404)
+    
+    return send_file(file_path, as_attachment=True, download_name=filename)
+
+@app.route('/api/certificates/upload/<cert_type>', methods=['POST'])
+def upload_certificate(cert_type):
+    """Upload a new certificate"""
+    import os
+    from werkzeug.utils import secure_filename
+    
+    if 'certificate' not in request.files:
+        return jsonify({'success': False, 'message': 'No file provided'})
+    
+    file = request.files['certificate']
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'No file selected'})
+    
+    # Map cert types to filenames
+    cert_mapping = {
+        'ca': 'ca_cert.pem',
+        'service': 'service_center_cert.pem',
+        'key': 'service_center_key.pem'
+    }
+    
+    if cert_type not in cert_mapping:
+        return jsonify({'success': False, 'message': 'Invalid certificate type'})
+    
+    try:
+        # Ensure certs directory exists
+        os.makedirs('certs', exist_ok=True)
+        
+        # Backup existing file
+        target_file = os.path.join('certs', cert_mapping[cert_type])
+        if os.path.exists(target_file):
+            backup_file = target_file + '.backup'
+            os.rename(target_file, backup_file)
+        
+        # Save new file
+        file.save(target_file)
+        
+        return jsonify({'success': True, 'message': f'{cert_type.upper()} certificate uploaded successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/certificates/generate', methods=['POST'])
+def generate_certificates():
+    """Generate new SSL certificates"""
+    import os
+    import subprocess
+    
+    try:
+        # Ensure certs directory exists
+        os.makedirs('certs', exist_ok=True)
+        
+        # Generate new certificates using OpenSSL
+        # This is a basic certificate generation - in production you might want more sophisticated setup
+        commands = [
+            # Generate CA private key
+            ['openssl', 'genrsa', '-out', 'certs/ca_key.pem', '2048'],
+            # Generate CA certificate
+            ['openssl', 'req', '-new', '-x509', '-key', 'certs/ca_key.pem', '-out', 'certs/ca_cert.pem', '-days', '365', '-subj', '/C=US/ST=State/L=City/O=BSSCI/CN=BSSCI-CA'],
+            # Generate service private key
+            ['openssl', 'genrsa', '-out', 'certs/service_center_key.pem', '2048'],
+            # Generate service certificate request
+            ['openssl', 'req', '-new', '-key', 'certs/service_center_key.pem', '-out', 'certs/service_center.csr', '-subj', '/C=US/ST=State/L=City/O=BSSCI/CN=bssci-service'],
+            # Sign service certificate with CA
+            ['openssl', 'x509', '-req', '-in', 'certs/service_center.csr', '-CA', 'certs/ca_cert.pem', '-CAkey', 'certs/ca_key.pem', '-CAcreateserial', '-out', 'certs/service_center_cert.pem', '-days', '365']
+        ]
+        
+        for cmd in commands:
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            if result.returncode != 0:
+                return jsonify({'success': False, 'message': f'Certificate generation failed: {result.stderr}'})
+        
+        # Clean up temporary files
+        temp_files = ['certs/service_center.csr', 'certs/ca_cert.srl']
+        for temp_file in temp_files:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+        
+        return jsonify({'success': True, 'message': 'New certificates generated successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/certificates/backup')
+def backup_certificates():
+    """Download all certificates as ZIP"""
+    import os
+    import tempfile
+    import zipfile
+    from flask import send_file
+    
+    try:
+        # Create temporary ZIP file
+        temp_zip = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
+        
+        with zipfile.ZipFile(temp_zip.name, 'w') as zipf:
+            cert_files = ['ca_cert.pem', 'service_center_cert.pem', 'service_center_key.pem']
+            for cert_file in cert_files:
+                file_path = os.path.join('certs', cert_file)
+                if os.path.exists(file_path):
+                    zipf.write(file_path, cert_file)
+        
+        return send_file(temp_zip.name, as_attachment=True, download_name='bssci_certificates_backup.zip')
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/certificates/restore', methods=['POST'])
+def restore_certificates():
+    """Restore certificates from ZIP backup"""
+    import os
+    import tempfile
+    import zipfile
+    
+    if 'backup' not in request.files:
+        return jsonify({'success': False, 'message': 'No backup file provided'})
+    
+    file = request.files['backup']
+    if file.filename == '':
+        return jsonify({'success': False, 'message': 'No file selected'})
+    
+    try:
+        # Save uploaded ZIP to temporary location
+        temp_zip = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
+        file.save(temp_zip.name)
+        
+        # Extract certificates
+        with zipfile.ZipFile(temp_zip.name, 'r') as zipf:
+            # Ensure certs directory exists
+            os.makedirs('certs', exist_ok=True)
+            
+            # Extract only certificate files
+            cert_files = ['ca_cert.pem', 'service_center_cert.pem', 'service_center_key.pem']
+            for cert_file in cert_files:
+                if cert_file in zipf.namelist():
+                    target_path = os.path.join('certs', cert_file)
+                    # Backup existing file
+                    if os.path.exists(target_path):
+                        os.rename(target_path, target_path + '.backup')
+                    # Extract new file
+                    zipf.extract(cert_file, 'certs')
+        
+        # Clean up temporary file
+        os.unlink(temp_zip.name)
+        
+        return jsonify({'success': True, 'message': 'Certificates restored successfully from backup'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
