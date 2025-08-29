@@ -338,33 +338,85 @@ STATUS_INTERVAL = {data['STATUS_INTERVAL']}  # seconds
 def logs():
     return render_template('logs.html')
 
+# Helper function to extract timestamp from log lines if they follow a specific format
+def extract_timestamp(line):
+    try:
+        # Example format: 'YYYY-MM-DD HH:MM:SS.ms' or 'YYYY-MM-DD HH:MM:SS'
+        # This is a basic attempt and might need refinement based on actual log formats.
+        parts = line.split(' ', 3) # Split into at least 4 parts: date, time, logger, message
+        if len(parts) >= 2:
+            timestamp_str = parts[0] + ' ' + parts[1]
+            # Try to parse with milliseconds
+            try:
+                datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S.%f')
+                return timestamp_str
+            except ValueError:
+                # Try to parse without milliseconds
+                try:
+                    datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+                    return timestamp_str
+                except ValueError:
+                    return None # Not a recognized timestamp format
+        return None
+    except Exception:
+        return None # Return None if any error occurs during parsing
+
 @app.route('/api/logs')
 def get_logs():
-    global log_entries
+    """Get recent log entries"""
+    try:
+        log_files = ['logs/bssci.log', 'logs/bssci_sync.log']
+        logs = []
 
-    # Get query parameters for filtering
-    level_filter = request.args.get('level', 'all').upper()
-    logger_filter = request.args.get('logger', 'all')
-    limit = int(request.args.get('limit', 100))
+        for log_file in log_files:
+            if not os.path.exists(log_file):
+                continue
 
-    # Filter logs based on parameters
-    filtered_logs = log_entries
+            try:
+                with open(log_file, 'r') as f:
+                    lines = f.readlines()
 
-    if level_filter != 'ALL':
-        filtered_logs = [log for log in filtered_logs if log['level'] == level_filter]
+                # Get the last 50 lines from each file
+                recent_lines = lines[-50:] if len(lines) > 50 else lines
 
-    if logger_filter != 'all':
-        filtered_logs = [log for log in filtered_logs if logger_filter.lower() in log['logger'].lower()]
+                for line in recent_lines:
+                    line = line.strip()
+                    if line:
+                        logs.append({
+                            'message': line,
+                            'timestamp': extract_timestamp(line),
+                            'source': os.path.basename(log_file)
+                        })
+            except PermissionError:
+                logging.warning(f"Permission denied reading {log_file}")
+                continue
+            except Exception as e:
+                logging.error(f"Error reading {log_file}: {e}")
+                continue
 
-    # Return the most recent logs (up to limit)
-    recent_logs = filtered_logs[-limit:] if len(filtered_logs) > limit else filtered_logs
+        # Sort by timestamp if available
+        logs.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
 
-    return jsonify({
-        'logs': recent_logs,
-        'total_logs': len(log_entries),
-        'filtered_logs': len(filtered_logs),
-        'bssci_status': get_bssci_service_status()
-    })
+        # Limit to 100 most recent
+        logs = logs[:100]
+
+        if not logs:
+            return jsonify({
+                'logs': [{'message': 'No log files accessible or logs are empty', 'timestamp': '', 'source': 'system'}],
+                'total': 1,
+                'message': 'Log files may have permission issues'
+            })
+
+        return jsonify({
+            'logs': logs,
+            'total': len(logs)
+        })
+    except Exception as e:
+        return jsonify({
+            'error': f'Failed to read logs: {str(e)}',
+            'logs': [{'message': f'Log access error: {str(e)}', 'timestamp': '', 'source': 'error'}],
+            'total': 1
+        }), 500
 
 def get_bssci_service_status():
     """Get the status of the BSSCI service"""
