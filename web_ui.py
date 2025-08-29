@@ -231,8 +231,7 @@ def config():
         'MQTT_USERNAME': bssci_config.MQTT_USERNAME,
         'MQTT_PASSWORD': bssci_config.MQTT_PASSWORD,
         'BASE_TOPIC': bssci_config.BASE_TOPIC,
-        'STATUS_INTERVAL': bssci_config.STATUS_INTERVAL,
-
+        'STATUS_INTERVAL': bssci_config.STATUS_INTERVAL
     }
     return render_template('config.html', config=config_data)
 
