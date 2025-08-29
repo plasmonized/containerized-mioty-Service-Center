@@ -1,4 +1,3 @@
-
 import json
 import logging
 import os
@@ -22,17 +21,17 @@ max_log_entries = 1000
 class WebUILogHandler(logging.Handler):
     def emit(self, record):
         global log_entries
-        
+
         # Filter out noisy web request logs to reduce clutter
         if record.name == 'werkzeug' and any(x in record.getMessage() for x in [
             'GET /api/', 'GET /logs', 'GET /sensors', 'GET /config', 'GET /', 'GET /static/'
         ]):
             return  # Skip web request logs
-            
+
         # Avoid duplicate handlers by checking if this exact message was just logged
         current_time = datetime.fromtimestamp(record.created).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
         message = record.getMessage()
-        
+
         # Check if this exact message was logged in the last second (duplicate detection)
         if log_entries:
             last_entry = log_entries[-1]
@@ -41,7 +40,7 @@ class WebUILogHandler(logging.Handler):
                 last_entry['message'] == message and 
                 last_entry['logger'] == record.name):
                 return  # Skip duplicate message
-            
+
         log_entry = {
             'timestamp': current_time,
             'level': record.levelname,
@@ -49,7 +48,7 @@ class WebUILogHandler(logging.Handler):
             'message': message
         }
         log_entries.append(log_entry)
-        
+
         # Keep only the last max_log_entries
         if len(log_entries) > max_log_entries:
             log_entries = log_entries[-max_log_entries:]
@@ -59,7 +58,7 @@ if not any(isinstance(h, WebUILogHandler) for h in logging.getLogger().handlers)
     web_handler = WebUILogHandler()
     logging.getLogger().addHandler(web_handler)
     logging.getLogger().setLevel(logging.DEBUG)
-    
+
     # Specifically capture important logs
     logging.getLogger('TLSServer').setLevel(logging.DEBUG)
     logging.getLogger('mqtt_interface').setLevel(logging.DEBUG)
@@ -92,7 +91,7 @@ def get_sensors():
                     return jsonify(tls_server.get_sensor_registration_status())
         except:
             pass
-        
+
         # Try sync service if async not available
         if not tls_server:
             try:
@@ -121,7 +120,7 @@ def get_sensors():
                         return jsonify(sensor_status)
             except:
                 pass
-        
+
         # Fallback to file only
         with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
             sensors = json.load(f)
@@ -152,7 +151,7 @@ def add_sensor():
             sensors = json.load(f)
     except:
         sensors = []
-    
+
     # Check if sensor already exists
     for sensor in sensors:
         if sensor['eui'].lower() == data['eui'].lower():
@@ -162,7 +161,7 @@ def add_sensor():
     else:
         # Add new sensor
         sensors.append(data)
-    
+
     try:
         with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
             json.dump(sensors, f, indent=4)
@@ -177,9 +176,9 @@ def delete_sensor(eui):
             sensors = json.load(f)
     except:
         sensors = []
-    
+
     sensors = [s for s in sensors if s['eui'].lower() != eui.lower()]
-    
+
     try:
         with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
             json.dump(sensors, f, indent=4)
@@ -194,7 +193,7 @@ def clear_all_sensors():
         # Clear the file
         with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
             json.dump([], f, indent=4)
-        
+
         # Also clear from TLS server if available
         try:
             from web_main import get_tls_server
@@ -203,7 +202,7 @@ def clear_all_sensors():
                 tls_server.clear_all_sensors()
         except:
             pass  # TLS server not available, that's okay
-        
+
         return jsonify({'success': True, 'message': 'All sensors cleared successfully'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
@@ -233,7 +232,7 @@ def config():
         'MQTT_PASSWORD': bssci_config.MQTT_PASSWORD,
         'BASE_TOPIC': bssci_config.BASE_TOPIC,
         'STATUS_INTERVAL': bssci_config.STATUS_INTERVAL,
-        
+
     }
     return render_template('config.html', config=config_data)
 
@@ -258,7 +257,7 @@ STATUS_INTERVAL = {data['STATUS_INTERVAL']}  # seconds
 
 
 '''
-    
+
     try:
         with open('bssci_config.py', 'w') as f:
             f.write(config_content)
@@ -273,24 +272,24 @@ def logs():
 @app.route('/api/logs')
 def get_logs():
     global log_entries
-    
+
     # Get query parameters for filtering
     level_filter = request.args.get('level', 'all').upper()
     logger_filter = request.args.get('logger', 'all')
     limit = int(request.args.get('limit', 100))
-    
+
     # Filter logs based on parameters
     filtered_logs = log_entries
-    
+
     if level_filter != 'ALL':
         filtered_logs = [log for log in filtered_logs if log['level'] == level_filter]
-    
+
     if logger_filter != 'all':
         filtered_logs = [log for log in filtered_logs if logger_filter.lower() in log['logger'].lower()]
-    
+
     # Return the most recent logs (up to limit)
     recent_logs = filtered_logs[-limit:] if len(filtered_logs) > limit else filtered_logs
-    
+
     return jsonify({
         'logs': recent_logs,
         'total_logs': len(log_entries),
@@ -311,7 +310,7 @@ def get_bssci_service_status():
             tls_server = None
             mqtt_client = None
             service_type = "unknown"
-        
+
         # Try to get sync service instances if async not available
         sync_tls_server = None
         sync_mqtt_client = None
@@ -326,11 +325,11 @@ def get_bssci_service_status():
                     service_type = "sync"
             except:
                 pass
-        
+
         # Use whichever service instances we found
         active_tls = tls_server or sync_tls_server
         active_mqtt = mqtt_client or sync_mqtt_client
-        
+
         # TLS Server Status
         tls_status = {
             'active': active_tls is not None,
@@ -341,7 +340,7 @@ def get_bssci_service_status():
             'registered_sensors': 0,
             'pending_requests': 0
         }
-        
+
         if active_tls:
             try:
                 if hasattr(active_tls, 'get_base_station_status'):
@@ -350,7 +349,7 @@ def get_bssci_service_status():
                 else:
                     # For sync version, count connected base stations directly
                     tls_status['connected_base_stations'] = len(getattr(active_tls, 'connected_base_stations', {}))
-                
+
                 if hasattr(active_tls, 'get_sensor_registration_status'):
                     sensor_status = active_tls.get_sensor_registration_status()
                     tls_status.update({
@@ -364,39 +363,38 @@ def get_bssci_service_status():
                         'total_sensors': len(sensor_config),
                         'registered_sensors': len(sensor_config)  # Assume all configured sensors are registered in sync version
                     })
-                
+
                 if hasattr(active_tls, 'pending_attach_requests'):
                     tls_status['pending_requests'] = len(active_tls.pending_attach_requests)
             except Exception as e:
                 logger.debug(f"Error getting TLS server details: {e}")
-        
-        # MQTT Status
+
+        # MQTT Status - Get actual connection state
+        mqtt_connected = False
+        mqtt_client_id = None
+        if active_mqtt:
+            if hasattr(active_mqtt, 'is_connected'):
+                mqtt_connected = active_mqtt.is_connected()
+            elif hasattr(active_mqtt, '_client') and hasattr(active_mqtt._client, 'is_connected'):
+                mqtt_connected = active_mqtt._client.is_connected()
+            elif hasattr(active_mqtt, 'connected'):
+                mqtt_connected = active_mqtt.connected
+
+            # Try to get client ID
+            if hasattr(active_mqtt, '_client_id'):
+                mqtt_client_id = active_mqtt._client_id
+            elif hasattr(active_mqtt, 'client_id'):
+                mqtt_client_id = active_mqtt.client_id
+
         mqtt_status = {
             'active': active_mqtt is not None,
-            'service_type': service_type,
-            'broker_host': bssci_config.MQTT_BROKER,
-            'broker_port': bssci_config.MQTT_PORT,
-            'username': bssci_config.MQTT_USERNAME,
-            'base_topic': bssci_config.BASE_TOPIC,
-            'connected': active_mqtt is not None,
-            'out_queue_size': 0,
-            'in_queue_size': 0
+            'connected': mqtt_connected,
+            'broker_host': bssci_config.MQTT_BROKER if active_mqtt else None,
+            'broker_port': bssci_config.MQTT_PORT if active_mqtt else None,
+            'client_id': mqtt_client_id,
+            'username': bssci_config.MQTT_USERNAME if active_mqtt else None
         }
-        
-        if active_mqtt:
-            try:
-                if hasattr(active_mqtt, 'mqtt_out_queue'):
-                    mqtt_status['out_queue_size'] = active_mqtt.mqtt_out_queue.qsize()
-                if hasattr(active_mqtt, 'mqtt_in_queue'):
-                    mqtt_status['in_queue_size'] = active_mqtt.mqtt_in_queue.qsize()
-                # For sync version, try to get queue sizes differently
-                elif hasattr(active_mqtt, 'out_queue'):
-                    mqtt_status['out_queue_size'] = active_mqtt.out_queue.qsize()
-                elif hasattr(active_mqtt, 'in_queue'):
-                    mqtt_status['in_queue_size'] = active_mqtt.in_queue.qsize()
-            except Exception as e:
-                logger.debug(f"Error getting MQTT queue sizes: {e}")
-        
+
         return {
             'running': tls_status['active'] and mqtt_status['active'],
             'service_type': service_type,
@@ -405,7 +403,7 @@ def get_bssci_service_status():
             'uptime_seconds': int(time.time() - (getattr(get_bssci_service_status, 'start_time', time.time()))),
             'last_updated': time.time()
         }
-        
+
     except Exception as e:
         logger.error(f"Error getting BSSCI service status: {e}")
         return {
@@ -436,101 +434,66 @@ def bssci_status():
 def get_base_stations():
     """Get status of connected base stations"""
     try:
-        # Try async service first
-        tls_server = None
-        mqtt_client = None
-        
+        # Try to get async service instance first
+        base_stations = []
+        total_connected = 0
+
         try:
-            from web_main import get_tls_server, get_mqtt_client
+            from web_main import get_tls_server
             tls_server = get_tls_server()
-            mqtt_client = get_mqtt_client()
         except:
-            pass
-        
-        # Try sync service if async not available
+            tls_server = None
+
+        # Try sync service instance if async not available
         if not tls_server:
             try:
                 import sync_main
                 if hasattr(sync_main, 'tls_server_instance'):
                     tls_server = sync_main.tls_server_instance
-                if hasattr(sync_main, 'mqtt_client_instance'):
-                    mqtt_client = sync_main.mqtt_client_instance
             except:
                 pass
-        
+
         if tls_server:
-            # Try to use the get_base_station_status method if available
-            if hasattr(tls_server, 'get_base_station_status'):
-                status = tls_server.get_base_station_status()
-            else:
-                # For sync version, manually build status from connected_base_stations
-                connected_stations = []
-                connecting_stations = []
-                
-                # Get connected base stations
-                for addr, bs_eui in getattr(tls_server, 'connected_base_stations', {}).items():
-                    if hasattr(addr, '__iter__') and len(addr) >= 2:
-                        address_str = f"{addr[0]}:{addr[1]}"
-                    else:
-                        address_str = str(addr)
-                    
-                    connected_stations.append({
-                        "eui": bs_eui,
-                        "address": address_str,
-                        "status": "connected"
+            if hasattr(tls_server, 'connected_base_stations'):
+                # Async TLS server
+                for writer, bs_eui in tls_server.connected_base_stations.items():
+                    try:
+                        addr = writer.get_extra_info('peername') if hasattr(writer, 'get_extra_info') else 'Unknown'
+                    except:
+                        addr = 'Unknown'
+
+                    base_stations.append({
+                        'eui': bs_eui,
+                        'address': f"{addr[0]}:{addr[1]}" if isinstance(addr, tuple) else str(addr),
+                        'status': 'connected',
+                        'connection_type': 'TLS'
                     })
-                
-                # Get connecting base stations
-                for addr, bs_eui in getattr(tls_server, 'connecting_base_stations', {}).items():
-                    if hasattr(addr, '__iter__') and len(addr) >= 2:
-                        address_str = f"{addr[0]}:{addr[1]}"
-                    else:
-                        address_str = str(addr)
-                    
-                    connecting_stations.append({
-                        "eui": bs_eui,
-                        "address": address_str,
-                        "status": "connecting"
+                total_connected = len(base_stations)
+
+            elif hasattr(tls_server, 'stats') and 'connected_clients' in tls_server.stats:
+                # Sync TLS server
+                total_connected = tls_server.stats.get('connected_clients', 0)
+                # For sync server, we don't have detailed connection info readily available
+                for i in range(total_connected):
+                    base_stations.append({
+                        'eui': f'sync_bs_{i+1}',
+                        'address': 'Sync connection',
+                        'status': 'connected',
+                        'connection_type': 'TLS (Sync)'
                     })
-                
-                status = {
-                    "connected": connected_stations,
-                    "connecting": connecting_stations,
-                    "total_connected": len(connected_stations),
-                    "total_connecting": len(connecting_stations)
-                }
-            
-            # Add additional status info
-            status['last_updated'] = time.time()
-            status['tls_server_running'] = True
-            
-            # Add MQTT status if available
-            if mqtt_client:
-                status['mqtt_status'] = 'connected'
-            else:
-                status['mqtt_status'] = 'disconnected'
-            
-            return jsonify(status)
-        else:
-            return jsonify({
-                "connected": [],
-                "connecting": [],
-                "total_connected": 0,
-                "total_connecting": 0,
-                "tls_server_running": False,
-                "mqtt_status": "unknown",
-                "error": "TLS server not initialized"
-            })
-    except Exception as e:
-        logger.error(f"Error getting base station status: {e}")
+
         return jsonify({
-            "connected": [],
-            "connecting": [],
-            "total_connected": 0,
-            "total_connecting": 0,
-            "tls_server_running": False,
-            "mqtt_status": "unknown",
-            "error": str(e)
+            'base_stations': base_stations,
+            'total_connected': total_connected,
+            'timestamp': time.time()
+        })
+
+    except Exception as e:
+        logger.error(f"Error getting base station info: {e}")
+        return jsonify({
+            'error': str(e),
+            'base_stations': [],
+            'total_connected': 0
         })
 
 if __name__ == '__main__':

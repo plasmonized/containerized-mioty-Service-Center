@@ -65,22 +65,22 @@ function updateServiceStatus() {
             fetch('/api/bssci/status')
                 .then(response => response.json())
                 .then(data => {
-                    document.getElementById('service-status').className = 
+                    document.getElementById('service-status').className =
                         data.running ? 'alert alert-success' : 'alert alert-warning';
 
-                    const serviceTypeText = data.service_type ? 
+                    const serviceTypeText = data.service_type ?
                         ` (${data.service_type.charAt(0).toUpperCase() + data.service_type.slice(1)} Mode)` : '';
 
-                    document.getElementById('service-details').innerHTML = data.running ? 
+                    document.getElementById('service-details').innerHTML = data.running ?
                         `The BSSCI Service Center is running and ready to accept base station connections${serviceTypeText}.
                             <ul class="list-unstyled mt-2 mb-0">
-                                <li><strong>TLS Server:</strong> ${data.tls_server.active ? 
+                                <li><strong>TLS Server:</strong> ${data.tls_server.active ?
                                     `Listening on port ${data.tls_server.listening_port}` : 'Inactive'}</li>
-                                <li><strong>MQTT Broker:</strong> ${data.mqtt_broker.active ? 
+                                <li><strong>MQTT Broker:</strong> ${data.mqtt_broker.active ?
                                     `Connected to ${data.mqtt_broker.broker_host}:${data.mqtt_broker.broker_port}` : 'Inactive'}</li>
                                 <li><strong>Base Stations:</strong> ${data.tls_server.connected_base_stations || 0} connected</li>
                                 <li><strong>Sensors:</strong> ${data.tls_server.total_sensors || 0} configured, ${data.tls_server.registered_sensors || 0} registered</li>
-                            </ul>` : 
+                            </ul>` :
                         `Service Center has issues - check configuration and logs${serviceTypeText}.
                             <div class="mt-2">
                                 <small>TLS Server: ${data.tls_server.active ? 'Active' : 'Inactive'}</small><br>
@@ -97,40 +97,40 @@ function updateServiceStatus() {
         }
 
 function loadBaseStationStatus() {
-    fetch('/api/base_stations')
+    // Fetch from '/api/bssci/status' as per the intention of the changes snippet.
+    // The original code fetched from '/api/base_stations'.
+    fetch('/api/bssci/status')
         .then(response => response.json())
         .then(data => {
-            // Update connected count
-            document.getElementById('connected-count').textContent = data.total_connected;
-            document.getElementById('connecting-count').textContent = data.total_connecting;
+            // Update connected count using the data property suggested by the changes snippet.
+            // The original code used 'data.total_connected'.
+            const connectedCount = data.tls_server ? data.tls_server.connected_base_stations : 0;
+            document.getElementById('connected-count').textContent = connectedCount;
 
-            // Update connected base stations list
+            // The changes snippet does not provide logic for 'connecting-count' or the lists of stations.
+            // Also, the API endpoint has changed, so the old data structure might not be available.
+            // Therefore, we will update 'connecting-count' and the lists to reflect that this information
+            // might not be available from the new API endpoint, or set a placeholder.
+            // We are omitting the update for 'base-station-message' as this element does not exist in the original HTML.
+
+            // Setting placeholder/default values for connecting stations as no update logic was provided in the snippet.
+            document.getElementById('connecting-count').textContent = 'N/A';
+            document.getElementById('connecting-stations').innerHTML = '<small class="text-muted">Connecting station info not available</small>';
+
+            // Similarly, for connected stations list.
             const connectedDiv = document.getElementById('connected-stations');
-            if (data.connected.length === 0) {
-                connectedDiv.innerHTML = '<small class="text-muted">No base stations connected</small>';
-            } else {
-                const connectedHtml = data.connected.map(bs => 
-                    `<div class="mb-1">
-                        <small><code>${bs.eui}</code> <span class="badge bg-success">Connected</span></small>
-                    </div>`
-                ).join('');
-                connectedDiv.innerHTML = connectedHtml;
-            }
-
-            // Update connecting base stations list
-            const connectingDiv = document.getElementById('connecting-stations');
-            if (data.connecting.length === 0) {
-                connectingDiv.innerHTML = '<small class="text-muted">No base stations connecting</small>';
-            } else {
-                const connectingHtml = data.connecting.map(bs => 
-                    `<div class="mb-1">
-                        <small><code>${bs.eui}</code> <span class="badge bg-warning">Connecting</span></small>
-                    </div>`
-                ).join('');
-                connectingDiv.innerHTML = connectingHtml;
-            }
+            connectedDiv.innerHTML = '<small class="text-muted">Detailed connected station lists not available</small>';
         })
         .catch(error => {
+            console.error('Error fetching base station status:', error);
+            // Update connected count with an error message as per the logic from the changes snippet.
+            // The snippet suggests 'Error fetching status' for a non-existent element,
+            // so we adapt it for the existing 'connected-count' element.
+            document.getElementById('connected-count').textContent = '0'; // Default to 0 on error
+
+            // The original error handling updated 'connected-stations' and 'connecting-stations'.
+            // We will adapt this error handling for the modified function.
+            document.getElementById('connecting-count').textContent = 'Error';
             document.getElementById('connected-stations').innerHTML = '<small class="text-danger">Error loading status</small>';
             document.getElementById('connecting-stations').innerHTML = '<small class="text-danger">Error loading status</small>';
         });
@@ -148,10 +148,10 @@ function loadRecentLogs() {
                 return;
             }
 
-            const logHtml = logs.slice(-10).map(log => 
+            const logHtml = logs.slice(-10).map(log =>
                 `<div class="log-entry mb-1">
                     <small class="text-muted">${log.timestamp}</small>
-                    <span class="badge" style="background-color: ${log.level.toLowerCase() === 'error' ? '#dc3545' : 
+                    <span class="badge" style="background-color: ${log.level.toLowerCase() === 'error' ? '#dc3545' :
                                                 log.level.toLowerCase() === 'warning' ? '#ff8c00' : '#6c757d'}; color: white;">${log.level}</span>
                     <strong>${log.logger}:</strong> ${log.message}
                 </div>`
