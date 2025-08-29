@@ -97,3 +97,6 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python sync_main.py"
+
+[agent]
+expertMode = true
