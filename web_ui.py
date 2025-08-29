@@ -3,7 +3,7 @@ import logging
 import os
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 from typing import List, Dict, Any
 import bssci_config
@@ -19,50 +19,99 @@ max_log_entries = 1000
 # Consolidated WebUILogHandler - single definition to avoid duplicates
 
 class WebUILogHandler(logging.Handler):
-    def emit(self, record):
-        global log_entries
+    def __init__(self):
+        super().__init__()
+        self.logs = deque(maxlen=1000)  # Keep last 1000 log entries
+        self.log_sources = {'memory': self.logs}
+        self.lock = threading.Lock()
 
-        # Filter out noisy web request logs to reduce clutter
-        if record.name == 'werkzeug' and any(x in record.getMessage() for x in [
-            'GET /api/', 'GET /logs', 'GET /sensors', 'GET /config', 'GET /', 'GET /static/'
-        ]):
-            return  # Skip web request logs
+        # Track seen messages to prevent duplicates
+        self.seen_messages = set()
+        self.duplicate_count = {}
 
-        # Avoid duplicate handlers by checking if this exact message was just logged
-        current_time = datetime.fromtimestamp(record.created).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-        message = record.getMessage()
+        # Set up timezone-aware formatter
+        # Assuming Central European Time (CET/CEST) - adjust offset as needed
+        self.timezone_offset = timedelta(hours=2)  # +2 hours from UTC
 
-        # Check if this exact message was logged in the last second (duplicate detection)
-        if log_entries:
-            last_entry = log_entries[-1]
-            try:
-                # Parse timestamp more carefully
-                last_timestamp = last_entry['timestamp']
-                if '.' in last_timestamp:
-                    last_time = datetime.strptime(last_timestamp, '%Y-%m-%d %H:%M:%S.%f')
+        class TimezoneFormatter(logging.Formatter):
+            def __init__(self, fmt, datefmt, timezone_offset):
+                super().__init__(fmt, datefmt)
+                self.timezone_offset = timezone_offset
+
+            def formatTime(self, record, datefmt=None):
+                # Convert UTC timestamp to local timezone
+                utc_time = datetime.fromtimestamp(record.created, tz=timezone.utc)
+                local_time = utc_time + self.timezone_offset
+                if datefmt:
+                    return local_time.strftime(datefmt)
                 else:
-                    last_time = datetime.strptime(last_timestamp, '%Y-%m-%d %H:%M:%S')
-                
-                time_diff = abs(record.created - last_time.timestamp())
-                if (time_diff < 1.0 and  # Within 1 second
-                    last_entry['message'] == message and
-                    last_entry['logger'] == record.name):
-                    return  # Skip duplicate message
-            except (ValueError, KeyError):
-                # If timestamp parsing fails, don't skip - better to show duplicate than miss log
-                pass
+                    return local_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
 
-        log_entry = {
-            'timestamp': current_time,
-            'level': record.levelname,
-            'logger': record.name,
-            'message': message
-        }
-        log_entries.append(log_entry)
+        formatter = TimezoneFormatter(
+            '%(asctime)s %(levelname)s %(name)s [%(source)s]\n   %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S'
+        )
+        self.setFormatter(formatter)
 
-        # Keep only the last max_log_entries
-        if len(log_entries) > max_log_entries:
-            log_entries = log_entries[-max_log_entries:]
+    def emit(self, record):
+        with self.lock:
+            try:
+                # Add source information
+                if not hasattr(record, 'source'):
+                    record.source = 'memory'
+
+                # Format the record
+                formatted_message = self.format(record)
+
+                # Create timezone-aware timestamp
+                utc_time = datetime.fromtimestamp(record.created, tz=timezone.utc)
+                local_time = utc_time + self.timezone_offset
+
+                # Create log entry
+                log_entry = {
+                    'timestamp': local_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3],
+                    'level': record.levelname,
+                    'logger': record.name,
+                    'message': record.getMessage(),
+                    'source': getattr(record, 'source', 'memory')
+                }
+
+                # Prevent duplicate log entries within a short period
+                log_key = (log_entry['timestamp'], log_entry['level'], log_entry['logger'], log_entry['message'])
+                if log_key in self.seen_messages:
+                    if log_key in self.duplicate_count:
+                        self.duplicate_count[log_key] += 1
+                    else:
+                        self.duplicate_count[log_key] = 1
+                    # Optionally, you could decide to skip adding duplicates beyond a certain count,
+                    # but for now, we'll add them and let the UI handle display.
+                    # For example, to skip after the first duplicate:
+                    # if self.duplicate_count[log_key] > 1:
+                    #    return
+
+                else:
+                    self.seen_messages.add(log_key)
+                    self.duplicate_count[log_key] = 1
+
+
+                self.logs.append(log_entry)
+
+                # Keep only the last max_log_entries
+                if len(self.logs) > max_log_entries:
+                    # Remove the oldest entry if limit is exceeded
+                    oldest_entry = self.logs.popleft()
+                    # Clean up seen_messages and duplicate_count if the oldest entry was removed
+                    oldest_key = (oldest_entry['timestamp'], oldest_entry['level'], oldest_entry['logger'], oldest_entry['message'])
+                    if oldest_key in self.seen_messages:
+                        self.seen_messages.remove(oldest_key)
+                    if oldest_key in self.duplicate_count:
+                        del self.duplicate_count[oldest_key]
+
+            except Exception as e:
+                # Log any errors during log handling itself
+                print(f"Error in WebUILogHandler.emit: {e}")
+                logging.error(f"Error in WebUILogHandler.emit: {e}")
+
 
 # Add our custom handler to the root logger (only once)
 if not any(isinstance(h, WebUILogHandler) for h in logging.getLogger().handlers):
@@ -354,36 +403,36 @@ def extract_timestamp(line):
     try:
         # Handle various log formats - look for timestamp at start of line
         import re
-        
+
         # Pattern for timestamps like "2025-08-29 07:36:35.909"
         timestamp_pattern = r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,6})?)'
         match = re.match(timestamp_pattern, line.strip())
-        
+
         if match:
             return match.group(1)
-        
+
         # Fallback: try splitting and parsing
         parts = line.strip().split(' ')
         if len(parts) >= 2:
             timestamp_str = parts[0] + ' ' + parts[1]
-            
+
             # Try different timestamp formats
             formats = [
                 '%Y-%m-%d %H:%M:%S.%f',  # With microseconds
                 '%Y-%m-%d %H:%M:%S,%f',  # With comma separator
                 '%Y-%m-%d %H:%M:%S'      # Without microseconds
             ]
-            
+
             for fmt in formats:
                 try:
                     datetime.strptime(timestamp_str, fmt)
                     return timestamp_str
                 except ValueError:
                     continue
-        
+
         # Return None instead of current time to avoid confusion
         return None
-        
+
     except Exception:
         return None
 
@@ -395,7 +444,7 @@ def get_logs():
         level_filter = request.args.get('level', 'all')
         logger_filter = request.args.get('logger', 'all')
         limit = int(request.args.get('limit', 100))
-        
+
         # First try to get logs from memory (WebUILogHandler)
         memory_logs = []
         if log_entries:
@@ -405,7 +454,7 @@ def get_logs():
                     continue
                 if logger_filter != 'all' and logger_filter not in entry.get('logger', ''):
                     continue
-                    
+
                 memory_logs.append({
                     'message': entry.get('message', ''),
                     'timestamp': entry.get('timestamp', ''),
@@ -413,7 +462,7 @@ def get_logs():
                     'logger': entry.get('logger', 'unknown'),
                     'source': 'memory'
                 })
-        
+
         # If we have memory logs, use them
         if memory_logs:
             return jsonify({
@@ -422,7 +471,7 @@ def get_logs():
                 'filtered_logs': len(memory_logs),
                 'source': 'memory'
             })
-        
+
         # Fall back to file logs if no memory logs
         log_files = ['logs/bssci.log', 'logs/bssci_sync.log']
         file_logs = []
@@ -442,26 +491,26 @@ def get_logs():
                     line = line.strip()
                     if not line:
                         continue
-                    
+
                     # Extract timestamp first
                     timestamp = extract_timestamp(line)
                     if not timestamp:
                         continue  # Skip lines without valid timestamps
-                    
+
                     # Parse log components using regex for better accuracy
                     import re
-                    
+
                     # Pattern: YYYY-MM-DD HH:MM:SS.mmm LEVEL logger [source] message
                     log_pattern = r'^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d{1,6})?)\s+(\w+)\s+(\w+)\s+(?:\[([^\]]+)\])?\s*(.*)$'
                     match = re.match(log_pattern, line)
-                    
+
                     if match:
                         timestamp_part, log_level, logger_name, source_part, message = match.groups()
-                        
+
                         # Clean up the message
                         if message.startswith('- '):
                             message = message[2:]  # Remove leading "- "
-                            
+
                         # Use extracted source or fall back to filename
                         source = source_part if source_part else os.path.basename(log_file)
                     else:
@@ -471,7 +520,7 @@ def get_logs():
                             message = parts[1]
                         else:
                             message = line
-                            
+
                         # Try to extract level from line
                         log_level = 'INFO'
                         if ' ERROR ' in line:
@@ -480,21 +529,21 @@ def get_logs():
                             log_level = 'WARNING'
                         elif ' DEBUG ' in line:
                             log_level = 'DEBUG'
-                        
+
                         # Try to extract logger 
                         logger_name = 'unknown'
                         log_parts = line.split(' ')
                         if len(log_parts) >= 4:
                             logger_name = log_parts[3]
-                            
+
                         source = os.path.basename(log_file)
-                    
+
                     # Apply filters
                     if level_filter != 'all' and log_level != level_filter:
                         continue
                     if logger_filter != 'all' and logger_filter not in logger_name:
                         continue
-                        
+
                     file_logs.append({
                         'message': message,
                         'timestamp': timestamp,
@@ -512,7 +561,7 @@ def get_logs():
             if not timestamp or timestamp == '':
                 return '0000-00-00 00:00:00'  # Put entries without timestamps at the beginning
             return timestamp
-        
+
         try:
             file_logs.sort(key=sort_key, reverse=True)
         except Exception as e:
@@ -541,7 +590,7 @@ def get_logs():
             'filtered_logs': len(file_logs),
             'source': 'files'
         })
-        
+
     except Exception as e:
         logging.error(f"Error in get_logs: {e}")
         return jsonify({

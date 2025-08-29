@@ -6,11 +6,36 @@ from bssci_config import SENSOR_CONFIG_FILE, LISTEN_HOST, LISTEN_PORT, MQTT_BROK
 from mqtt_interface import MQTTClient
 from TLSServer import TLSServer
 
+# Configure logging with timezone
+import time
+from datetime import datetime, timezone, timedelta
+
+class TimezoneFormatter(logging.Formatter):
+    def __init__(self, fmt, datefmt=None):
+        super().__init__(fmt, datefmt)
+        self.timezone_offset = timedelta(hours=2)  # +2 hours from UTC
+    
+    def formatTime(self, record, datefmt=None):
+        utc_time = datetime.fromtimestamp(record.created, tz=timezone.utc)
+        local_time = utc_time + self.timezone_offset
+        if datefmt:
+            return local_time.strftime(datefmt)
+        else:
+            return local_time.strftime('%Y-%m-%d %H:%M:%S')
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
 )
+
+# Apply timezone formatter to all handlers
+for handler in logging.root.handlers:
+    handler.setFormatter(TimezoneFormatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        '%Y-%m-%d %H:%M:%S'
+    ))
 logger = logging.getLogger(__name__)
 
 async def main():

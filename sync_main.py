@@ -9,15 +9,40 @@ from sync_mqtt_interface import SyncMQTTClient
 from sync_tls_server import SyncTLSServer
 import bssci_config
 
+# Configure logging with timezone
+from datetime import datetime, timezone, timedelta
+
+class TimezoneFormatter(logging.Formatter):
+    def __init__(self, fmt, datefmt=None):
+        super().__init__(fmt, datefmt)
+        self.timezone_offset = timedelta(hours=2)  # +2 hours from UTC
+    
+    def formatTime(self, record, datefmt=None):
+        utc_time = datetime.fromtimestamp(record.created, tz=timezone.utc)
+        local_time = utc_time + self.timezone_offset
+        if datefmt:
+            return local_time.strftime(datefmt)
+        else:
+            return local_time.strftime('%Y-%m-%d %H:%M:%S')
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S',
     handlers=[
         logging.FileHandler('logs/bssci_sync.log'),
         logging.StreamHandler()
     ]
 )
+
+# Apply timezone formatter to all handlers
+timezone_formatter = TimezoneFormatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    '%Y-%m-%d %H:%M:%S'
+)
+for handler in logging.root.handlers:
+    handler.setFormatter(timezone_formatter)
 logger = logging.getLogger(__name__)
 
 class SyncBSSCIService:
