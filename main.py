@@ -1,3 +1,4 @@
+
 import asyncio
 import logging
 
@@ -13,11 +14,13 @@ from datetime import datetime, timezone, timedelta
 class TimezoneFormatter(logging.Formatter):
     def __init__(self, fmt, datefmt=None):
         super().__init__(fmt, datefmt)
-        self.timezone_offset = timedelta(hours=2)  # +2 hours from UTC
-    
+        # Set timezone to UTC+2 (Central European Time)
+        self.timezone = timezone(timedelta(hours=2))
+
     def formatTime(self, record, datefmt=None):
+        # Convert UTC timestamp to local timezone
         utc_time = datetime.fromtimestamp(record.created, tz=timezone.utc)
-        local_time = utc_time + self.timezone_offset
+        local_time = utc_time.astimezone(self.timezone)
         if datefmt:
             return local_time.strftime(datefmt)
         else:
@@ -31,11 +34,12 @@ logging.basicConfig(
 )
 
 # Apply timezone formatter to all handlers
+timezone_formatter = TimezoneFormatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    '%Y-%m-%d %H:%M:%S'
+)
 for handler in logging.root.handlers:
-    handler.setFormatter(TimezoneFormatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        '%Y-%m-%d %H:%M:%S'
-    ))
+    handler.setFormatter(timezone_formatter)
 logger = logging.getLogger(__name__)
 
 async def main():

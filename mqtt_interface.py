@@ -18,13 +18,18 @@ class MQTTClient:
         mqtt_in_queue: asyncio.Queue[dict[str, str]],
     ):
         self.broker_host = MQTT_BROKER
-        if BASE_TOPIC[-1] == "/":
+        if BASE_TOPIC.endswith("/"):
             self.base_topic = BASE_TOPIC[:-1]
         else:
             self.base_topic = BASE_TOPIC
         self.config_topic = self.base_topic + "/ep/+/config"
         self.mqtt_out_queue = mqtt_out_queue
         self.mqtt_in_queue = mqtt_in_queue
+
+        # Add queue logging
+        logger.info(f"🔍 MQTT Client Queue Assignment:")
+        logger.info(f"   mqtt_out_queue ID: {id(self.mqtt_out_queue)}")
+        logger.info(f"   mqtt_in_queue ID: {id(self.mqtt_in_queue)}")
 
     def log_queue_info(self) -> None:
         """Log queue information for debugging"""
@@ -72,6 +77,7 @@ class MQTTClient:
 
                     # Run both handlers using the working pattern
                     logger.info("🎭 Starting concurrent MQTT handlers...")
+                    self.log_queue_info()
                     
                     await asyncio.gather(
                         self._handle_incoming(client), 
@@ -115,12 +121,27 @@ class MQTTClient:
 
                 try:
                     # Extract EUI like the working version
-                    eui = str(message.topic).split("/")[len(self.base_topic.split("/"))+1]
-                    config = json.loads(message.payload.decode())
-                    config["eui"] = eui
-                    logger.info(f"✅ Configuration received for EUI {eui}")
-                    await self.mqtt_in_queue.put(config)
-                    logger.info(f"✅ Configuration queued successfully")
+                    topic_parts = str(message.topic).split("/")
+                    base_parts = self.base_topic.split("/")
+                    
+                    if len(topic_parts) > len(base_parts) + 1:
+                        eui = topic_parts[len(base_parts) + 1]
+                        logger.info(f"🔑 Extracted EUI: {eui}")
+                        
+                        payload_str = message.payload.decode('utf-8')
+                        logger.info(f"📄 Payload: {payload_str}")
+                        
+                        config = json.loads(payload_str)
+                        config["eui"] = eui
+                        
+                        logger.info(f"✅ Configuration received for EUI {eui}")
+                        logger.info(f"   Queue size before put: {self.mqtt_in_queue.qsize()}")
+                        await self.mqtt_in_queue.put(config)
+                        logger.info(f"✅ Configuration queued successfully")
+                        logger.info(f"   Queue size after put: {self.mqtt_in_queue.qsize()}")
+                        logger.info(f"📋 Config: {json.dumps(config, indent=2)}")
+                    else:
+                        logger.warning(f"⚠️  Invalid topic format: {message.topic}")
 
                 except Exception as e:
                     logger.error(f"❌ Message processing failed: {e}")
@@ -137,7 +158,7 @@ class MQTTClient:
         try:
             while True:
                 try:
-                    logger.info(f"⏳ WAITING FOR MQTT MESSAGE in queue (size: {self.mqtt_out_queue.qsize()})")
+                    logger.debug(f"⏳ WAITING FOR MQTT MESSAGE in queue (size: {self.mqtt_out_queue.qsize()})")
                     msg = await self.mqtt_out_queue.get()
                     message_count += 1
                     topic = f"{self.base_topic}/{msg['topic']}"

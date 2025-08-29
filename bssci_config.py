@@ -1,3 +1,4 @@
+
 LISTEN_HOST = "0.0.0.0"
 LISTEN_PORT = 16018  # Internal container port
 
@@ -12,5 +13,4 @@ MQTT_PASSWORD = "test=1234"
 BASE_TOPIC = "bssci/"
 
 SENSOR_CONFIG_FILE = "endpoints.json"
-STATUS_INTERVAL = 30  # seconds
-
+STATUS_INTERVAL = 60  # seconds
