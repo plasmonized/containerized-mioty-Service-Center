@@ -1,4 +1,3 @@
-
 import asyncio
 import json
 import logging
@@ -31,6 +30,19 @@ class TLSServer:
         self.registered_sensors: Dict[str, Dict[str, Any]] = {}  # EUI -> {status, base_stations: [], timestamp}
         self.pending_attach_requests: Dict[int, Dict[str, Any]] = {}  # opID -> {sensor_eui, timestamp, base_station}
         self._status_task_running = False  # Track if status request task is running
+
+        # Deduplication variables
+        self.deduplication_buffer: Dict[str, Dict[str, Any]] = {}  # message_key -> {message, timestamp, snr, bs_eui}
+        self.deduplication_delay = bssci_config.DEDUPLICATION_DELAY
+        self.deduplication_stats = {
+            'total_messages': 0,
+            'duplicate_messages': 0,
+            'published_messages': 0
+        }
+        # Start the deduplication task
+        asyncio.create_task(self.process_deduplication_buffer())
+
+
         try:
             with open(sensor_config_file, "r") as f:
                 self.sensor_config = json.load(f)
@@ -270,7 +282,7 @@ class TLSServer:
     async def send_status_requests(self) -> None:
         logger.info(f"📊 STATUS REQUEST TASK STARTED")
         logger.info(f"   Status request interval: {bssci_config.STATUS_INTERVAL} seconds")
-        
+
         try:
             while True:
                 await asyncio.sleep(bssci_config.STATUS_INTERVAL)
@@ -281,22 +293,22 @@ class TLSServer:
 
                     requests_sent = 0
                     failed_requests = 0
-                    
+
                     for writer, bs_eui in self.connected_base_stations.copy().items():  # Use copy to avoid dict change during iteration
                         try:
                             logger.info(f"📤 Sending status request to base station {bs_eui}")
                             logger.info(f"   Operation ID: {self.opID}")
-                            
+
                             msg_pack = encode_message(messages.build_status_request(self.opID))
                             full_message = IDENTIFIER + len(msg_pack).to_bytes(4, byteorder="little") + msg_pack
-                            
+
                             writer.write(full_message)
                             await writer.drain()
-                            
+
                             logger.info(f"✅ Status request transmitted to {bs_eui} (opID: {self.opID})")
                             requests_sent += 1
                             self.opID -= 1
-                            
+
                         except Exception as e:
                             failed_requests += 1
                             logger.error(f"❌ Failed to send status request to base station {bs_eui}")
@@ -305,15 +317,15 @@ class TLSServer:
                             # Remove disconnected base station
                             if writer in self.connected_base_stations:
                                 self.connected_base_stations.pop(writer)
-                    
+
                     logger.info(f"📊 STATUS REQUEST CYCLE COMPLETE")
                     logger.info(f"   Requests sent: {requests_sent}")
                     logger.info(f"   Failed requests: {failed_requests}")
                     logger.info(f"   Remaining connected base stations: {len(self.connected_base_stations)}")
-                    
+
                 else:
                     logger.info(f"⏸️  STATUS REQUEST CYCLE SKIPPED - No base stations connected")
-                    
+
         except asyncio.CancelledError:
             logger.info(f"📊 STATUS REQUEST TASK CANCELLED")
             self._status_task_running = False
@@ -486,14 +498,14 @@ class TLSServer:
 
                         mqtt_topic = f"bs/{bs_eui}"
                         payload = json.dumps(data_dict)
-                        
+
                         logger.info(f"📤 MQTT PUBLICATION - BASE STATION STATUS")
                         logger.info(f"   Topic: {bssci_config.BASE_TOPIC.rstrip('/')}/{mqtt_topic}")
                         logger.info(f"   Base Station EUI: {bs_eui}")
                         logger.info(f"   Payload size: {len(payload)} bytes")
                         logger.info(f"   Status data: Code={data_dict['code']}, CPU={data_dict['cpuLoad']:.1%}, Memory={data_dict['memLoad']:.1%}")
                         logger.info(f"   Queue size before add: {self.mqtt_out_queue.qsize()}")
-                        
+
                         try:
                             await self.mqtt_out_queue.put(
                                 {
@@ -558,7 +570,7 @@ class TLSServer:
                                     'registration_time': self._get_local_time(),
                                     'registrations': []
                                 }
-                            
+
                             # Add this base station if not already registered
                             if bs_eui not in self.registered_sensors[eui_key]['base_stations']:
                                 self.registered_sensors[eui_key]['base_stations'].append(bs_eui)
@@ -611,7 +623,7 @@ class TLSServer:
                                         'registration_time': self._get_local_time(),
                                         'registrations': []
                                     }
-                                
+
                                 # Add this base station if not already registered
                                 if bs_eui not in self.registered_sensors[eui_key]['base_stations']:
                                     self.registered_sensors[eui_key]['base_stations'].append(bs_eui)
@@ -647,6 +659,39 @@ class TLSServer:
                         bs_eui = self.connected_base_stations[writer]
                         op_id = message.get("opId", "unknown")
                         rx_time = message["rxTime"]
+                        snr = message["snr"]
+                        packet_cnt = message["packetCnt"]
+
+                        # Create a unique key for deduplication
+                        message_key = f"{eui}_{packet_cnt}"
+
+                        self.deduplication_stats['total_messages'] += 1
+
+                        # Check if message is a duplicate and if the new one has better SNR
+                        is_duplicate = message_key in self.deduplication_buffer
+                        if is_duplicate:
+                            existing_message = self.deduplication_buffer[message_key]
+                            if snr > existing_message['snr']:
+                                logger.info(f"🔄 Received duplicate message for {message_key} with better SNR ({snr:.2f} dB > {existing_message['snr']:.2f} dB)")
+                                self.deduplication_buffer[message_key] = {
+                                    'message': message,
+                                    'timestamp': asyncio.get_event_loop().time(),
+                                    'snr': snr,
+                                    'bs_eui': bs_eui
+                                }
+                            else:
+                                logger.debug(f"   Filtered duplicate message for {message_key} with lower SNR ({snr:.2f} dB <= {existing_message['snr']:.2f} dB)")
+                                self.deduplication_stats['duplicate_messages'] += 1
+                                continue  # Skip processing this duplicate
+
+                        else:
+                            logger.debug(f"New message received for {message_key}")
+                            self.deduplication_buffer[message_key] = {
+                                'message': message,
+                                'timestamp': asyncio.get_event_loop().time(),
+                                'snr': snr,
+                                'bs_eui': bs_eui
+                            }
 
                         # Parse received timestamp if available
                         try:
@@ -662,9 +707,9 @@ class TLSServer:
                         logger.info(f"   Reception Time: {rx_time_str}")
                         logger.info(f"   Operation ID: {op_id}")
                         logger.info(f"   Signal Quality:")
-                        logger.info(f"     SNR: {message['snr']:.2f} dB")
+                        logger.info(f"     SNR: {snr:.2f} dB")
                         logger.info(f"     RSSI: {message['rssi']:.2f} dBm")
-                        logger.info(f"   Packet Counter: {message['packetCnt']}")
+                        logger.info(f"   Packet Counter: {packet_cnt}")
                         logger.info(f"   Payload:")
                         logger.info(f"     Length: {len(message['userData'])} bytes")
                         logger.info(f"     Data (hex): {' '.join(f'{b:02x}' for b in message['userData'])}")
@@ -684,16 +729,16 @@ class TLSServer:
 
                         data_dict = {
                             "bs_eui": bs_eui,
-                            "rxTime": message["rxTime"],
-                            "snr": message["snr"],
+                            "rxTime": rx_time,
+                            "snr": snr,
                             "rssi": message["rssi"],
-                            "cnt": message["packetCnt"],
+                            "cnt": packet_cnt,
                             "data": message["userData"],
                         }
 
                         mqtt_topic = f"ep/{eui}/ul"
                         payload_json = json.dumps(data_dict)
-                        
+
                         logger.info(f"📤 MQTT PUBLICATION - SENSOR UPLINK DATA")
                         logger.info(f"   =====================================")
                         logger.info(f"   Full Topic: {bssci_config.BASE_TOPIC.rstrip('/')}/{mqtt_topic}")
@@ -703,13 +748,27 @@ class TLSServer:
                         logger.info(f"   Data Preview: SNR={data_dict['snr']:.1f}dB, RSSI={data_dict['rssi']:.1f}dBm, Count={data_dict['cnt']}")
                         logger.info(f"   Queue size before add: {self.mqtt_out_queue.qsize()}")
                         logger.debug(f"   Full Payload: {payload_json}")
-                        
+
                         try:
                             await self.mqtt_out_queue.put(
                                 {"topic": mqtt_topic, "payload": payload_json}
                             )
                             logger.info(f"✅ MQTT message queued successfully")
                             logger.info(f"   Queue size after add: {self.mqtt_out_queue.qsize()}")
+
+                            # Update statistics
+                            self.deduplication_stats['published_messages'] += 1
+                            total_msg = self.deduplication_stats['total_messages']
+                            dup_msg = self.deduplication_stats['duplicate_messages']
+                            pub_msg = self.deduplication_stats['published_messages']
+                            dup_rate = (dup_msg / total_msg * 100) if total_msg > 0 else 0
+
+                            logger.info(f"📊 DEDUPLICATION STATISTICS:")
+                            logger.info(f"   Total messages received: {total_msg}")
+                            logger.info(f"   Duplicate messages filtered: {dup_msg}")
+                            logger.info(f"   Messages published: {pub_msg}")
+                            logger.info(f"   Duplication rate: {dup_rate:.1f}%")
+
                         except Exception as mqtt_err:
                             logger.error(f"❌ FAILED to queue MQTT message")
                             logger.error(f"   Error: {type(mqtt_err).__name__}: {mqtt_err}")
@@ -775,6 +834,87 @@ class TLSServer:
                 logger.info(f"   Remaining connected base stations: {len(self.connected_base_stations)}")
             if writer in self.connecting_base_stations:
                 self.connecting_base_stations.pop(writer)
+
+    async def process_deduplication_buffer(self) -> None:
+        """Processes the deduplication buffer, forwards best messages, and cleans up old entries."""
+        logger.info(f"🧠 Starting deduplication buffer processing task with delay: {self.deduplication_delay}s")
+        while True:
+            await asyncio.sleep(self.deduplication_delay)
+            current_time = asyncio.get_event_loop().time()
+            
+            # Find messages that have been in the buffer longer than the delay
+            messages_to_publish = []
+            for key, value in list(self.deduplication_buffer.items()): # Use list to allow modification during iteration
+                if current_time - value['timestamp'] >= self.deduplication_delay:
+                    messages_to_publish.append((key, value))
+                    del self.deduplication_buffer[key] # Remove from buffer
+
+            # Sort messages to publish by SNR (highest first)
+            messages_to_publish.sort(key=lambda item: item[1]['snr'], reverse=True)
+
+            for message_key, message_data in messages_to_publish:
+                message = message_data['message']
+                bs_eui = message_data['bs_eui']
+                eui = int(message["epEui"]).to_bytes(8, byteorder="big").hex()
+                snr = message_data['snr']
+                packet_cnt = message["packetCnt"]
+
+                data_dict = {
+                    "bs_eui": bs_eui,
+                    "rxTime": message["rxTime"],
+                    "snr": snr,
+                    "rssi": message["rssi"],
+                    "cnt": packet_cnt,
+                    "data": message["userData"],
+                }
+
+                mqtt_topic = f"ep/{eui}/ul"
+                payload_json = json.dumps(data_dict)
+
+                logger.info(f"📤 PUBLISHING DEDUPLICATED MESSAGE")
+                logger.info(f"   =====================================")
+                logger.info(f"   Full Topic: {bssci_config.BASE_TOPIC.rstrip('/')}/{mqtt_topic}")
+                logger.info(f"   Sensor EUI: {eui}")
+                logger.info(f"   Base Station: {bs_eui}")
+                logger.info(f"   Payload Size: {len(payload_json)} bytes")
+                logger.info(f"   Data Preview: SNR={data_dict['snr']:.1f}dB, RSSI={data_dict['rssi']:.1f}dBm, Count={data_dict['cnt']}")
+                logger.info(f"   Queue size before add: {self.mqtt_out_queue.qsize()}")
+                logger.debug(f"   Full Payload: {payload_json}")
+                
+                try:
+                    await self.mqtt_out_queue.put(
+                        {"topic": mqtt_topic, "payload": payload_json}
+                    )
+                    logger.info(f"✅ DEDUPLICATED MQTT message queued successfully")
+                    logger.info(f"   Queue size after add: {self.mqtt_out_queue.qsize()}")
+
+                    # Update statistics
+                    self.deduplication_stats['published_messages'] += 1
+                    total_msg = self.deduplication_stats['total_messages']
+                    dup_msg = self.deduplication_stats['duplicate_messages']
+                    pub_msg = self.deduplication_stats['published_messages']
+                    dup_rate = (dup_msg / total_msg * 100) if total_msg > 0 else 0
+
+                    logger.info(f"📊 DEDUPLICATION STATISTICS:")
+                    logger.info(f"   Total messages received: {total_msg}")
+                    logger.info(f"   Duplicate messages filtered: {dup_msg}")
+                    logger.info(f"   Messages published: {pub_msg}")
+                    logger.info(f"   Duplication rate: {dup_rate:.1f}%")
+
+                except Exception as mqtt_err:
+                    logger.error(f"❌ FAILED to queue deduplicated MQTT message")
+                    logger.error(f"   Error: {type(mqtt_err).__name__}: {mqtt_err}")
+                    logger.error(f"   Topic: {mqtt_topic}")
+                    logger.error(f"   Payload: {payload_json}")
+                logger.info(f"   =======================================")
+
+            # Clean up old entries from the buffer that were not published
+            oldest_allowed_time = current_time - (self.deduplication_delay * 2) # Keep entries for a bit longer to ensure they are processed
+            for key, value in list(self.deduplication_buffer.items()):
+                 if current_time - value['timestamp'] > oldest_allowed_time:
+                     logger.warning(f"   🧹 Cleaning up old unduplicated message from buffer: {key}")
+                     del self.deduplication_buffer[key]
+
 
     async def queue_watcher(self) -> None:
         logger.info("📨 MQTT queue watcher started - monitoring for configuration updates")
