@@ -176,7 +176,7 @@ class MQTTClient:
                 except Exception as e:
                     logger.error(f"❌ MQTT PUBLISH ERROR: {e}")
                     # For connection errors, re-raise to trigger reconnection
-                    if isinstance(e, (ConnectionError, OSError)) or "connection" in str(e).lower():
+                    if isinstance(e, (ConnectionError, OSError)) or "connection" in str(e).lower() or "not currently connected" in str(e).lower():
                         logger.error("   CONNECTION ERROR - TRIGGERING RECONNECTION")
                         await self.mqtt_out_queue.put(msg)  # Put message back
                         raise
