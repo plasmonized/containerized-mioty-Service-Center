@@ -1,0 +1,1001 @@
+Logs
+Showing 500 of 1000 filtered logs (1000 total) - Source: memory
+2025-08-31 09:36:27.130 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 58752)
+2025-08-31 09:36:27.132 INFO TLSServer [memory]
+📨 BSSCI message #53827 received from ('172.27.0.1', 58750)
+2025-08-31 09:36:27.132 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:36:27.133 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 24726}
+2025-08-31 09:36:27.133 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 58750)
+2025-08-31 09:36:27.133 INFO TLSServer [memory]
+📨 BSSCI message #53677 received from ('172.27.0.1', 58752)
+2025-08-31 09:36:27.133 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:36:27.133 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 24651}
+2025-08-31 09:36:27.133 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 58752)
+2025-08-31 09:36:32.119 INFO TLSServer [memory]
+📨 BSSCI message #62535 received from ('172.27.0.1', 49338)
+2025-08-31 09:36:32.120 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:36:32.120 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 28728}
+2025-08-31 09:36:32.121 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 49338)
+2025-08-31 09:36:32.123 INFO TLSServer [memory]
+📨 BSSCI message #62536 received from ('172.27.0.1', 49338)
+2025-08-31 09:36:32.123 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:36:32.123 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 28728}
+2025-08-31 09:36:32.124 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 49338)
+2025-08-31 09:36:32.143 INFO TLSServer [memory]
+📨 BSSCI message #53678 received from ('172.27.0.1', 58752)
+2025-08-31 09:36:32.143 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:36:32.143 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 24652}
+2025-08-31 09:36:32.143 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 58752)
+2025-08-31 09:36:32.146 INFO TLSServer [memory]
+📨 BSSCI message #53828 received from ('172.27.0.1', 58750)
+2025-08-31 09:36:32.146 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:36:32.146 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 24727}
+2025-08-31 09:36:32.146 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 58750)
+2025-08-31 09:36:32.147 INFO TLSServer [memory]
+📨 BSSCI message #53679 received from ('172.27.0.1', 58752)
+2025-08-31 09:36:32.147 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:36:32.147 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 24652}
+2025-08-31 09:36:32.147 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 58752)
+2025-08-31 09:36:32.149 INFO TLSServer [memory]
+📨 BSSCI message #53829 received from ('172.27.0.1', 58750)
+2025-08-31 09:36:32.149 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:36:32.149 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 24727}
+2025-08-31 09:36:32.149 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 58750)
+2025-08-31 09:36:37.131 INFO TLSServer [memory]
+📨 BSSCI message #62537 received from ('172.27.0.1', 49338)
+2025-08-31 09:36:37.132 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:36:37.132 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 28729}
+2025-08-31 09:36:37.132 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 49338)
+2025-08-31 09:36:37.133 INFO TLSServer [memory]
+📨 BSSCI message #62538 received from ('172.27.0.1', 49338)
+2025-08-31 09:36:37.134 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:36:37.134 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 28729}
+2025-08-31 09:36:37.134 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 49338)
+2025-08-31 09:36:37.159 INFO TLSServer [memory]
+📨 BSSCI message #53680 received from ('172.27.0.1', 58752)
+2025-08-31 09:36:37.160 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:36:37.160 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 24653}
+2025-08-31 09:36:37.160 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 58752)
+2025-08-31 09:36:37.162 INFO TLSServer [memory]
+📨 BSSCI message #53830 received from ('172.27.0.1', 58750)
+2025-08-31 09:36:37.162 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:36:37.162 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 24728}
+2025-08-31 09:36:37.163 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 58750)
+2025-08-31 09:36:37.163 INFO TLSServer [memory]
+📨 BSSCI message #53681 received from ('172.27.0.1', 58752)
+2025-08-31 09:36:37.164 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:36:37.164 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 24653}
+2025-08-31 09:36:37.164 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 58752)
+2025-08-31 09:36:37.165 INFO TLSServer [memory]
+📨 BSSCI message #53831 received from ('172.27.0.1', 58750)
+2025-08-31 09:36:37.166 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:36:37.166 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 24728}
+2025-08-31 09:36:37.166 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 58750)
+2025-08-31 09:36:41.139 INFO TLSServer [memory]
+📨 BSSCI message #62539 received from ('172.27.0.1', 49338)
+2025-08-31 09:36:41.140 INFO TLSServer [memory]
+   Message type: ulData
+2025-08-31 09:36:41.140 DEBUG TLSServer [memory]
+   Full message: {'command': 'ulData', 'dlAck': False, 'dlOpen': True, 'epEui': 8391082416558571542, 'eqSnr': 19.781999588012695, 'format': 192, 'mode': 'ulp', 'opId': 28730, 'packetCnt': 18607, 'profile': 'eu868', 'responseExp': False, 'rssi': -60.43695831298828, 'rxTime': 1756625801083539751, 'snr': 27.881872177124023, 'subpackets': {'frequency': [868167529.1875, 868205615.125, 868186572.15625, 868158007.703125, 868196093.640625, 868177050.671875, 868169909.5585938, 868207995.5, 868188952.5273438, 868153246.9609375, 868191332.8984375, 868172289.9296875, 868155627.3320312, 868193713.2695312, 868174670.3007812, 868162768.4453125, 868200854.3828125, 868181811.4140625, 868165148.8164062, 868203234.75, 868184191.7851562, 868160388.0742188, 868198474.015625, 868179431.0429688, 868200854.3828125, 868155627.3320312], 'rssi': [-60.57538986206055, -60.57837677001953, -60.51628112792969, -60.361595153808594, -60.43621063232422, -60.345970153808594, -60.525428771972656, -60.57619094848633, -60.59371566772461, -60.34824752807617, -60.503753662109375, -60.488502502441406, -60.40977478027344, -60.5442008972168, -60.51334762573242, -60.337528228759766, -60.40461730957031, -60.37353515625, -60.384307861328125, -60.447174072265625, -60.393516540527344, -60.39414978027344, -60.43055725097656, -60.32561492919922, -60.43185806274414, -60.412784576416016], 'snr': [25.792964935302734, 24.103364944458008, 26.900341033935547, 28.77260971069336, 29.304658889770508, 26.85201644897461, 26.752635955810547, 27.721576690673828, 26.374176025390625, 31.770620346069336, 29.977962493896484, 24.821109771728516, 27.600597381591797, 31.471576690673828, 24.944265365600586, 28.90300941467285, 25.84679412841797, 30.543872833251953, 30.450176239013672, 24.30332374572754, 26.70464324951172, 27.080842971801758, 27.291976928710938, 29.482736587524414, 24.819955825805664, 26.874296188354492]}, 'userData': [1, 3, 1, 54, 0, 1, 115, 0, 102, 97, 1]}
+2025-08-31 09:36:41.140 DEBUG TLSServer [memory]
+📨 DEDUPLICATION: New message received for 74731d0000000016
+2025-08-31 09:36:41.140 DEBUG TLSServer [memory]
+   Message counter: 18607
+2025-08-31 09:36:41.140 DEBUG TLSServer [memory]
+   SNR: 27.88 dB (via 70b3d59cd00009f6)
+2025-08-31 09:36:41.141 INFO TLSServer [memory]
+📊 PREFERRED PATH UPDATED for sensor 74731d0000000016
+2025-08-31 09:36:41.141 INFO TLSServer [memory]
+   Base Station: 70b3d59cd00009f6
+2025-08-31 09:36:41.141 INFO TLSServer [memory]
+   SNR: 27.88 dB
+2025-08-31 09:36:41.141 INFO TLSServer [memory]
+   Total messages: 5950
+2025-08-31 09:36:41.142 INFO TLSServer [memory]
+📡 UPLINK DATA BUFFERED FOR DEDUPLICATION
+2025-08-31 09:36:41.142 INFO TLSServer [memory]
+   =================================
+2025-08-31 09:36:41.143 INFO TLSServer [memory]
+   Endpoint EUI: 74731d0000000016
+2025-08-31 09:36:41.143 INFO TLSServer [memory]
+   Via Base Station: 70b3d59cd00009f6
+2025-08-31 09:36:41.143 INFO TLSServer [memory]
+   Reception Time: 2025-08-31 07:36:41.083
+2025-08-31 09:36:41.143 INFO TLSServer [memory]
+   Operation ID: 28730
+2025-08-31 09:36:41.143 INFO TLSServer [memory]
+   Signal Quality:
+2025-08-31 09:36:41.144 INFO TLSServer [memory]
+     SNR: 27.88 dB
+2025-08-31 09:36:41.144 INFO TLSServer [memory]
+     RSSI: -60.44 dBm
+2025-08-31 09:36:41.144 INFO TLSServer [memory]
+   Packet Counter: 18607
+2025-08-31 09:36:41.144 INFO TLSServer [memory]
+   Payload:
+2025-08-31 09:36:41.144 INFO TLSServer [memory]
+     Length: 11 bytes
+2025-08-31 09:36:41.144 INFO TLSServer [memory]
+     Data (hex): 01 03 01 36 00 01 73 00 66 61 01
+2025-08-31 09:36:41.145 INFO TLSServer [memory]
+     Data (dec): [1, 3, 1, 54, 0, 1, 115, 0, 102, 97, 1]
+2025-08-31 09:36:41.145 INFO TLSServer [memory]
+   Registration Status: ✅ REGISTERED
+2025-08-31 09:36:41.145 INFO TLSServer [memory]
+     Registered to 4 base station(s): ['00073200007e221d', '70b3d59cd00009f6', '9c65f9fffe6be145', '3e5446fffee97b78']
+2025-08-31 09:36:41.145 INFO TLSServer [memory]
+     Data received via: 70b3d59cd00009f6
+2025-08-31 09:36:41.145 INFO TLSServer [memory]
+     Registration time: 2025-08-29 15:22:53.147
+2025-08-31 09:36:41.146 INFO TLSServer [memory]
+⏳ Message queued for deduplication processing
+2025-08-31 09:36:41.146 INFO TLSServer [memory]
+   Will be published in 2 seconds if no better signal received
+2025-08-31 09:36:41.146 INFO TLSServer [memory]
+   Buffer size: 1 messages
+2025-08-31 09:36:41.146 INFO TLSServer [memory]
+   =================================
+2025-08-31 09:36:41.147 INFO TLSServer [memory]
+✅ UPLINK DATA PROCESSING COMPLETE for 74731d0000000016
+2025-08-31 09:36:41.147 INFO TLSServer [memory]
+   =================================
+2025-08-31 09:36:41.147 INFO TLSServer [memory]
+📨 BSSCI message #53682 received from ('172.27.0.1', 58752)
+2025-08-31 09:36:41.147 INFO TLSServer [memory]
+   Message type: ulData
+2025-08-31 09:36:41.148 DEBUG TLSServer [memory]
+   Full message: {'command': 'ulData', 'dlAck': False, 'dlOpen': True, 'epEui': 8391082416558571542, 'eqSnr': 19.781999588012695, 'format': 192, 'mode': 'ulp', 'opId': 24654, 'packetCnt': 18607, 'profile': 'eu868', 'responseExp': False, 'rssi': -107.07121276855469, 'rxTime': 1671182602037493235, 'snr': 25.024499893188477, 'subpackets': {'frequency': [868167192.4023438, 868205278.34375, 868186235.3710938, 868157670.9179688, 868195756.859375, 868176713.8867188, 868169572.7734375, 868207658.7109375, 868188615.7421875, 868152910.1757812, 868190996.1132812, 868171953.1445312, 868155290.546875, 868193376.484375, 868174333.515625, 868162431.6601562, 868200517.59375, 868181474.6289062, 868164812.03125, 868202897.96875, 868183855.0, 868160051.2890625, 868198137.2265625, 868179094.2578125, 868200517.59375, 868155290.546875], 'rssi': [-107.24325561523438, -107.21952819824219, -107.16510009765625, -107.0530776977539, -107.07787322998047, -106.95784759521484, -107.19746398925781, -107.19940185546875, -107.17835235595703, -106.94282531738281, -107.14152526855469, -107.10731506347656, -107.22891235351562, -107.24177551269531, -107.07617950439453, -106.96270751953125, -106.93347930908203, -106.86466979980469, -106.97764587402344, -107.00900268554688, -107.08882141113281, -107.05184936523438, -106.8619613647461, -106.88748168945312, -106.880859375, -106.95082092285156], 'snr': [24.966678619384766, 25.253101348876953, 25.186382293701172, 25.26517677307129, 24.80168342590332, 23.450773239135742, 24.160573959350586, 26.809215545654297, 25.772903442382812, 26.43651580810547, 27.783357620239258, 24.298112869262695, 23.912925720214844, 26.324459075927734, 24.810699462890625, 25.81064224243164, 22.516986846923828, 26.122018814086914, 27.723405838012695, 20.188339233398438, 22.526412963867188, 21.896873474121094, 23.155986785888672, 23.91476058959961, 22.11383628845215, 23.635135650634766]}, 'userData': [1, 3, 1, 54, 0, 1, 115, 0, 102, 97, 1]}
+2025-08-31 09:36:41.148 DEBUG TLSServer [memory]
+   🔽 DEDUPLICATION: Filtered duplicate message for 74731d0000000016 with lower SNR (25.02 dB <= 27.88 dB)
+2025-08-31 09:36:41.149 INFO TLSServer [memory]
+📨 BSSCI message #62540 received from ('172.27.0.1', 49338)
+2025-08-31 09:36:41.149 INFO TLSServer [memory]
+   Message type: ulDataCmp
+2025-08-31 09:36:41.149 DEBUG TLSServer [memory]
+   Full message: {'command': 'ulDataCmp', 'opId': 28730}
+2025-08-31 09:36:41.151 INFO TLSServer [memory]
+📨 BSSCI message #53683 received from ('172.27.0.1', 58752)
+2025-08-31 09:36:41.151 INFO TLSServer [memory]
+   Message type: ulDataCmp
+2025-08-31 09:36:41.151 DEBUG TLSServer [memory]
+   Full message: {'command': 'ulDataCmp', 'opId': 24654}
+2025-08-31 09:36:41.171 INFO TLSServer [memory]
+📨 BSSCI message #53832 received from ('172.27.0.1', 58750)
+2025-08-31 09:36:41.171 INFO TLSServer [memory]
+   Message type: ulData
+2025-08-31 09:36:41.171 DEBUG TLSServer [memory]
+   Full message: {'command': 'ulData', 'dlAck': False, 'dlOpen': True, 'epEui': 8391082416558571542, 'eqSnr': 19.781999588012695, 'format': 192, 'mode': 'ulp', 'opId': 24729, 'packetCnt': 18607, 'profile': 'eu868', 'responseExp': False, 'rssi': -76.39542388916016, 'rxTime': 1756625800289737308, 'snr': 29.215721130371094, 'subpackets': {'frequency': [868167674.9765625, 868205760.9140625, 868186717.9453125, 868158153.4941406, 868196239.4296875, 868177196.4609375, 868170055.3515625, 868208141.2890625, 868189098.3203125, 868153392.7519531, 868191478.6875, 868172435.71875, 868155773.1230469, 868193859.0625, 868174816.09375, 868162914.234375, 868201000.171875, 868181957.203125, 868165294.609375, 868203380.546875, 868184337.578125, 868160533.8652344, 868198619.8046875, 868179576.8359375, 868201000.171875, 868155773.1230469], 'rssi': [-76.63021850585938, -76.6396484375, -76.57322692871094, -76.39291381835938, -76.50074768066406, -76.33672332763672, -76.51500701904297, -76.66450500488281, -76.60675811767578, -76.23381042480469, -76.43037414550781, -76.3822250366211, -76.50959777832031, -76.60464477539062, -76.498291015625, -76.30656433105469, -76.39202880859375, -76.32313537597656, -76.30525207519531, -76.44308471679688, -76.43075561523438, -76.48326873779297, -76.30961608886719, -76.32656860351562, -76.28750610351562, -76.37643432617188], 'snr': [23.752050399780273, 22.383872985839844, 24.043502807617188, 29.137737274169922, 27.290040969848633, 28.05027198791504, 25.73928451538086, 24.734569549560547, 28.27925682067871, 35.53125, 31.373550415039062, 24.532440185546875, 23.40140151977539, 28.352853775024414, 22.951705932617188, 29.212539672851562, 23.624460220336914, 28.960735321044922, 30.14739990234375, 21.180036544799805, 24.732942581176758, 23.662805557250977, 23.840391159057617, 29.192874908447266, 24.2622013092041, 25.23802947998047]}, 'userData': [1, 3, 1, 54, 0, 1, 115, 0, 102, 97, 1]}
+2025-08-31 09:36:41.171 INFO TLSServer [memory]
+🔄 DEDUPLICATION: Better signal found for 74731d0000000016
+2025-08-31 09:36:41.172 INFO TLSServer [memory]
+   Message counter: 18607
+2025-08-31 09:36:41.172 INFO TLSServer [memory]
+   Previous SNR: 27.88 dB (via 70b3d59cd00009f6)
+2025-08-31 09:36:41.172 INFO TLSServer [memory]
+   New SNR: 29.22 dB (via 9c65f9fffe6be145)
+2025-08-31 09:36:41.172 INFO TLSServer [memory]
+   Updating preferred path: 70b3d59cd00009f6 → 9c65f9fffe6be145
+2025-08-31 09:36:41.172 INFO TLSServer [memory]
+📊 PREFERRED PATH UPDATED for sensor 74731d0000000016
+2025-08-31 09:36:41.173 INFO TLSServer [memory]
+   Base Station: 9c65f9fffe6be145
+2025-08-31 09:36:41.173 INFO TLSServer [memory]
+   SNR: 29.22 dB
+2025-08-31 09:36:41.173 INFO TLSServer [memory]
+   Total messages: 5951
+2025-08-31 09:36:41.174 INFO TLSServer [memory]
+📡 UPLINK DATA BUFFERED FOR DEDUPLICATION
+2025-08-31 09:36:41.174 INFO TLSServer [memory]
+   =================================
+2025-08-31 09:36:41.174 INFO TLSServer [memory]
+   Endpoint EUI: 74731d0000000016
+2025-08-31 09:36:41.174 INFO TLSServer [memory]
+   Via Base Station: 9c65f9fffe6be145
+2025-08-31 09:36:41.174 INFO TLSServer [memory]
+   Reception Time: 2025-08-31 07:36:40.289
+2025-08-31 09:36:41.175 INFO TLSServer [memory]
+   Operation ID: 24729
+2025-08-31 09:36:41.175 INFO TLSServer [memory]
+   Signal Quality:
+2025-08-31 09:36:41.175 INFO TLSServer [memory]
+     SNR: 29.22 dB
+2025-08-31 09:36:41.175 INFO TLSServer [memory]
+     RSSI: -76.40 dBm
+2025-08-31 09:36:41.175 INFO TLSServer [memory]
+   Packet Counter: 18607
+2025-08-31 09:36:41.176 INFO TLSServer [memory]
+   Payload:
+2025-08-31 09:36:41.176 INFO TLSServer [memory]
+     Length: 11 bytes
+2025-08-31 09:36:41.176 INFO TLSServer [memory]
+     Data (hex): 01 03 01 36 00 01 73 00 66 61 01
+2025-08-31 09:36:41.176 INFO TLSServer [memory]
+     Data (dec): [1, 3, 1, 54, 0, 1, 115, 0, 102, 97, 1]
+2025-08-31 09:36:41.176 INFO TLSServer [memory]
+   Registration Status: ✅ REGISTERED
+2025-08-31 09:36:41.177 INFO TLSServer [memory]
+     Registered to 4 base station(s): ['00073200007e221d', '70b3d59cd00009f6', '9c65f9fffe6be145', '3e5446fffee97b78']
+2025-08-31 09:36:41.177 INFO TLSServer [memory]
+     Data received via: 9c65f9fffe6be145
+2025-08-31 09:36:41.177 INFO TLSServer [memory]
+     Registration time: 2025-08-29 15:22:53.147
+2025-08-31 09:36:41.177 INFO TLSServer [memory]
+⏳ Message queued for deduplication processing
+2025-08-31 09:36:41.177 INFO TLSServer [memory]
+   Will be published in 2 seconds if no better signal received
+2025-08-31 09:36:41.177 INFO TLSServer [memory]
+   Buffer size: 1 messages
+2025-08-31 09:36:41.178 INFO TLSServer [memory]
+   =================================
+2025-08-31 09:36:41.178 INFO TLSServer [memory]
+✅ UPLINK DATA PROCESSING COMPLETE for 74731d0000000016
+2025-08-31 09:36:41.178 INFO TLSServer [memory]
+   =================================
+2025-08-31 09:36:41.182 INFO TLSServer [memory]
+📨 BSSCI message #53833 received from ('172.27.0.1', 58750)
+2025-08-31 09:36:41.182 INFO TLSServer [memory]
+   Message type: ulDataCmp
+2025-08-31 09:36:41.182 DEBUG TLSServer [memory]
+   Full message: {'command': 'ulDataCmp', 'opId': 24729}
+2025-08-31 09:36:45.125 INFO TLSServer [memory]
+📤 PUBLISHING DEDUPLICATED MESSAGE
+2025-08-31 09:36:45.125 INFO TLSServer [memory]
+   =====================================
+2025-08-31 09:36:45.126 INFO TLSServer [memory]
+   Full Topic: bssci/ep/74731d0000000016/ul
+2025-08-31 09:36:45.126 INFO TLSServer [memory]
+   Sensor EUI: 74731d0000000016
+2025-08-31 09:36:45.126 INFO TLSServer [memory]
+   Base Station: 9c65f9fffe6be145
+2025-08-31 09:36:45.126 INFO TLSServer [memory]
+   Payload Size: 179 bytes
+2025-08-31 09:36:45.126 INFO TLSServer [memory]
+   Data Preview: SNR=29.2dB, RSSI=-76.4dBm, Count=18607
+2025-08-31 09:36:45.126 INFO TLSServer [memory]
+   Queue size before add: 0
+2025-08-31 09:36:45.127 DEBUG TLSServer [memory]
+   Full Payload: {"bs_eui": "9c65f9fffe6be145", "rxTime": 1756625800289737308, "snr": 29.215721130371094, "rssi": -76.39542388916016, "cnt": 18607, "data": [1, 3, 1, 54, 0, 1, 115, 0, 102, 97, 1]}
+2025-08-31 09:36:45.127 INFO queue_logger [memory]
+📤 [mqtt_out_queue] PUT #23816
+2025-08-31 09:36:45.127 INFO queue_logger [memory]
+   Queue ID: 139676590172272
+2025-08-31 09:36:45.127 INFO queue_logger [memory]
+   New size: 1
+2025-08-31 09:36:45.127 INFO queue_logger [memory]
+   Item type: dict
+2025-08-31 09:36:45.127 INFO queue_logger [memory]
+   Item keys: ['topic', 'payload']
+2025-08-31 09:36:45.127 INFO TLSServer [memory]
+✅ DEDUPLICATED MQTT message queued successfully
+2025-08-31 09:36:45.128 INFO TLSServer [memory]
+   Queue size after add: 1
+2025-08-31 09:36:45.128 INFO TLSServer [memory]
+📊 DEDUPLICATION STATISTICS:
+2025-08-31 09:36:45.128 INFO TLSServer [memory]
+   Total messages received: 10994
+2025-08-31 09:36:45.128 INFO TLSServer [memory]
+   Duplicate messages filtered: 4331
+2025-08-31 09:36:45.128 INFO TLSServer [memory]
+   Messages published: 3552
+2025-08-31 09:36:45.128 INFO TLSServer [memory]
+   Duplication rate: 39.4%
+2025-08-31 09:36:45.129 INFO TLSServer [memory]
+   =======================================
+2025-08-31 09:36:45.129 INFO queue_logger [memory]
+📥 [mqtt_out_queue] GET #23816
+2025-08-31 09:36:45.129 INFO queue_logger [memory]
+   Queue ID: 139676590172272
+2025-08-31 09:36:45.129 INFO queue_logger [memory]
+   New size: 0
+2025-08-31 09:36:45.129 INFO queue_logger [memory]
+   Item type: dict
+2025-08-31 09:36:45.130 INFO queue_logger [memory]
+   Item keys: ['topic', 'payload']
+2025-08-31 09:36:45.130 INFO mqtt_interface [memory]
+🎉 MESSAGE #23816 RECEIVED FOR PUBLISHING!
+2025-08-31 09:36:45.130 INFO mqtt_interface [memory]
+   Topic: bssci/ep/74731d0000000016/ul
+2025-08-31 09:36:45.130 INFO mqtt_interface [memory]
+   Payload Size: 179 bytes
+2025-08-31 09:36:45.131 ERROR mqtt_interface [memory]
+❌ MQTT PUBLISH ERROR: [code:4] The client is not currently connected.
+2025-08-31 09:36:45.131 ERROR mqtt_interface [memory]
+   NON-CONNECTION ERROR - Continuing...
+2025-08-31 09:36:45.131 DEBUG mqtt_interface [memory]
+⏳ WAITING FOR MQTT MESSAGE in queue (size: 0)
+2025-08-31 09:36:46.161 INFO TLSServer [memory]
+📨 BSSCI message #62541 received from ('172.27.0.1', 49338)
+2025-08-31 09:36:46.161 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:36:46.161 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 28731}
+2025-08-31 09:36:46.161 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 49338)
+2025-08-31 09:36:46.163 INFO TLSServer [memory]
+📨 BSSCI message #62542 received from ('172.27.0.1', 49338)
+2025-08-31 09:36:46.163 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:36:46.164 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 28731}
+2025-08-31 09:36:46.164 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 49338)
+2025-08-31 09:36:46.165 INFO TLSServer [memory]
+📨 BSSCI message #53684 received from ('172.27.0.1', 58752)
+2025-08-31 09:36:46.165 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:36:46.165 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 24655}
+2025-08-31 09:36:46.166 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 58752)
+2025-08-31 09:36:46.169 INFO TLSServer [memory]
+📨 BSSCI message #53685 received from ('172.27.0.1', 58752)
+2025-08-31 09:36:46.169 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:36:46.170 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 24655}
+2025-08-31 09:36:46.170 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 58752)
+2025-08-31 09:36:46.187 INFO TLSServer [memory]
+📨 BSSCI message #53834 received from ('172.27.0.1', 58750)
+2025-08-31 09:36:46.187 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:36:46.188 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 24730}
+2025-08-31 09:36:46.188 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 58750)
+2025-08-31 09:36:46.191 INFO TLSServer [memory]
+📨 BSSCI message #53835 received from ('172.27.0.1', 58750)
+2025-08-31 09:36:46.191 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:36:46.191 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 24730}
+2025-08-31 09:36:46.191 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 58750)
+2025-08-31 09:36:51.179 INFO TLSServer [memory]
+📨 BSSCI message #62543 received from ('172.27.0.1', 49338)
+2025-08-31 09:36:51.180 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:36:51.180 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 28732}
+2025-08-31 09:36:51.180 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 49338)
+2025-08-31 09:36:51.183 INFO TLSServer [memory]
+📨 BSSCI message #53686 received from ('172.27.0.1', 58752)
+2025-08-31 09:36:51.183 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:36:51.184 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 24656}
+2025-08-31 09:36:51.184 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 58752)
+2025-08-31 09:36:51.185 INFO TLSServer [memory]
+📨 BSSCI message #62544 received from ('172.27.0.1', 49338)
+2025-08-31 09:36:51.185 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:36:51.186 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 28732}
+2025-08-31 09:36:51.186 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 49338)
+2025-08-31 09:36:51.188 INFO TLSServer [memory]
+📨 BSSCI message #53687 received from ('172.27.0.1', 58752)
+2025-08-31 09:36:51.188 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:36:51.189 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 24656}
+2025-08-31 09:36:51.189 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 58752)
+2025-08-31 09:36:51.203 INFO TLSServer [memory]
+📨 BSSCI message #53836 received from ('172.27.0.1', 58750)
+2025-08-31 09:36:51.203 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:36:51.204 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 24731}
+2025-08-31 09:36:51.204 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 58750)
+2025-08-31 09:36:51.209 INFO TLSServer [memory]
+📨 BSSCI message #53837 received from ('172.27.0.1', 58750)
+2025-08-31 09:36:51.209 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:36:51.209 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 24731}
+2025-08-31 09:36:51.210 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 58750)
+2025-08-31 09:36:52.082 INFO TLSServer [memory]
+📊 PERIODIC STATUS REQUEST CYCLE STARTING
+2025-08-31 09:36:52.082 INFO TLSServer [memory]
+   Connected base stations: 4
+2025-08-31 09:36:52.082 INFO TLSServer [memory]
+   Base stations: ['00073200007e221d', '70b3d59cd00009f6', '9c65f9fffe6be145', '3e5446fffee97b78']
+2025-08-31 09:36:52.082 INFO TLSServer [memory]
+📤 Sending status request to base station 00073200007e221d
+2025-08-31 09:36:52.082 INFO TLSServer [memory]
+   Operation ID: -20337
+2025-08-31 09:36:52.083 INFO TLSServer [memory]
+✅ Status request transmitted to 00073200007e221d (opID: -20337)
+2025-08-31 09:36:52.083 INFO TLSServer [memory]
+📤 Sending status request to base station 70b3d59cd00009f6
+2025-08-31 09:36:52.083 INFO TLSServer [memory]
+   Operation ID: -20338
+2025-08-31 09:36:52.083 INFO TLSServer [memory]
+✅ Status request transmitted to 70b3d59cd00009f6 (opID: -20338)
+2025-08-31 09:36:52.084 INFO TLSServer [memory]
+📤 Sending status request to base station 9c65f9fffe6be145
+2025-08-31 09:36:52.084 INFO TLSServer [memory]
+   Operation ID: -20339
+2025-08-31 09:36:52.084 INFO TLSServer [memory]
+✅ Status request transmitted to 9c65f9fffe6be145 (opID: -20339)
+2025-08-31 09:36:52.084 INFO TLSServer [memory]
+📤 Sending status request to base station 3e5446fffee97b78
+2025-08-31 09:36:52.084 INFO TLSServer [memory]
+   Operation ID: -20340
+2025-08-31 09:36:52.084 INFO TLSServer [memory]
+✅ Status request transmitted to 3e5446fffee97b78 (opID: -20340)
+2025-08-31 09:36:52.085 INFO TLSServer [memory]
+📊 STATUS REQUEST CYCLE COMPLETE
+2025-08-31 09:36:52.085 INFO TLSServer [memory]
+   Requests sent: 4
+2025-08-31 09:36:52.085 INFO TLSServer [memory]
+   Failed requests: 0
+2025-08-31 09:36:52.085 INFO TLSServer [memory]
+   Remaining connected base stations: 4
+2025-08-31 09:36:52.085 INFO TLSServer [memory]
+📨 BSSCI message #6783 received from ('172.27.0.1', 49328)
+2025-08-31 09:36:52.086 INFO TLSServer [memory]
+   Message type: statusRsp
+2025-08-31 09:36:52.086 DEBUG TLSServer [memory]
+   Full message: {'command': 'statusRsp', 'opId': -20337, 'code': 0, 'message': '', 'time': 1756625812082000, 'dutyCycle': 0.10000000149011612, 'uptime': 161084, 'temp': 47.0, 'cpuLoad': 4.913592293244747, 'memLoad': 0.13358016991974242}
+2025-08-31 09:36:52.086 INFO TLSServer [memory]
+📊 BASE STATION STATUS RESPONSE received from 00073200007e221d
+2025-08-31 09:36:52.086 INFO TLSServer [memory]
+   Operation ID: -20337
+2025-08-31 09:36:52.086 INFO TLSServer [memory]
+   Status Code: 0
+2025-08-31 09:36:52.086 INFO TLSServer [memory]
+   Memory Load: 13.4%
+2025-08-31 09:36:52.086 INFO TLSServer [memory]
+   CPU Load: 491.4%
+2025-08-31 09:36:52.087 INFO TLSServer [memory]
+   Duty Cycle: 10.0%
+2025-08-31 09:36:52.087 INFO TLSServer [memory]
+   Uptime: 44:44:44 (161084s)
+2025-08-31 09:36:52.087 INFO TLSServer [memory]
+   Base Station Time: 1970-01-21 07:57:05.812
+2025-08-31 09:36:52.087 INFO TLSServer [memory]
+📤 MQTT PUBLICATION - BASE STATION STATUS
+2025-08-31 09:36:52.087 INFO TLSServer [memory]
+   Topic: bssci/bs/00073200007e221d
+2025-08-31 09:36:52.087 INFO TLSServer [memory]
+   Base Station EUI: 00073200007e221d
+2025-08-31 09:36:52.088 INFO TLSServer [memory]
+   Payload size: 151 bytes
+2025-08-31 09:36:52.088 INFO TLSServer [memory]
+   Status data: Code=0, CPU=491.4%, Memory=13.4%
+2025-08-31 09:36:52.088 INFO TLSServer [memory]
+   Queue size before add: 0
+2025-08-31 09:36:52.088 INFO queue_logger [memory]
+📤 [mqtt_out_queue] PUT #23817
+2025-08-31 09:36:52.088 INFO queue_logger [memory]
+   Queue ID: 139676590172272
+2025-08-31 09:36:52.088 INFO queue_logger [memory]
+   New size: 1
+2025-08-31 09:36:52.089 INFO queue_logger [memory]
+   Item type: dict
+2025-08-31 09:36:52.089 INFO queue_logger [memory]
+   Item keys: ['topic', 'payload']
+2025-08-31 09:36:52.089 INFO TLSServer [memory]
+✅ Base station status queued for MQTT publication
+2025-08-31 09:36:52.089 INFO TLSServer [memory]
+   Queue size after add: 1
+2025-08-31 09:36:52.089 DEBUG TLSServer [memory]
+📤 STATUS COMPLETE sent for opID -20337
+2025-08-31 09:36:52.089 INFO queue_logger [memory]
+📥 [mqtt_out_queue] GET #23817
+2025-08-31 09:36:52.090 INFO queue_logger [memory]
+   Queue ID: 139676590172272
+2025-08-31 09:36:52.090 INFO queue_logger [memory]
+   New size: 0
+2025-08-31 09:36:52.090 INFO queue_logger [memory]
+   Item type: dict
+2025-08-31 09:36:52.090 INFO queue_logger [memory]
+   Item keys: ['topic', 'payload']
+2025-08-31 09:36:52.090 INFO mqtt_interface [memory]
+🎉 MESSAGE #23817 RECEIVED FOR PUBLISHING!
+2025-08-31 09:36:52.090 INFO mqtt_interface [memory]
+   Topic: bssci/bs/00073200007e221d
+2025-08-31 09:36:52.090 INFO mqtt_interface [memory]
+   Payload Size: 151 bytes
+2025-08-31 09:36:52.091 ERROR mqtt_interface [memory]
+❌ MQTT PUBLISH ERROR: [code:4] The client is not currently connected.
+2025-08-31 09:36:52.091 ERROR mqtt_interface [memory]
+   NON-CONNECTION ERROR - Continuing...
+2025-08-31 09:36:52.091 DEBUG mqtt_interface [memory]
+⏳ WAITING FOR MQTT MESSAGE in queue (size: 0)
+2025-08-31 09:36:52.092 INFO TLSServer [memory]
+📨 BSSCI message #62545 received from ('172.27.0.1', 49338)
+2025-08-31 09:36:52.092 INFO TLSServer [memory]
+   Message type: statusRsp
+2025-08-31 09:36:52.092 DEBUG TLSServer [memory]
+   Full message: {'code': 0, 'command': 'statusRsp', 'cpuLoad': 0.10360000282526016, 'dutyCycle': 0.0, 'geoLocation': [0.0, 0.0, 0.0], 'memLoad': 0.39534246921539307, 'message': 'ok', 'opId': -20338, 'time': 1756625812083770244, 'uptime': 2215744}
+2025-08-31 09:36:52.092 INFO TLSServer [memory]
+📊 BASE STATION STATUS RESPONSE received from 70b3d59cd00009f6
+2025-08-31 09:36:52.092 INFO TLSServer [memory]
+   Operation ID: -20338
+2025-08-31 09:36:52.092 INFO TLSServer [memory]
+   Status Code: 0
+2025-08-31 09:36:52.092 INFO TLSServer [memory]
+   Memory Load: 39.5%
+2025-08-31 09:36:52.093 INFO TLSServer [memory]
+   CPU Load: 10.4%
+2025-08-31 09:36:52.093 INFO TLSServer [memory]
+   Duty Cycle: 0.0%
+2025-08-31 09:36:52.093 INFO TLSServer [memory]
+   Uptime: 615:29:04 (2215744s)
+2025-08-31 09:36:52.093 INFO TLSServer [memory]
+   Base Station Time: 2025-08-31 07:36:52.083
+2025-08-31 09:36:52.093 INFO TLSServer [memory]
+📤 MQTT PUBLICATION - BASE STATION STATUS
+2025-08-31 09:36:52.093 INFO TLSServer [memory]
+   Topic: bssci/bs/70b3d59cd00009f6
+2025-08-31 09:36:52.094 INFO TLSServer [memory]
+   Base Station EUI: 70b3d59cd00009f6
+2025-08-31 09:36:52.094 INFO TLSServer [memory]
+   Payload size: 141 bytes
+2025-08-31 09:36:52.094 INFO TLSServer [memory]
+   Status data: Code=0, CPU=10.4%, Memory=39.5%
+2025-08-31 09:36:52.094 INFO TLSServer [memory]
+   Queue size before add: 0
+2025-08-31 09:36:52.094 INFO queue_logger [memory]
+📤 [mqtt_out_queue] PUT #23818
+2025-08-31 09:36:52.094 INFO queue_logger [memory]
+   Queue ID: 139676590172272
+2025-08-31 09:36:52.094 INFO queue_logger [memory]
+   New size: 1
+2025-08-31 09:36:52.095 INFO queue_logger [memory]
+   Item type: dict
+2025-08-31 09:36:52.095 INFO queue_logger [memory]
+   Item keys: ['topic', 'payload']
+2025-08-31 09:36:52.095 INFO TLSServer [memory]
+✅ Base station status queued for MQTT publication
+2025-08-31 09:36:52.095 INFO TLSServer [memory]
+   Queue size after add: 1
+2025-08-31 09:36:52.095 DEBUG TLSServer [memory]
+📤 STATUS COMPLETE sent for opID -20338
+2025-08-31 09:36:52.096 INFO TLSServer [memory]
+📨 BSSCI message #53838 received from ('172.27.0.1', 58750)
+2025-08-31 09:36:52.096 INFO TLSServer [memory]
+   Message type: statusRsp
+2025-08-31 09:36:52.096 DEBUG TLSServer [memory]
+   Full message: {'code': 0, 'command': 'statusRsp', 'cpuLoad': 0.21746666729450226, 'dutyCycle': 0.0, 'geoLocation': [0.0, 0.0, 0.0], 'memLoad': 0.4716935157775879, 'message': 'ok', 'opId': -20339, 'time': 1756625811291533250, 'uptime': 13543053}
+2025-08-31 09:36:52.096 INFO TLSServer [memory]
+📊 BASE STATION STATUS RESPONSE received from 9c65f9fffe6be145
+2025-08-31 09:36:52.096 INFO TLSServer [memory]
+   Operation ID: -20339
+2025-08-31 09:36:52.096 INFO TLSServer [memory]
+   Status Code: 0
+2025-08-31 09:36:52.096 INFO TLSServer [memory]
+   Memory Load: 47.2%
+2025-08-31 09:36:52.097 INFO TLSServer [memory]
+   CPU Load: 21.7%
+2025-08-31 09:36:52.097 INFO TLSServer [memory]
+   Duty Cycle: 0.0%
+2025-08-31 09:36:52.097 INFO TLSServer [memory]
+   Uptime: 3761:57:33 (13543053s)
+2025-08-31 09:36:52.097 INFO TLSServer [memory]
+   Base Station Time: 2025-08-31 07:36:51.291
+2025-08-31 09:36:52.097 INFO TLSServer [memory]
+📤 MQTT PUBLICATION - BASE STATION STATUS
+2025-08-31 09:36:52.097 INFO TLSServer [memory]
+   Topic: bssci/bs/9c65f9fffe6be145
+2025-08-31 09:36:52.098 INFO TLSServer [memory]
+   Base Station EUI: 9c65f9fffe6be145
+2025-08-31 09:36:52.098 INFO TLSServer [memory]
+   Payload size: 141 bytes
+2025-08-31 09:36:52.098 INFO TLSServer [memory]
+   Status data: Code=0, CPU=21.7%, Memory=47.2%
+2025-08-31 09:36:52.098 INFO TLSServer [memory]
+   Queue size before add: 1
+2025-08-31 09:36:52.098 INFO queue_logger [memory]
+📤 [mqtt_out_queue] PUT #23819
+2025-08-31 09:36:52.098 INFO queue_logger [memory]
+   Queue ID: 139676590172272
+2025-08-31 09:36:52.098 INFO queue_logger [memory]
+   New size: 2
+2025-08-31 09:36:52.099 INFO queue_logger [memory]
+   Item type: dict
+2025-08-31 09:36:52.099 INFO queue_logger [memory]
+   Item keys: ['topic', 'payload']
+2025-08-31 09:36:52.099 INFO TLSServer [memory]
+✅ Base station status queued for MQTT publication
+2025-08-31 09:36:52.099 INFO TLSServer [memory]
+   Queue size after add: 2
+2025-08-31 09:36:52.099 DEBUG TLSServer [memory]
+📤 STATUS COMPLETE sent for opID -20339
+2025-08-31 09:36:52.099 INFO TLSServer [memory]
+📨 BSSCI message #53688 received from ('172.27.0.1', 58752)
+2025-08-31 09:36:52.100 INFO TLSServer [memory]
+   Message type: statusRsp
+2025-08-31 09:36:52.100 DEBUG TLSServer [memory]
+   Full message: {'code': 0, 'command': 'statusRsp', 'cpuLoad': 0.2657333314418793, 'dutyCycle': 0.0, 'geoLocation': [0.0, 0.0, 0.0], 'memLoad': 0.40234148502349854, 'message': 'ok', 'opId': -20340, 'time': 1671182613039857500, 'uptime': 162706}
+2025-08-31 09:36:52.100 INFO TLSServer [memory]
+📊 BASE STATION STATUS RESPONSE received from 3e5446fffee97b78
+2025-08-31 09:36:52.100 INFO TLSServer [memory]
+   Operation ID: -20340
+2025-08-31 09:36:52.100 INFO TLSServer [memory]
+   Status Code: 0
+2025-08-31 09:36:52.100 INFO TLSServer [memory]
+   Memory Load: 40.2%
+2025-08-31 09:36:52.101 INFO TLSServer [memory]
+   CPU Load: 26.6%
+2025-08-31 09:36:52.101 INFO TLSServer [memory]
+   Duty Cycle: 0.0%
+2025-08-31 09:36:52.101 INFO TLSServer [memory]
+   Uptime: 45:11:46 (162706s)
+2025-08-31 09:36:52.101 INFO TLSServer [memory]
+   Base Station Time: 2022-12-16 09:23:33.039
+2025-08-31 09:36:52.101 INFO TLSServer [memory]
+📤 MQTT PUBLICATION - BASE STATION STATUS
+2025-08-31 09:36:52.101 INFO TLSServer [memory]
+   Topic: bssci/bs/3e5446fffee97b78
+2025-08-31 09:36:52.102 INFO TLSServer [memory]
+   Base Station EUI: 3e5446fffee97b78
+2025-08-31 09:36:52.102 INFO TLSServer [memory]
+   Payload size: 139 bytes
+2025-08-31 09:36:52.102 INFO TLSServer [memory]
+   Status data: Code=0, CPU=26.6%, Memory=40.2%
+2025-08-31 09:36:52.102 INFO TLSServer [memory]
+   Queue size before add: 2
+2025-08-31 09:36:52.102 INFO queue_logger [memory]
+📤 [mqtt_out_queue] PUT #23820
+2025-08-31 09:36:52.102 INFO queue_logger [memory]
+   Queue ID: 139676590172272
+2025-08-31 09:36:52.102 INFO queue_logger [memory]
+   New size: 3
+2025-08-31 09:36:52.103 INFO queue_logger [memory]
+   Item type: dict
+2025-08-31 09:36:52.103 INFO queue_logger [memory]
+   Item keys: ['topic', 'payload']
+2025-08-31 09:36:52.103 INFO TLSServer [memory]
+✅ Base station status queued for MQTT publication
+2025-08-31 09:36:52.103 INFO TLSServer [memory]
+   Queue size after add: 3
+2025-08-31 09:36:52.103 DEBUG TLSServer [memory]
+📤 STATUS COMPLETE sent for opID -20340
+2025-08-31 09:36:52.103 INFO queue_logger [memory]
+📥 [mqtt_out_queue] GET #23818
+2025-08-31 09:36:52.104 INFO queue_logger [memory]
+   Queue ID: 139676590172272
+2025-08-31 09:36:52.104 INFO queue_logger [memory]
+   New size: 2
+2025-08-31 09:36:52.104 INFO queue_logger [memory]
+   Item type: dict
+2025-08-31 09:36:52.104 INFO queue_logger [memory]
+   Item keys: ['topic', 'payload']
+2025-08-31 09:36:52.104 INFO mqtt_interface [memory]
+🎉 MESSAGE #23818 RECEIVED FOR PUBLISHING!
+2025-08-31 09:36:52.104 INFO mqtt_interface [memory]
+   Topic: bssci/bs/70b3d59cd00009f6
+2025-08-31 09:36:52.104 INFO mqtt_interface [memory]
+   Payload Size: 141 bytes
+2025-08-31 09:36:52.105 ERROR mqtt_interface [memory]
+❌ MQTT PUBLISH ERROR: [code:4] The client is not currently connected.
+2025-08-31 09:36:52.105 ERROR mqtt_interface [memory]
+   NON-CONNECTION ERROR - Continuing...
+2025-08-31 09:36:52.105 DEBUG mqtt_interface [memory]
+⏳ WAITING FOR MQTT MESSAGE in queue (size: 2)
+2025-08-31 09:36:52.105 INFO queue_logger [memory]
+📥 [mqtt_out_queue] GET #23819
+2025-08-31 09:36:52.105 INFO queue_logger [memory]
+   Queue ID: 139676590172272
+2025-08-31 09:36:52.105 INFO queue_logger [memory]
+   New size: 1
+2025-08-31 09:36:52.106 INFO queue_logger [memory]
+   Item type: dict
+2025-08-31 09:36:52.106 INFO queue_logger [memory]
+   Item keys: ['topic', 'payload']
+2025-08-31 09:36:52.106 INFO mqtt_interface [memory]
+🎉 MESSAGE #23819 RECEIVED FOR PUBLISHING!
+2025-08-31 09:36:52.106 INFO mqtt_interface [memory]
+   Topic: bssci/bs/9c65f9fffe6be145
+2025-08-31 09:36:52.106 INFO mqtt_interface [memory]
+   Payload Size: 141 bytes
+2025-08-31 09:36:52.107 ERROR mqtt_interface [memory]
+❌ MQTT PUBLISH ERROR: [code:4] The client is not currently connected.
+2025-08-31 09:36:52.107 ERROR mqtt_interface [memory]
+   NON-CONNECTION ERROR - Continuing...
+2025-08-31 09:36:52.107 DEBUG mqtt_interface [memory]
+⏳ WAITING FOR MQTT MESSAGE in queue (size: 1)
+2025-08-31 09:36:52.107 INFO queue_logger [memory]
+📥 [mqtt_out_queue] GET #23820
+2025-08-31 09:36:52.107 INFO queue_logger [memory]
+   Queue ID: 139676590172272
+2025-08-31 09:36:52.108 INFO queue_logger [memory]
+   New size: 0
+2025-08-31 09:36:52.108 INFO queue_logger [memory]
+   Item type: dict
+2025-08-31 09:36:52.108 INFO queue_logger [memory]
+   Item keys: ['topic', 'payload']
+2025-08-31 09:36:52.108 INFO mqtt_interface [memory]
+🎉 MESSAGE #23820 RECEIVED FOR PUBLISHING!
+2025-08-31 09:36:52.108 INFO mqtt_interface [memory]
+   Topic: bssci/bs/3e5446fffee97b78
+2025-08-31 09:36:52.108 INFO mqtt_interface [memory]
+   Payload Size: 139 bytes
+2025-08-31 09:36:52.109 ERROR mqtt_interface [memory]
+❌ MQTT PUBLISH ERROR: [code:4] The client is not currently connected.
+2025-08-31 09:36:52.109 ERROR mqtt_interface [memory]
+   NON-CONNECTION ERROR - Continuing...
+2025-08-31 09:36:52.109 DEBUG mqtt_interface [memory]
+⏳ WAITING FOR MQTT MESSAGE in queue (size: 0)
+2025-08-31 09:36:57.111 INFO TLSServer [memory]
+📨 BSSCI message #53689 received from ('172.27.0.1', 58752)
+2025-08-31 09:36:57.111 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:36:57.111 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 24657}
+2025-08-31 09:36:57.111 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 58752)
+2025-08-31 09:36:57.112 INFO TLSServer [memory]
+📨 BSSCI message #62546 received from ('172.27.0.1', 49338)
+2025-08-31 09:36:57.112 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:36:57.112 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 28733}
+2025-08-31 09:36:57.112 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 49338)
+2025-08-31 09:36:57.113 INFO TLSServer [memory]
+📨 BSSCI message #53839 received from ('172.27.0.1', 58750)
+2025-08-31 09:36:57.113 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:36:57.113 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 24732}
+2025-08-31 09:36:57.113 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 58750)
+2025-08-31 09:36:57.115 INFO TLSServer [memory]
+📨 BSSCI message #53690 received from ('172.27.0.1', 58752)
+2025-08-31 09:36:57.116 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:36:57.116 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 24657}
+2025-08-31 09:36:57.116 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 58752)
+2025-08-31 09:36:57.116 INFO TLSServer [memory]
+📨 BSSCI message #62547 received from ('172.27.0.1', 49338)
+2025-08-31 09:36:57.116 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:36:57.116 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 28733}
+2025-08-31 09:36:57.117 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 49338)
+2025-08-31 09:36:57.117 INFO TLSServer [memory]
+📨 BSSCI message #53840 received from ('172.27.0.1', 58750)
+2025-08-31 09:36:57.117 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:36:57.117 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 24732}
+2025-08-31 09:36:57.117 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 58750)
+2025-08-31 09:37:02.127 INFO TLSServer [memory]
+📨 BSSCI message #53841 received from ('172.27.0.1', 58750)
+2025-08-31 09:37:02.127 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:37:02.127 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 24733}
+2025-08-31 09:37:02.127 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 58750)
+2025-08-31 09:37:02.128 INFO TLSServer [memory]
+📨 BSSCI message #62548 received from ('172.27.0.1', 49338)
+2025-08-31 09:37:02.129 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:37:02.129 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 28734}
+2025-08-31 09:37:02.129 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 49338)
+2025-08-31 09:37:02.129 INFO TLSServer [memory]
+📨 BSSCI message #53691 received from ('172.27.0.1', 58752)
+2025-08-31 09:37:02.129 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:37:02.130 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 24658}
+2025-08-31 09:37:02.130 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 58752)
+2025-08-31 09:37:02.130 INFO TLSServer [memory]
+📨 BSSCI message #62549 received from ('172.27.0.1', 49338)
+2025-08-31 09:37:02.130 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:37:02.130 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 28734}
+2025-08-31 09:37:02.131 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 49338)
+2025-08-31 09:37:02.131 INFO TLSServer [memory]
+📨 BSSCI message #53842 received from ('172.27.0.1', 58750)
+2025-08-31 09:37:02.131 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:37:02.131 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 24733}
+2025-08-31 09:37:02.131 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 58750)
+2025-08-31 09:37:02.133 INFO TLSServer [memory]
+📨 BSSCI message #53692 received from ('172.27.0.1', 58752)
+2025-08-31 09:37:02.133 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:37:02.133 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 24658}
+2025-08-31 09:37:02.133 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 58752)
+2025-08-31 09:37:03.999 INFO queue_logger [memory]
+============================================================
+2025-08-31 09:37:03.999 INFO queue_logger [memory]
+📊 COMPREHENSIVE QUEUE STATISTICS
+2025-08-31 09:37:03.999 INFO queue_logger [memory]
+============================================================
+2025-08-31 09:37:04.000 INFO queue_logger [memory]
+📊 Queue Stats for 'mqtt_out_queue':
+2025-08-31 09:37:04.000 INFO queue_logger [memory]
+   Queue ID: 139676590172272
+2025-08-31 09:37:04.000 INFO queue_logger [memory]
+   Current size: 0
+2025-08-31 09:37:04.000 INFO queue_logger [memory]
+   Put operations: 23820
+2025-08-31 09:37:04.000 INFO queue_logger [memory]
+   Get operations: 23820
+2025-08-31 09:37:04.000 INFO queue_logger [memory]
+   Max size seen: 4
+2025-08-31 09:37:04.000 INFO queue_logger [memory]
+   Total processed: 23820
+2025-08-31 09:37:04.001 INFO queue_logger [memory]
+----------------------------------------
+2025-08-31 09:37:04.001 INFO queue_logger [memory]
+📊 Queue Stats for 'mqtt_in_queue':
+2025-08-31 09:37:04.001 INFO queue_logger [memory]
+   Queue ID: 139676588947936
+2025-08-31 09:37:04.001 INFO queue_logger [memory]
+   Current size: 0
+2025-08-31 09:37:04.001 INFO queue_logger [memory]
+   Put operations: 0
+2025-08-31 09:37:04.001 INFO queue_logger [memory]
+   Get operations: 0
+2025-08-31 09:37:04.002 INFO queue_logger [memory]
+   Max size seen: 0
+2025-08-31 09:37:04.002 INFO queue_logger [memory]
+   Total processed: 0
+2025-08-31 09:37:04.002 INFO queue_logger [memory]
+----------------------------------------
+2025-08-31 09:37:04.002 INFO queue_logger [memory]
+============================================================
+2025-08-31 09:37:07.143 INFO TLSServer [memory]
+📨 BSSCI message #53693 received from ('172.27.0.1', 58752)
+2025-08-31 09:37:07.143 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:37:07.143 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 24659}
+2025-08-31 09:37:07.143 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 58752)
+2025-08-31 09:37:07.144 INFO TLSServer [memory]
+📨 BSSCI message #53843 received from ('172.27.0.1', 58750)
+2025-08-31 09:37:07.144 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:37:07.144 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 24734}
+2025-08-31 09:37:07.144 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 58750)
+2025-08-31 09:37:07.145 INFO TLSServer [memory]
+📨 BSSCI message #62550 received from ('172.27.0.1', 49338)
+2025-08-31 09:37:07.145 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:37:07.145 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 28735}
+2025-08-31 09:37:07.145 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 49338)
+2025-08-31 09:37:07.147 INFO TLSServer [memory]
+📨 BSSCI message #53844 received from ('172.27.0.1', 58750)
+2025-08-31 09:37:07.147 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:37:07.147 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 24734}
+2025-08-31 09:37:07.147 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 58750)
+2025-08-31 09:37:07.148 INFO TLSServer [memory]
+📨 BSSCI message #53694 received from ('172.27.0.1', 58752)
+2025-08-31 09:37:07.148 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:37:07.148 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 24659}
+2025-08-31 09:37:07.148 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 58752)
+2025-08-31 09:37:07.148 INFO TLSServer [memory]
+📨 BSSCI message #62551 received from ('172.27.0.1', 49338)
+2025-08-31 09:37:07.148 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:37:07.149 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 28735}
+2025-08-31 09:37:07.149 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 49338)
+2025-08-31 09:37:12.160 INFO TLSServer [memory]
+📨 BSSCI message #53845 received from ('172.27.0.1', 58750)
+2025-08-31 09:37:12.160 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:37:12.160 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 24735}
+2025-08-31 09:37:12.160 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 58750)
+2025-08-31 09:37:12.161 INFO TLSServer [memory]
+📨 BSSCI message #53695 received from ('172.27.0.1', 58752)
+2025-08-31 09:37:12.161 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:37:12.161 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 24660}
+2025-08-31 09:37:12.161 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 58752)
+2025-08-31 09:37:12.162 INFO TLSServer [memory]
+📨 BSSCI message #62552 received from ('172.27.0.1', 49338)
+2025-08-31 09:37:12.162 INFO TLSServer [memory]
+   Message type: ping
+2025-08-31 09:37:12.162 DEBUG TLSServer [memory]
+   Full message: {'command': 'ping', 'opId': 28736}
+2025-08-31 09:37:12.162 DEBUG TLSServer [memory]
+Ping request received from ('172.27.0.1', 49338)
+2025-08-31 09:37:12.163 INFO TLSServer [memory]
+📨 BSSCI message #53846 received from ('172.27.0.1', 58750)
+2025-08-31 09:37:12.163 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:37:12.163 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 24735}
+2025-08-31 09:37:12.164 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 58750)
+2025-08-31 09:37:12.164 INFO TLSServer [memory]
+📨 BSSCI message #62553 received from ('172.27.0.1', 49338)
+2025-08-31 09:37:12.164 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:37:12.164 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 28736}
+2025-08-31 09:37:12.164 DEBUG TLSServer [memory]
+Ping complete received from ('172.27.0.1', 49338)
+2025-08-31 09:37:12.165 INFO TLSServer [memory]
+📨 BSSCI message #53696 received from ('172.27.0.1', 58752)
+2025-08-31 09:37:12.165 INFO TLSServer [memory]
+   Message type: pingCmp
+2025-08-31 09:37:12.165 DEBUG TLSServer [memory]
+   Full message: {'command': 'pingCmp', 'opId': 24660}
+2025-08-31 09:37:12.165 DEBUG TLSServer [memory]
