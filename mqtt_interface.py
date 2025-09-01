@@ -60,7 +60,9 @@ class MQTTClient:
                     hostname=self.broker_host, 
                     port=MQTT_PORT, 
                     username=MQTT_USERNAME, 
-                    password=MQTT_PASSWORD
+                    password=MQTT_PASSWORD,
+                    keepalive=60,  # Send keepalive every 60 seconds
+                    timeout=30     # Connection timeout after 30 seconds
                 ) as client:
                     logger.info("✅ MQTT CLIENT CONNECTION SUCCESSFUL!")
                     logger.info("✅ Authentication completed successfully")
@@ -75,13 +77,14 @@ class MQTTClient:
                     await client.publish(test_topic, test_payload)
                     logger.info("✅ MQTT ping successful - connection is stable")
 
-                    # Run both handlers using the working pattern
-                    logger.info("🎭 Starting concurrent MQTT handlers...")
+                    # Run both handlers with health monitoring
+                    logger.info("🎭 Starting concurrent MQTT handlers with health monitoring...")
                     self.log_queue_info()
                     
                     await asyncio.gather(
                         self._handle_incoming(client), 
                         self._handle_outgoing(client),
+                        self._connection_health_monitor(client),
                         return_exceptions=True
                     )
 
@@ -150,6 +153,27 @@ class MQTTClient:
             logger.error(f"❌ MQTT INCOMING HANDLER FAILED: {handler_error}")
             raise
 
+    async def _connection_health_monitor(self, client: Client) -> None:
+        """Monitor connection health and force reconnection if needed"""
+        logger.info("💓 MQTT CONNECTION HEALTH MONITOR STARTED")
+        
+        while True:
+            try:
+                await asyncio.sleep(300)  # Check every 5 minutes
+                
+                # Send a test message to verify connection
+                test_topic = f"{self.base_topic}/health_check"
+                test_payload = f'{{"timestamp": "{asyncio.get_event_loop().time()}", "status": "alive"}}'
+                
+                logger.debug("💓 Performing MQTT health check...")
+                await client.publish(test_topic, test_payload)
+                logger.debug("✅ MQTT health check successful")
+                
+            except Exception as e:
+                logger.error(f"💀 MQTT HEALTH CHECK FAILED: {e}")
+                logger.error("🔄 Triggering connection reset...")
+                raise  # This will cause reconnection
+                
     async def _handle_outgoing(self, client: Client) -> None:
         logger.info("🚀 MQTT OUTGOING HANDLER INITIALIZED")
         logger.info("📤 Ready to publish messages")
