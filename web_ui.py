@@ -1,4 +1,3 @@
-
 import json
 import logging
 import os
@@ -75,11 +74,11 @@ if not any(isinstance(h, WebUILogHandler) for h in logging.getLogger().handlers)
     # Specifically capture important logs
     logging.getLogger('TLSServer').setLevel(logging.DEBUG)
     logging.getLogger('mqtt_interface').setLevel(logging.DEBUG)
-
+    
 @app.route('/')
 def index():
     return render_template('index.html')
-
+    
 @app.route('/sensors')
 def sensors():
     try:
@@ -88,7 +87,7 @@ def sensors():
     except:
         sensors = []
     return render_template('sensors.html', sensors=sensors)
-
+    
 @app.route('/api/sensors', methods=['GET'])
 def get_sensors():
     try:
@@ -126,7 +125,7 @@ def get_sensors():
     except Exception as e:
         print(f"Error in get_sensors: {e}")
         return jsonify({})
-
+        
 @app.route('/api/sensors', methods=['POST'])
 def add_sensor():
     data = request.json
@@ -152,7 +151,7 @@ def add_sensor():
         return jsonify({'success': True, 'message': 'Sensor saved successfully'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
-
+        
 @app.route('/api/sensors/<eui>', methods=['DELETE'])
 def delete_sensor(eui):
     try:
@@ -169,7 +168,7 @@ def delete_sensor(eui):
         return jsonify({'success': True, 'message': 'Sensor deleted successfully'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
-
+        
 @app.route('/api/sensors/clear', methods=['POST'])
 def clear_all_sensors():
     """Clear all sensor configurations"""
@@ -190,7 +189,7 @@ def clear_all_sensors():
         return jsonify({'success': True, 'message': 'All sensors cleared successfully'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
-
+        
 @app.route('/api/sensors/reload', methods=['POST'])
 def reload_sensors():
     """Force reload sensor configuration in TLS server"""
@@ -204,7 +203,7 @@ def reload_sensors():
             return jsonify({'success': False, 'message': 'TLS server not available'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
-
+        
 @app.route('/config')
 def config():
     config_data = {
@@ -219,7 +218,7 @@ def config():
         'DEDUPLICATION_DELAY': bssci_config.DEDUPLICATION_DELAY
     }
     return render_template('config.html', config=config_data)
-
+    
 @app.route('/api/config', methods=['POST'])
 def update_config():
     data = request.json
@@ -240,22 +239,28 @@ SENSOR_CONFIG_FILE = "endpoints.json"
 STATUS_INTERVAL = {data['STATUS_INTERVAL']}  # seconds
 DEDUPLICATION_DELAY = {data['DEDUPLICATION_DELAY']}  # seconds to wait for duplicate messages before forwarding
 '''
-    
+
     try:
         with open('bssci_config.py', 'w') as f:
             f.write(config_content)
-        return jsonify({'success': True, 'message': 'Configuration updated successfully. Restart required.'})
+
+        # Add note for Synology users
+        message = 'Configuration updated successfully. Restart required.'
+        if os.environ.get('SYNOLOGY_DOCKER') == '1':
+            message += ' Note: On Synology, config changes are container-local. Back up /app/bssci_config.py from container if needed.'
+
+        return jsonify({'success': True, 'message': message})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
-
+        
 @app.route('/certificates')
 def certificates():
     return render_template('certificates.html')
-
+    
 @app.route('/logs')
 def logs():
     return render_template('logs.html')
-
+    
 @app.route('/api/logs')
 def get_logs():
     global log_entries
@@ -283,7 +288,7 @@ def get_logs():
         'filtered_logs': len(filtered_logs),
         'source': 'memory'
     })
-
+    
 def get_bssci_service_status():
     """Get the status of the BSSCI service"""
     try:
@@ -339,17 +344,17 @@ def get_bssci_service_status():
             'base_stations': {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []},
             'traceback': traceback.format_exc()
         }
-
+        
 @app.route('/api/logs/clear', methods=['POST'])
 def clear_logs():
     global log_entries
     log_entries = []
     return jsonify({'success': True, 'message': 'Logs cleared successfully'})
-
+    
 @app.route('/api/bssci/status')
 def bssci_status():
     return jsonify(get_bssci_service_status())
-
+    
 @app.route('/api/base_stations')
 def get_base_stations():
     """Get status of connected base stations"""
@@ -377,7 +382,7 @@ def get_base_stations():
             "total_connecting": 0,
             "error": str(e)
         })
-
+        
 @app.route('/api/certificates/status')
 def get_certificate_status():
     """Get status of SSL certificates"""
@@ -416,7 +421,7 @@ def get_certificate_status():
         return jsonify({'success': True, 'certificates': status['certificates']})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
-
+        
 @app.route('/api/certificates/download/<filename>')
 def download_certificate(filename):
     """Download a certificate file"""
@@ -433,7 +438,7 @@ def download_certificate(filename):
         abort(404)
     
     return send_file(file_path, as_attachment=True, download_name=filename)
-
+    
 @app.route('/api/certificates/upload/<cert_type>', methods=['POST'])
 def upload_certificate(cert_type):
     """Upload a new certificate"""
@@ -473,7 +478,7 @@ def upload_certificate(cert_type):
         return jsonify({'success': True, 'message': f'{cert_type.upper()} certificate uploaded successfully'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
-
+        
 @app.route('/api/certificates/generate', methods=['POST'])
 def generate_certificates():
     """Generate new SSL certificates"""
@@ -528,7 +533,7 @@ def generate_certificates():
         return jsonify({'success': True, 'message': 'New certificates generated successfully'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
-
+        
 @app.route('/api/certificates/backup')
 def backup_certificates():
     """Download all certificates as ZIP"""
@@ -551,7 +556,7 @@ def backup_certificates():
         return send_file(temp_zip.name, as_attachment=True, download_name='bssci_certificates_backup.zip')
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
-
+        
 @app.route('/api/certificates/restore', methods=['POST'])
 def restore_certificates():
     """Restore certificates from ZIP backup"""
@@ -593,7 +598,7 @@ def restore_certificates():
         return jsonify({'success': True, 'message': 'Certificates restored successfully from backup'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
-
+        
 @app.route('/api/service/restart', methods=['POST'])
 def restart_service():
     """Restart the BSSCI service"""
@@ -643,6 +648,6 @@ def restart_service():
         return jsonify({'success': True, 'message': 'Service restart initiated'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
-
+        
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

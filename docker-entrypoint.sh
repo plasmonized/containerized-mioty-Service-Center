@@ -2,75 +2,72 @@
 #!/bin/bash
 set -e
 
-echo "=== Docker Environment Debug Information ==="
+echo "=== BSSCI Docker Entrypoint - Synology Edition ==="
 echo "Current user: $(id)"
 echo "Current working directory: $(pwd)"
-echo "Environment variables:"
-echo "  UID: ${UID:-not_set}"
-echo "  GID: ${GID:-not_set}"
-echo "  USER: ${USER:-not_set}"
-echo "  HOME: ${HOME:-not_set}"
 
-echo "=== File System Permissions Before Changes ==="
-ls -la /app/ | head -10
-echo "Current file ownership:"
-ls -la /app/bssci_config.py /app/endpoints.json 2>/dev/null || echo "Config files not found"
-
-# Ensure proper permissions on log directory
-echo "=== Setting up directories ==="
-mkdir -p /app/logs
-chmod 755 /app/logs
-
-# Ensure certificates directory exists
-mkdir -p /app/certs
-
-# Try multiple permission fix strategies
-echo "=== Attempting permission fixes ==="
-
-# Strategy 1: Try to take ownership if we're root
-if [ "$(id -u)" = "0" ]; then
-    echo "Running as root - attempting to fix ownership"
-    chown -R $(id -u):$(id -g) /app/bssci_config.py /app/endpoints.json /app/logs 2>/dev/null || true
-    chmod 666 /app/bssci_config.py /app/endpoints.json 2>/dev/null || true
+# Synology-specific setup
+if [ "$SYNOLOGY_DOCKER" = "1" ]; then
+    echo "=== Synology Docker Environment Detected ==="
+    
+    # Create writable copies of config files in container
+    echo "Setting up writable configuration files..."
+    
+    # Copy host config files to writable locations
+    if [ -f "/tmp/host_endpoints.json" ]; then
+        cp /tmp/host_endpoints.json /app/endpoints.json
+        chmod 666 /app/endpoints.json
+        echo "✓ endpoints.json copied and made writable"
+    else
+        echo "[]" > /app/endpoints.json
+        chmod 666 /app/endpoints.json
+        echo "✓ Created empty endpoints.json"
+    fi
+    
+    if [ -f "/tmp/host_bssci_config.py" ]; then
+        cp /tmp/host_bssci_config.py /app/bssci_config.py
+        chmod 666 /app/bssci_config.py
+        echo "✓ bssci_config.py copied and made writable"
+    else
+        echo "# Default BSSCI Configuration" > /app/bssci_config.py
+        chmod 666 /app/bssci_config.py
+        echo "✓ Created default bssci_config.py"
+    fi
+    
+    # Set up sync mechanism for config changes back to host
+    mkdir -p /app/sync
+    echo "#!/bin/bash" > /app/sync_to_host.sh
+    echo "# This script would sync changes back to host in a real deployment" >> /app/sync_to_host.sh
+    echo "# For Synology, manual backup of /app/endpoints.json and /app/bssci_config.py is recommended" >> /app/sync_to_host.sh
+    chmod +x /app/sync_to_host.sh
 else
-    echo "Running as non-root user $(id -u):$(id -g)"
+    echo "=== Standard Docker Environment ==="
+    # Standard permission fixes for non-Synology environments
+    chmod 666 /app/bssci_config.py /app/endpoints.json 2>/dev/null || true
 fi
 
-# Strategy 2: Try chmod regardless of ownership
-echo "Setting file permissions..."
-chmod 666 /app/bssci_config.py /app/endpoints.json 2>/dev/null || echo "chmod failed - continuing anyway"
+# Ensure directories exist with proper permissions
+mkdir -p /app/logs /app/certs
+chmod 755 /app/logs /app/certs
 
-# Strategy 3: Test if files are actually writable
-echo "=== Testing file writability ==="
-if [ -w "/app/bssci_config.py" ]; then
+echo "=== Final File Permissions Check ==="
+ls -la /app/bssci_config.py /app/endpoints.json /app/logs 2>/dev/null || echo "Some files not accessible"
+
+# Test writability
+echo "=== Testing Configuration File Write Access ==="
+if echo "# Test write" >> /app/bssci_config.py 2>/dev/null; then
+    sed -i '$d' /app/bssci_config.py  # Remove test line
     echo "✓ bssci_config.py is writable"
 else
     echo "✗ bssci_config.py is NOT writable"
-    # Try to copy to a writable location and symlink back
-    if cp /app/bssci_config.py /tmp/bssci_config.py 2>/dev/null; then
-        echo "Attempting to create writable copy in /tmp"
-        rm -f /app/bssci_config.py
-        ln -sf /tmp/bssci_config.py /app/bssci_config.py
-    fi
 fi
 
-if [ -w "/app/endpoints.json" ]; then
+if echo "test" > /tmp/test_endpoints.json && cat /tmp/test_endpoints.json > /app/endpoints.json 2>/dev/null; then
+    rm /tmp/test_endpoints.json
     echo "✓ endpoints.json is writable"
 else
     echo "✗ endpoints.json is NOT writable"
-    # Try to copy to a writable location and symlink back
-    if cp /app/endpoints.json /tmp/endpoints.json 2>/dev/null; then
-        echo "Attempting to create writable copy in /tmp"
-        rm -f /app/endpoints.json
-        ln -sf /tmp/endpoints.json /app/endpoints.json
-    fi
 fi
-
-echo "=== File System Permissions After Changes ==="
-ls -la /app/bssci_config.py /app/endpoints.json /app/logs 2>/dev/null || echo "Some files not accessible"
-
-echo "=== Mount information ==="
-mount | grep "/app" || echo "No /app mounts found"
 
 # Generate self-signed certificates if they don't exist
 if [ ! -f "/app/certs/ca_cert.pem" ] || [ ! -f "/app/certs/service_center_cert.pem" ] || [ ! -f "/app/certs/service_center_key.pem" ]; then
@@ -96,6 +93,8 @@ if [ ! -f "/app/certs/ca_cert.pem" ] || [ ! -f "/app/certs/service_center_cert.p
     
     echo "SSL certificates generated successfully"
 fi
+
+echo "=== Container startup complete ==="
 
 # Execute the main command
 exec "$@"

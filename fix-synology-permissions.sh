@@ -29,10 +29,10 @@ touch "$SCRIPT_DIR/bssci_config.py"
 mkdir -p "$SCRIPT_DIR/logs"
 mkdir -p "$SCRIPT_DIR/certs"
 
-# Set liberal permissions for testing
-echo "Setting file permissions..."
-chmod 666 "$SCRIPT_DIR/endpoints.json"
-chmod 666 "$SCRIPT_DIR/bssci_config.py"
+# Set appropriate permissions for Synology
+echo "Setting file permissions for Synology..."
+chmod 644 "$SCRIPT_DIR/endpoints.json"
+chmod 644 "$SCRIPT_DIR/bssci_config.py"
 chmod 755 "$SCRIPT_DIR/logs"
 chmod 755 "$SCRIPT_DIR/certs"
 
@@ -52,23 +52,16 @@ ls -la "$SCRIPT_DIR/endpoints.json"
 ls -la "$SCRIPT_DIR/bssci_config.py"
 ls -la "$SCRIPT_DIR/logs"
 
-# Test writability
-echo "=== Testing file writability ==="
-if echo "test" >> "$SCRIPT_DIR/endpoints.json"; then
-    echo "✓ endpoints.json is writable"
-    # Remove test line
-    sed -i '$d' "$SCRIPT_DIR/endpoints.json"
-else
-    echo "✗ endpoints.json is NOT writable"
-fi
+echo "=== Synology Setup Notes ==="
+echo "1. Configuration files will be copied to writable container locations"
+echo "2. Changes made via web UI are container-local only"
+echo "3. To persist config changes, manually backup:"
+echo "   docker cp bssci-service-center:/app/bssci_config.py ./bssci_config.py"
+echo "   docker cp bssci-service-center:/app/endpoints.json ./endpoints.json"
+echo ""
+echo "=== Starting container with Synology configuration ==="
+docker-compose -f docker-compose.synology.yml up --build -d
 
-if echo "# test" >> "$SCRIPT_DIR/bssci_config.py"; then
-    echo "✓ bssci_config.py is writable"
-    # Remove test line
-    sed -i '$d' "$SCRIPT_DIR/bssci_config.py"
-else
-    echo "✗ bssci_config.py is NOT writable"
-fi
-
-echo "=== Permission fix complete ==="
-echo "You can now run: docker-compose -f docker-compose.synology.yml up --build"
+echo "=== Container started ==="
+echo "Web UI: http://localhost:5056"
+echo "TLS Server: localhost:16019"
