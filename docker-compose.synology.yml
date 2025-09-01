@@ -10,16 +10,30 @@ services:
       - "16019:16018"  # TLS Server port
       - "5056:5000"    # Web UI port
     volumes:
-      - ./certs:/app/certs:ro
-      - ./endpoints.json:/app/endpoints.json:rw,z
-      - ./bssci_config.py:/app/bssci_config.py:rw,z
-      - ./logs:/app/logs:rw,z
+      # Use absolute paths and specific Synology volume syntax
+      - type: bind
+        source: ./certs
+        target: /app/certs
+        read_only: true
+      - type: bind
+        source: ./endpoints.json
+        target: /app/endpoints.json
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ./bssci_config.py
+        target: /app/bssci_config.py
+        bind:
+          create_host_path: true
+      - type: bind
+        source: ./logs
+        target: /app/logs
+        bind:
+          create_host_path: true
     restart: unless-stopped
-    privileged: false
-    security_opt:
-      - no-new-privileges:true
     environment:
       - PYTHONUNBUFFERED=1
+      - SYNOLOGY_DOCKER=1
     networks:
       - bssci-network
     logging:
@@ -27,6 +41,11 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+    # Run as root to ensure file access
+    user: "0:0"
+    cap_add:
+      - CHOWN
+      - FOWNER
     healthcheck:
       test: ["CMD", "python", "-c", "import socket; s1 = socket.create_connection(('localhost', 16018), timeout=5); s2 = socket.create_connection(('localhost', 5000), timeout=5); s1.close(); s2.close()"]
       interval: 30s
