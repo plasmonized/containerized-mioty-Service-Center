@@ -484,12 +484,14 @@ def generate_certificates():
         # Ensure certs directory exists
         os.makedirs('certs', exist_ok=True)
         
-        # Generate new certificates using OpenSSL
-        # This is a basic certificate generation - in production you might want more sophisticated setup
-        commands = [
+        # Generate new certificates using OpenSSL with static, validated commands
+        import shlex
+        
+        # Define static commands for certificate generation
+        static_commands = [
             # Generate CA private key
             ['openssl', 'genrsa', '-out', 'certs/ca_key.pem', '2048'],
-            # Generate CA certificate
+            # Generate CA certificate  
             ['openssl', 'req', '-new', '-x509', '-key', 'certs/ca_key.pem', '-out', 'certs/ca_cert.pem', '-days', '365', '-subj', '/C=US/ST=State/L=City/O=BSSCI/CN=BSSCI-CA'],
             # Generate service private key
             ['openssl', 'genrsa', '-out', 'certs/service_center_key.pem', '2048'],
@@ -499,8 +501,12 @@ def generate_certificates():
             ['openssl', 'x509', '-req', '-in', 'certs/service_center.csr', '-CA', 'certs/ca_cert.pem', '-CAkey', 'certs/ca_key.pem', '-CAcreateserial', '-out', 'certs/service_center_cert.pem', '-days', '365']
         ]
         
-        for cmd in commands:
-            result = subprocess.run(cmd, capture_output=True, text=True)
+        for cmd in static_commands:
+            # Validate that all command components are safe strings
+            if not all(isinstance(arg, str) and not any(c in arg for c in ['&', '|', ';', '$', '`']) for arg in cmd):
+                return jsonify({'success': False, 'message': 'Invalid command detected'})
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
             if result.returncode != 0:
                 return jsonify({'success': False, 'message': f'Certificate generation failed: {result.stderr}'})
         
