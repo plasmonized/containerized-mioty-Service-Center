@@ -9,6 +9,10 @@ chmod 755 /app/logs
 # Ensure certificates directory exists
 mkdir -p /app/certs
 
+# Fix permissions for configuration files at runtime
+chmod 644 /app/bssci_config.py /app/endpoints.json 2>/dev/null || true
+chown $(id -u):$(id -g) /app/bssci_config.py /app/endpoints.json 2>/dev/null || true
+
 # Generate self-signed certificates if they don't exist
 if [ ! -f "/app/certs/ca_cert.pem" ] || [ ! -f "/app/certs/service_center_cert.pem" ] || [ ! -f "/app/certs/service_center_key.pem" ]; then
     echo "Generating SSL certificates..."

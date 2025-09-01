@@ -18,6 +18,10 @@ COPY . .
 # Create necessary directories
 RUN mkdir -p certs logs
 
+# Set proper permissions for configuration files
+RUN chmod 644 bssci_config.py endpoints.json && \
+    chown root:root bssci_config.py endpoints.json
+
 # Expose ports
 EXPOSE 16018 5000
 
