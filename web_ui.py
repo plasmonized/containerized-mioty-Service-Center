@@ -597,17 +597,29 @@ def restart_service():
         try:
             time.sleep(1)  # Small delay to allow response to be sent
             
-            # Kill existing processes
-            subprocess.run(['pkill', '-f', 'python.*web_main.py'], check=False)
-            subprocess.run(['pkill', '-f', 'python.*main.py'], check=False)
-            subprocess.run(['pkill', '-f', 'python.*sync_main.py'], check=False)
+            # Define static, safe commands for process management
+            kill_commands = [
+                ['pkill', '-f', 'python.*web_main.py'],
+                ['pkill', '-f', 'python.*main.py'],
+                ['pkill', '-f', 'python.*sync_main.py']
+            ]
+            
+            start_command = ['python', 'web_main.py']
+            
+            # Validate and execute kill commands
+            for cmd in kill_commands:
+                if not all(isinstance(arg, str) and not any(c in arg for c in ['&', '|', ';', '$', '`', '(', ')']) for arg in cmd):
+                    print(f"Invalid command detected: {cmd}")
+                    continue
+                subprocess.run(cmd, check=False, timeout=10)
             
             time.sleep(2)  # Wait for processes to terminate
             
-            # Start the service again
-            subprocess.Popen(['python', 'web_main.py'], 
-                           stdout=subprocess.DEVNULL, 
-                           stderr=subprocess.DEVNULL)
+            # Validate and start the service again
+            if all(isinstance(arg, str) and not any(c in arg for c in ['&', '|', ';', '$', '`', '(', ')']) for arg in start_command):
+                subprocess.Popen(start_command, 
+                               stdout=subprocess.DEVNULL, 
+                               stderr=subprocess.DEVNULL)
         except Exception as e:
             print(f"Error during restart: {e}")
     
