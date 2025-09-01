@@ -487,28 +487,37 @@ def generate_certificates():
         # Generate new certificates using OpenSSL with static, validated commands
         import shlex
         
-        # Define static commands for certificate generation
-        static_commands = [
-            # Generate CA private key
-            ['openssl', 'genrsa', '-out', 'certs/ca_key.pem', '2048'],
-            # Generate CA certificate  
-            ['openssl', 'req', '-new', '-x509', '-key', 'certs/ca_key.pem', '-out', 'certs/ca_cert.pem', '-days', '365', '-subj', '/C=US/ST=State/L=City/O=BSSCI/CN=BSSCI-CA'],
-            # Generate service private key
-            ['openssl', 'genrsa', '-out', 'certs/service_center_key.pem', '2048'],
-            # Generate service certificate request
-            ['openssl', 'req', '-new', '-key', 'certs/service_center_key.pem', '-out', 'certs/service_center.csr', '-subj', '/C=US/ST=State/L=City/O=BSSCI/CN=bssci-service'],
-            # Sign service certificate with CA
-            ['openssl', 'x509', '-req', '-in', 'certs/service_center.csr', '-CA', 'certs/ca_cert.pem', '-CAkey', 'certs/ca_key.pem', '-CAcreateserial', '-out', 'certs/service_center_cert.pem', '-days', '365']
-        ]
+        # Execute certificate generation commands with completely static strings
         
-        for cmd in static_commands:
-            # Validate that all command components are safe strings
-            if not all(isinstance(arg, str) and not any(c in arg for c in ['&', '|', ';', '$', '`']) for arg in cmd):
-                return jsonify({'success': False, 'message': 'Invalid command detected'})
-            
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-            if result.returncode != 0:
-                return jsonify({'success': False, 'message': f'Certificate generation failed: {result.stderr}'})
+        # Generate CA private key
+        result = subprocess.run(['openssl', 'genrsa', '-out', 'certs/ca_key.pem', '2048'], 
+                               capture_output=True, text=True, timeout=30)
+        if result.returncode != 0:
+            return jsonify({'success': False, 'message': f'CA key generation failed: {result.stderr}'})
+        
+        # Generate CA certificate
+        result = subprocess.run(['openssl', 'req', '-new', '-x509', '-key', 'certs/ca_key.pem', '-out', 'certs/ca_cert.pem', '-days', '365', '-subj', '/C=US/ST=State/L=City/O=BSSCI/CN=BSSCI-CA'], 
+                               capture_output=True, text=True, timeout=30)
+        if result.returncode != 0:
+            return jsonify({'success': False, 'message': f'CA certificate generation failed: {result.stderr}'})
+        
+        # Generate service private key
+        result = subprocess.run(['openssl', 'genrsa', '-out', 'certs/service_center_key.pem', '2048'], 
+                               capture_output=True, text=True, timeout=30)
+        if result.returncode != 0:
+            return jsonify({'success': False, 'message': f'Service key generation failed: {result.stderr}'})
+        
+        # Generate service certificate request
+        result = subprocess.run(['openssl', 'req', '-new', '-key', 'certs/service_center_key.pem', '-out', 'certs/service_center.csr', '-subj', '/C=US/ST=State/L=City/O=BSSCI/CN=bssci-service'], 
+                               capture_output=True, text=True, timeout=30)
+        if result.returncode != 0:
+            return jsonify({'success': False, 'message': f'Service certificate request generation failed: {result.stderr}'})
+        
+        # Sign service certificate with CA
+        result = subprocess.run(['openssl', 'x509', '-req', '-in', 'certs/service_center.csr', '-CA', 'certs/ca_cert.pem', '-CAkey', 'certs/ca_key.pem', '-CAcreateserial', '-out', 'certs/service_center_cert.pem', '-days', '365'], 
+                               capture_output=True, text=True, timeout=30)
+        if result.returncode != 0:
+            return jsonify({'success': False, 'message': f'Service certificate signing failed: {result.stderr}'})
         
         # Clean up temporary files
         temp_files = ['certs/service_center.csr', 'certs/ca_cert.srl']
