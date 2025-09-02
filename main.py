@@ -88,16 +88,20 @@ def run_bssci_service():
     signal.signal(signal.SIGTERM, signal_handler)
 
     try:
-        # Initialize TLS Server
+        # Create communication queues
+        mqtt_out_queue = asyncio.Queue()
+        mqtt_in_queue = asyncio.Queue()
+
+        # Initialize TLS Server with queues
         logger.info("Initializing TLS Server...")
         tls_server_instance = TLSServer(
-            bssci_config.LISTEN_HOST, bssci_config.LISTEN_PORT,
-            bssci_config.CERT_FILE, bssci_config.KEY_FILE,
-            bssci_config.CA_FILE)
+            bssci_config.SENSOR_CONFIG_FILE,
+            mqtt_out_queue,
+            mqtt_in_queue)
 
-        # Initialize MQTT Interface
+        # Initialize MQTT Interface with queues
         logger.info("Initializing MQTT Interface...")
-        mqtt_interface_instance = MQTTClient(tls_server_instance)
+        mqtt_interface_instance = MQTTClient(mqtt_out_queue, mqtt_in_queue)
 
         # Set MQTT interface in TLS server for bidirectional communication
         tls_server_instance.set_mqtt_interface(mqtt_interface_instance)
