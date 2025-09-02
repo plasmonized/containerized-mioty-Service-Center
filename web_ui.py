@@ -661,8 +661,8 @@ def get_certificate_status():
             if os.path.exists(file_path):
                 status['certificates'][cert_type] = True
                 # Try to get certificate expiry date
-                if cert_type != 'key':  # Don't try to parse private key as certificate
-                    try:
+                try:
+                    if cert_type != 'key':  # Don't try to parse private key as certificate
                         from cryptography import x509
                         from cryptography.hazmat.backends import default_backend
                         with open(file_path, 'rb') as f:
@@ -670,12 +670,11 @@ def get_certificate_status():
                             cert = x509.load_pem_x509_certificate(cert_data, default_backend())
                             expiry = cert.not_valid_after
                             status['certificates'][f'{cert_type}_expires'] = expiry.strftime('%Y-%m-%d %H:%M:%S')
-                    except ImportError:
-                        # cryptography module not available
-                        status['certificates'][f'{cert_type}_expires'] = 'Unable to read - cryptography module missing'
-                    except Exception as e:
-                        # If we can't read the certificate, just mark as present without expiry
-                        status['certificates'][f'{cert_type}_expires'] = f'Unable to read expiry: {str(e)}'
+                except Exception as e:
+                    # Log the warning but don't fail the entire request
+                    print(f"Warning: Could not read expiry for {file_path}: {e}")
+                    # Just mark as present without expiry date
+                    pass
             else:
                 status['certificates'][cert_type] = False
 
