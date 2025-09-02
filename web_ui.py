@@ -942,6 +942,117 @@ def detach_sensor(sensor_eui):
         add_log_entry('error', f"Error detaching sensor {sensor_eui}: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
+# Add the /api/config route for GET and POST
+@app.route('/api/config', methods=['GET', 'POST'])
+def config_api():
+    """API endpoint to get and save configuration"""
+    if request.method == 'POST':
+        return save_config()
+    else:
+        return get_config()
+
+# Define get_config and save_config functions as used above
+def get_config():
+    """Get current configuration"""
+    try:
+        # Reload the config module to get latest values
+        import importlib
+        importlib.reload(bssci_config)
+
+        config = {
+            'mqtt_broker': getattr(bssci_config, 'MQTT_BROKER', ''),
+            'mqtt_port': getattr(bssci_config, 'MQTT_PORT', 1887),
+            'mqtt_username': getattr(bssci_config, 'MQTT_USERNAME', ''),
+            'mqtt_password': getattr(bssci_config, 'MQTT_PASSWORD', ''),
+            'base_topic': getattr(bssci_config, 'BASE_TOPIC', 'bssci/'),
+            'listen_host': getattr(bssci_config, 'LISTEN_HOST', '0.0.0.0'),
+            'listen_port': getattr(bssci_config, 'LISTEN_PORT', 16018),
+            'cert_file': getattr(bssci_config, 'CERT_FILE', 'certs/service_center_cert.pem'),
+            'key_file': getattr(bssci_config, 'KEY_FILE', 'certs/service_center_key.pem'),
+            'ca_file': getattr(bssci_config, 'CA_FILE', 'certs/ca_cert.pem'),
+            'status_interval': getattr(bssci_config, 'STATUS_INTERVAL', 30),
+            'deduplication_delay': getattr(bssci_config, 'DEDUPLICATION_DELAY', 2),
+            'auto_detach_hours': getattr(bssci_config, 'AUTO_DETACH_HOURS', 48),
+            'auto_detach_check_interval': getattr(bssci_config, 'AUTO_DETACH_CHECK_INTERVAL', 3600)
+        }
+        return jsonify(config)
+    except Exception as e:
+        add_log_entry('ERROR', f'Failed to load configuration: {str(e)}')
+        return jsonify({'error': str(e)}), 500
+
+def save_config():
+    """Save configuration"""
+    try:
+        data = request.get_json()
+
+        # Create or update .env file with settings that should persist across restarts
+        env_updates = {}
+
+        # MQTT settings (secrets)
+        if 'mqtt_broker' in data: env_updates['MQTT_BROKER'] = data['mqtt_broker']
+        if 'mqtt_port' in data: env_updates['MQTT_PORT'] = data['mqtt_port']
+        if 'mqtt_username' in data: env_updates['MQTT_USERNAME'] = data['mqtt_username']
+        if 'mqtt_password' in data: env_updates['MQTT_PASSWORD'] = data['mqtt_password']
+        if 'base_topic' in data: env_updates['BASE_TOPIC'] = data['base_topic']
+
+        # Server settings
+        if 'listen_host' in data: env_updates['LISTEN_HOST'] = data['listen_host']
+        if 'listen_port' in data: env_updates['LISTEN_PORT'] = data['listen_port']
+
+        # Certificate settings
+        if 'cert_file' in data: env_updates['CERT_FILE'] = data['cert_file']
+        if 'key_file' in data: env_updates['KEY_FILE'] = data['key_file']
+        if 'ca_file' in data: env_updates['CA_FILE'] = data['ca_file']
+
+        # Construct the new .env content, preserving existing entries not in data
+        new_env_content = ""
+        current_env_vars = {}
+        if os.path.exists('.env'):
+            with open('.env', 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith('#') and '=' in line:
+                        key, value = line.split('=', 1)
+                        current_env_vars[key] = value
+
+        # Update with new values or keep existing if not provided
+        for key, default_value in {
+            'MQTT_BROKER': '', 'MQTT_PORT': '1887', 'MQTT_USERNAME': '', 'MQTT_PASSWORD': '', 'BASE_TOPIC': 'bssci/',
+            'LISTEN_HOST': '0.0.0.0', 'LISTEN_PORT': '16018',
+            'CERT_FILE': 'certs/service_center_cert.pem', 'KEY_FILE': 'certs/service_center_key.pem', 'CA_FILE': 'certs/ca_cert.pem',
+            'SENSOR_CONFIG_FILE': 'endpoints.json',
+            'STATUS_INTERVAL': '30', 'DEDUPLICATION_DELAY': '2',
+            'AUTO_DETACH_HOURS': '48', 'AUTO_DETACH_CHECK_INTERVAL': '3600'
+        }.items():
+            new_env_content += f"{key}={env_updates.get(key, current_env_vars.get(key, default_value))}\n"
+
+        with open('.env', 'w') as f:
+            f.write(new_env_content)
+
+        # Update runtime configuration for timing parameters (non-secrets)
+        # These are not typically in .env but loaded directly into bssci_config
+        if 'status_interval' in data:
+            bssci_config.STATUS_INTERVAL = int(data['status_interval'])
+            os.environ['STATUS_INTERVAL'] = data['status_interval'] # Update env for consistency
+        if 'deduplication_delay' in data:
+            bssci_config.DEDUPLICATION_DELAY = int(data['deduplication_delay'])
+            os.environ['DEDUPLICATION_DELAY'] = data['deduplication_delay']
+        if 'auto_detach_hours' in data:
+            bssci_config.AUTO_DETACH_HOURS = int(data['auto_detach_hours'])
+            os.environ['AUTO_DETACH_HOURS'] = data['auto_detach_hours']
+        if 'auto_detach_check_interval' in data:
+            bssci_config.AUTO_DETACH_CHECK_INTERVAL = int(data['auto_detach_check_interval'])
+            os.environ['AUTO_DETACH_CHECK_INTERVAL'] = data['auto_detach_check_interval']
+
+
+        add_log_entry('info', 'Configuration saved successfully')
+        return jsonify({'success': True, 'message': 'Configuration saved. Timing parameters updated immediately, other changes require service restart.'})
+
+    except Exception as e:
+        add_log_entry('error', f'Failed to save configuration: {e}')
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
 if __name__ == '__main__':
     # It's good practice to ensure bssci_config is available before running the app
     if bssci_config is None:

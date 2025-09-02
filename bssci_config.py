@@ -34,11 +34,11 @@ MQTT_USERNAME = os.getenv("MQTT_USERNAME", "")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "")
 BASE_TOPIC = os.getenv("BASE_TOPIC", "bssci/")
 
-# File and timing configuration
-SENSOR_CONFIG_FILE = os.getenv("SENSOR_CONFIG_FILE", "endpoints.json")
-STATUS_INTERVAL = int(os.getenv("STATUS_INTERVAL", "30"))
-DEDUPLICATION_DELAY = int(os.getenv("DEDUPLICATION_DELAY", "2"))
+# File and timing configuration (regular settings, not secrets)
+SENSOR_CONFIG_FILE = "endpoints.json"
+STATUS_INTERVAL = 30
+DEDUPLICATION_DELAY = 2
 
-# Auto-detach configuration
-AUTO_DETACH_HOURS = int(os.getenv("AUTO_DETACH_HOURS", "48"))
-AUTO_DETACH_CHECK_INTERVAL = int(os.getenv("AUTO_DETACH_CHECK_INTERVAL", "3600"))
+# Auto-detach configuration (regular settings, not secrets)
+AUTO_DETACH_HOURS = 48
+AUTO_DETACH_CHECK_INTERVAL = 3600
