@@ -1,2 +1,6 @@
 certs/*
-_pycache_
+# Environment variables
+.env
+__pycache__
+*.py[cod]
+*$py.class

@@ -7,9 +7,9 @@ CA_FILE = "certs/ca_cert.pem"
 
 import os
 
-MQTT_BROKER = os.getenv("MQTT_BROKER", "akahlig.selfhost.co")
-MQTT_PORT = int(os.getenv("MQTT_PORT", "1887"))
-MQTT_USERNAME = os.getenv("MQTT_USERNAME", "bssci")
+MQTT_BROKER = os.getenv("MQTT_BROKER", "localhost")
+MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
+MQTT_USERNAME = os.getenv("MQTT_USERNAME", "")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "")
 BASE_TOPIC = os.getenv("BASE_TOPIC", "bssci/")
 

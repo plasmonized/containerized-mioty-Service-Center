@@ -1,4 +1,3 @@
-
 # mioty BSSCI Service Center
 
 Eine umfassende Implementierung des mioty Base Station Service Center Interface (BSSCI) Protokolls v1.0.0.0 mit webbasierter Verwaltungsoberfläche und MQTT-Integration.
@@ -155,8 +154,8 @@ CA_FILE = "certs/ca_cert.pem"
 # MQTT Broker Einstellungen
 MQTT_BROKER = "your-broker.com"
 MQTT_PORT = 1883
-MQTT_USERNAME = "username"
-MQTT_PASSWORD = "password"
+MQTT_USERNAME = "your-username"
+MQTT_PASSWORD = "your-password"
 BASE_TOPIC = "bssci/"
 
 # Betriebseinstellungen
@@ -592,7 +591,8 @@ mosquitto_pub -h broker-host -t "bssci/ep/fca84a0300001234/cmd" \
 Das Service Center implementiert ausgeklügelte Deduplizierung:
 
 - **Multi-Basisstations-Unterstützung**: Behandelt dieselbe Nachricht von mehreren Basisstationen
-- **Signalqualitätsoptimierung**: Wählt besten Signalpfad basierend auf SNR
+- **Signalqualitätsoptimierung**: Wählt besten Signalpfad bas
+on SNR
 - **Konfigurierbare Verzögerung**: Einstellbares Deduplizierungsfenster
 - **Statistik-Verfolgung**: Überwacht Duplikatraten und Effizienz
 
