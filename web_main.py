@@ -54,9 +54,16 @@ tls_server_instance = None
 
 def get_tls_server():
     """Get the TLS server instance."""
+    global tls_server_instance
+    if tls_server_instance:
+        return tls_server_instance
+    
     try:
-        import main
-        return getattr(main, "tls_server_instance", None)
+        import sys
+        main_module = sys.modules.get('__main__')
+        if main_module:
+            return getattr(main_module, 'tls_server', None)
+        return None
     except Exception as e:
         logger.error(f"Error getting TLS server: {e}")
         return None

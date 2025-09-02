@@ -468,12 +468,24 @@ LOG_FILE: Optional[str] = os.getenv("LOG_FILE", None)
         tls_server = None
         mqtt_interface = None
 
-        # Try to get server instances (they might be in global scope)
-        import sys
-        if hasattr(sys.modules.get('__main__', {}), 'tls_server'):
-            tls_server = sys.modules['__main__'].tls_server
-        if hasattr(sys.modules.get('__main__', {}), 'mqtt_interface'):
-            mqtt_interface = sys.modules['__main__'].mqtt_interface
+        # Try to get server instances from different possible locations
+        try:
+            import sys
+            main_module = sys.modules.get('__main__')
+            if main_module:
+                tls_server = getattr(main_module, 'tls_server', None)
+                mqtt_interface = getattr(main_module, 'mqtt_interface', None)
+            
+            # Also try the main module directly
+            if not tls_server:
+                try:
+                    import main
+                    tls_server = getattr(main, 'tls_server', None)
+                    mqtt_interface = getattr(main, 'mqtt_interface', None)
+                except ImportError:
+                    pass
+        except Exception as e:
+            logger.error(f"Error accessing server instances: {e}")
 
         status_data = {
             "service_status": "running" if tls_server else "stopped",
@@ -959,8 +971,21 @@ def get_bssci_service_status() -> Dict[str, Any]:
 def get_tls_server():
     """Get the TLS server instance."""
     try:
-        import main
-        return getattr(main, "tls_server_instance", None)
+        import sys
+        main_module = sys.modules.get('__main__')
+        if main_module:
+            tls_server = getattr(main_module, 'tls_server', None)
+            if tls_server:
+                return tls_server
+        
+        # Try importing main module directly
+        try:
+            import main
+            return getattr(main, 'tls_server', None)
+        except ImportError:
+            pass
+            
+        return None
     except Exception as e:
         logger.error(f"Error getting TLS server: {e}")
         return None
