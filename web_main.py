@@ -1,4 +1,3 @@
-
 """Web interface main module for mioty BSSCI Service Center."""
 
 import asyncio
@@ -69,7 +68,7 @@ def run_web_ui() -> None:
     app = create_app()
     app.config["DEBUG"] = bssci_config.WEB_DEBUG
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-key")
-    
+
     app.run(
         host=bssci_config.WEB_HOST,
         port=bssci_config.WEB_PORT,
@@ -79,20 +78,31 @@ def run_web_ui() -> None:
     )
 
 
-def run_bssci_service() -> None:
-    """Run the BSSCI service."""
-    logger.info("Starting BSSCI Service")
-    asyncio.run(bssci_main())
-
+def run_bssci_service():
+    """Run BSSCI service in background."""
+    global tls_server_instance
+    try:
+        # Import and run the main BSSCI service
+        import main
+        asyncio.run(main.main())
+    except Exception as e:
+        logger.error(f"Error starting BSSCI service: {e}")
 
 def main() -> None:
     """Main entry point combining web UI and BSSCI service."""
-    global logger
-    
+    global logger, tls_server_instance
+
     setup_logging()
     logger = logging.getLogger(__name__)
-    
+
     logger.info("Starting BSSCI Service Center with Web UI")
+
+    # Start BSSCI service in background thread
+    bssci_thread = threading.Thread(target=run_bssci_service, daemon=True)
+    bssci_thread.start()
+
+    # Give the service a moment to start
+    time.sleep(2)
 
     # Start web UI in a separate thread
     web_thread = threading.Thread(target=run_web_ui, daemon=True)
@@ -102,14 +112,9 @@ def main() -> None:
     time.sleep(2)
     logger.info(f"Web UI available at http://localhost:{bssci_config.WEB_PORT}")
 
-    # Run BSSCI service in main thread
-    try:
-        run_bssci_service()
-    except KeyboardInterrupt:
-        logger.info("Shutting down...")
-    except Exception as e:
-        logger.error(f"Service error: {e}")
-        raise
+    # Keep the main thread alive to allow background threads to run
+    while True:
+        time.sleep(1)
 
 
 if __name__ == "__main__":

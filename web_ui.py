@@ -1,4 +1,3 @@
-
 """Web UI for mioty BSSCI Service Center management."""
 
 import asyncio
@@ -465,7 +464,52 @@ LOG_FILE: Optional[str] = os.getenv("LOG_FILE", None)
     @app.route("/api/bssci/status")
     def bssci_status() -> Dict[str, Any]:
         """Get BSSCI service status."""
-        return jsonify(get_bssci_service_status())
+        # Check if TLS server is available in global scope
+        tls_server = None
+        mqtt_interface = None
+
+        # Try to get server instances (they might be in global scope)
+        import sys
+        if hasattr(sys.modules.get('__main__', {}), 'tls_server'):
+            tls_server = sys.modules['__main__'].tls_server
+        if hasattr(sys.modules.get('__main__', {}), 'mqtt_interface'):
+            mqtt_interface = sys.modules['__main__'].mqtt_interface
+
+        status_data = {
+            "service_status": "running" if tls_server else "stopped",
+            "tls_server": tls_server.get_server_status() if tls_server else {
+                "is_running": False,
+                "listen_host": bssci_config.LISTEN_HOST,
+                "listen_port": bssci_config.LISTEN_PORT,
+                "deduplication_stats": {"total_messages": 0, "duplicate_messages": 0, "published_messages": 0},
+                "uptime": "Stopped"
+            },
+            "base_stations": tls_server.get_base_station_status() if tls_server else {
+                "connected_count": 0,
+                "connecting_count": 0,
+                "total_count": 0,
+                "base_stations": []
+            },
+            "sensors": tls_server.get_sensor_status() if tls_server else {
+                "total_sensors": 0,
+                "registered_sensors": 0,
+                "unregistered_sensors": 0,
+                "pending_attach_requests": 0
+            },
+            "mqtt": {
+                "broker": bssci_config.MQTT_BROKER,
+                "port": bssci_config.MQTT_PORT,
+                "base_topic": bssci_config.BASE_TOPIC,
+                "status": "connected" if mqtt_interface and hasattr(mqtt_interface, 'client') else "disconnected"
+            },
+            "config": {
+                "auto_detach_enabled": bssci_config.AUTO_DETACH_ENABLED,
+                "auto_detach_hours": bssci_config.AUTO_DETACH_HOURS,
+                "status_interval": bssci_config.STATUS_INTERVAL,
+                "deduplication_delay": bssci_config.DEDUPLICATION_DELAY
+            }
+        }
+        return jsonify(status_data)
 
     @app.route("/api/base_stations")
     def get_base_stations() -> Dict[str, Any]:

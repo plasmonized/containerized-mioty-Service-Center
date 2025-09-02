@@ -48,6 +48,51 @@ class TLSServer:
         # Start the deduplication task
         asyncio.create_task(self.process_deduplication_buffer())
 
+    def get_base_station_status(self) -> Dict[str, Any]:
+        """Get status information about connected base stations."""
+        return {
+            "connected_count": len(self.connected_base_stations),
+            "connecting_count": len(self.connecting_base_stations),
+            "total_count": len(self.connected_base_stations) + len(self.connecting_base_stations),
+            "base_stations": [
+                {
+                    "id": bs_id,
+                    "status": "connected",
+                    "address": writer.get_extra_info('peername')[0] if writer.get_extra_info('peername') else "unknown"
+                }
+                for writer, bs_id in self.connected_base_stations.items()
+            ] + [
+                {
+                    "id": bs_id,
+                    "status": "connecting",
+                    "address": writer.get_extra_info('peername')[0] if writer.get_extra_info('peername') else "unknown"
+                }
+                for writer, bs_id in self.connecting_base_stations.items()
+            ]
+        }
+
+    def get_sensor_status(self) -> Dict[str, Any]:
+        """Get status information about sensors."""
+        total_sensors = len(self.load_sensor_config())
+        registered_sensors = len(self.registered_sensors)
+        
+        return {
+            "total_sensors": total_sensors,
+            "registered_sensors": registered_sensors,
+            "unregistered_sensors": total_sensors - registered_sensors,
+            "pending_attach_requests": len(self.pending_attach_requests)
+        }
+
+    def get_server_status(self) -> Dict[str, Any]:
+        """Get overall server status."""
+        return {
+            "is_running": True,
+            "listen_host": bssci_config.LISTEN_HOST,
+            "listen_port": bssci_config.LISTEN_PORT,
+            "deduplication_stats": self.deduplication_stats.copy(),
+            "uptime": "Running"  # Could be enhanced with actual uptime tracking
+        }
+
         try:
             with open(sensor_config_file, "r", encoding="utf-8") as f:
                 self.sensor_config = json.load(f)
