@@ -6,3 +6,4 @@ aiohttp==3.9.1
 paho-mqtt
 cryptography
 cryptography
+cryptography
