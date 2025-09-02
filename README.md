@@ -299,6 +299,40 @@ bssci/ep/{sensor_eui}/config
 }
 ```
 
+#### Command Topics
+```
+bssci/ep/{sensor_eui}/cmd
+```
+
+**Detach Command:**
+```json
+{
+  "command": "detach"
+}
+```
+
+**Status Command:**
+```json
+{
+  "command": "status"
+}
+```
+
+**Command Response Topic:**
+```
+bssci/ep/{sensor_eui}/cmd/response
+```
+
+**Response Payload:**
+```json
+{
+  "command": "detach",
+  "status": "success",
+  "sensor_eui": "0123456789ABCDEF",
+  "timestamp": "2024-01-20 14:30:25.123"
+}
+```
+
 ### Message Deduplication
 
 The service center implements intelligent deduplication:

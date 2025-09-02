@@ -23,6 +23,7 @@ class MQTTClient:
         else:
             self.base_topic = BASE_TOPIC
         self.config_topic = self.base_topic + "/ep/+/config"
+        self.command_topic = self.base_topic + "/ep/+/cmd"
         self.mqtt_out_queue = mqtt_out_queue
         self.mqtt_in_queue = mqtt_in_queue
 
@@ -105,12 +106,14 @@ class MQTTClient:
     async def _handle_incoming(self, client: Client) -> None:
         logger.info("🔔 MQTT INCOMING HANDLER STARTING")
         logger.info("=" * 50)
-        logger.info(f"📌 Subscription Topic: {self.config_topic}")
+        logger.info(f"📌 Config Subscription Topic: {self.config_topic}")
+        logger.info(f"📌 Command Subscription Topic: {self.command_topic}")
         
         try:
             await client.subscribe(self.config_topic)
-            logger.info("✅ MQTT SUBSCRIPTION SUCCESSFUL")
-            logger.info("👂 MQTT incoming message handler is now ACTIVE and listening...")
+            await client.subscribe(self.command_topic)
+            logger.info("✅ MQTT SUBSCRIPTIONS SUCCESSFUL")
+            logger.info("👂 MQTT incoming message handler is now ACTIVE and listening for config & commands...")
         except Exception as sub_error:
             logger.error(f"❌ MQTT subscription failed: {sub_error}")
             raise
@@ -123,26 +126,43 @@ class MQTTClient:
                 logger.info(f"📍 Topic: {message.topic}")
 
                 try:
+                    topic_str = str(message.topic)
+                    payload_str = message.payload.decode('utf-8')
+                    payload_data = json.loads(payload_str)
+                    
                     # Extract EUI like the working version
-                    topic_parts = str(message.topic).split("/")
+                    topic_parts = topic_str.split("/")
                     base_parts = self.base_topic.split("/")
                     
                     if len(topic_parts) > len(base_parts) + 1:
                         eui = topic_parts[len(base_parts) + 1]
                         logger.info(f"🔑 Extracted EUI: {eui}")
-                        
-                        payload_str = message.payload.decode('utf-8')
                         logger.info(f"📄 Payload: {payload_str}")
                         
-                        config = json.loads(payload_str)
-                        config["eui"] = eui
-                        
-                        logger.info(f"✅ Configuration received for EUI {eui}")
-                        logger.info(f"   Queue size before put: {self.mqtt_in_queue.qsize()}")
-                        await self.mqtt_in_queue.put(config)
-                        logger.info(f"✅ Configuration queued successfully")
-                        logger.info(f"   Queue size after put: {self.mqtt_in_queue.qsize()}")
-                        logger.info(f"📋 Config: {json.dumps(config, indent=2)}")
+                        # Check if this is a command or config message
+                        if topic_str.endswith("/cmd"):
+                            logger.info(f"📡 MQTT COMMAND received for EUI {eui}")
+                            # Send command to TLS server for processing
+                            command_msg = {
+                                "mqtt_topic": topic_str,
+                                "mqtt_payload": payload_data
+                            }
+                            await self.mqtt_in_queue.put(command_msg)
+                            logger.info(f"✅ MQTT command queued for processing")
+                            
+                        elif topic_str.endswith("/config"):
+                            logger.info(f"🔧 MQTT CONFIG received for EUI {eui}")
+                            config = payload_data
+                            config["eui"] = eui
+                            
+                            logger.info(f"✅ Configuration received for EUI {eui}")
+                            logger.info(f"   Queue size before put: {self.mqtt_in_queue.qsize()}")
+                            await self.mqtt_in_queue.put(config)
+                            logger.info(f"✅ Configuration queued successfully")
+                            logger.info(f"   Queue size after put: {self.mqtt_in_queue.qsize()}")
+                            logger.info(f"📋 Config: {json.dumps(config, indent=2)}")
+                        else:
+                            logger.warning(f"⚠️  Unknown topic type: {topic_str}")
                     else:
                         logger.warning(f"⚠️  Invalid topic format: {message.topic}")
 

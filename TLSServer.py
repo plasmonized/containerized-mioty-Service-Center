@@ -444,6 +444,14 @@ class TLSServer:
                                 asyncio.create_task(self.send_status_requests())
                             else:
                                 logger.info(f"📊 Status request task already running, will include this base station")
+
+                            # Start auto-detach task if not already running
+                            if not hasattr(self, '_auto_detach_task_running') or not self._auto_detach_task_running:
+                                logger.info(f"🕐 Starting auto-detach task for inactive sensors")
+                                self._auto_detach_task_running = True
+                                asyncio.create_task(self.auto_detach_inactive_sensors())
+                            else:
+                                logger.info(f"🕐 Auto-detach task already running")
                         else:
                             logger.warning(f"⚠️  Received connection complete from unknown or already connected base station")
 
@@ -740,14 +748,19 @@ class TLSServer:
                         logger.info(f"     Data (hex): {' '.join(f'{b:02x}' for b in message['userData'])}")
                         logger.info(f"     Data (dec): {message['userData']}")
 
-                        # Check if this sensor is registered
+                        # Check if this sensor is registered and update activity timestamp
                         is_registered = eui.lower() in self.registered_sensors
                         if is_registered:
                             reg_info = self.registered_sensors[eui.lower()]
+                            # Update last activity timestamp for auto-detach tracking
+                            self.registered_sensors[eui.lower()]['last_data_timestamp'] = asyncio.get_event_loop().time()
+                            self.registered_sensors[eui.lower()]['last_data_time_str'] = self._get_local_time()
+                            
                             logger.info(f"   Registration Status: ✅ REGISTERED")
                             logger.info(f"     Registered to {len(reg_info.get('base_stations', []))} base station(s): {reg_info.get('base_stations', [])}")
                             logger.info(f"     Data received via: {bs_eui}")
                             logger.info(f"     Registration time: {reg_info.get('registration_time', 'unknown')}")
+                            logger.info(f"     Last activity: {self._get_local_time()}")
                         else:
                             logger.warning(f"   Registration Status: ⚠️  NOT REGISTERED")
                             logger.warning(f"     This sensor may not be configured in endpoints.json")
@@ -899,15 +912,26 @@ class TLSServer:
 
 
     async def queue_watcher(self) -> None:
-        logger.info("📨 MQTT queue watcher started - monitoring for configuration updates")
+        logger.info("📨 MQTT queue watcher started - monitoring for configuration updates and commands")
         logger.info(f"   Watching queue ID: {id(self.mqtt_in_queue)}")
         try:
             while True:
                 logger.debug(f"⏳ Queue watcher waiting for message (queue size: {self.mqtt_in_queue.qsize()})")
                 msg = dict(await self.mqtt_in_queue.get())
-                logger.info(f"📥 MQTT CONFIGURATION MESSAGE received")
+                logger.info(f"📥 MQTT MESSAGE received")
                 logger.debug(f"   Raw message: {msg}")
 
+                # Check if this is a command message
+                if "mqtt_topic" in msg and "mqtt_payload" in msg:
+                    topic = msg["mqtt_topic"]
+                    payload = msg["mqtt_payload"]
+                    
+                    if "/cmd" in topic:
+                        logger.info(f"📡 MQTT COMMAND detected in topic: {topic}")
+                        await self.process_mqtt_commands(topic, payload)
+                        continue
+
+                # Process sensor configuration messages
                 if (
                     "eui" in msg.keys()
                     and "nwKey" in msg.keys()
@@ -933,8 +957,9 @@ class TLSServer:
                     self.update_or_add_entry(msg)
                     logger.info(f"✅ ENDPOINT CONFIGURATION processing complete for {msg['eui']}")
                 else:
-                    logger.error(f"❌ INVALID MQTT configuration message - missing required fields")
-                    logger.error(f"   Required: eui, nwKey, shortAddr, bidi")
+                    logger.error(f"❌ INVALID MQTT message - missing required fields")
+                    logger.error(f"   Expected config fields: eui, nwKey, shortAddr, bidi")
+                    logger.error(f"   Or command fields: mqtt_topic, mqtt_payload")
                     logger.error(f"   Received: {list(msg.keys())}")
         except asyncio.CancelledError:
             logger.info("📨 MQTT queue watcher stopped")
@@ -1078,6 +1103,181 @@ class TLSServer:
                 break
         else:
             logger.warning(f"⚠️  Sensor {eui} not found in configuration for preferred path update")
+
+    async def detach_sensor(self, sensor_eui: str) -> bool:
+        """Send detach request for a specific sensor to all connected base stations"""
+        if not self.connected_base_stations:
+            logger.warning(f"❌ DETACH REQUEST FAILED - No base stations connected")
+            return False
+
+        logger.info(f"📤 BSSCI DETACH REQUEST INITIATED")
+        logger.info(f"   =====================================")
+        logger.info(f"   Sensor EUI: {sensor_eui}")
+        logger.info(f"   Target Base Stations: {len(self.connected_base_stations)}")
+        logger.info(f"   Timestamp: {self._get_local_time()}")
+
+        detach_count = 0
+        failed_count = 0
+
+        for writer, bs_eui in self.connected_base_stations.items():
+            try:
+                logger.info(f"📤 Sending detach request to base station {bs_eui}")
+                logger.info(f"   Operation ID: {self.opID}")
+
+                # Build detach message using the EUI directly as string
+                detach_message = messages.build_detach_request(sensor_eui, self.opID)
+                msg_pack = encode_message(detach_message)
+                full_message = IDENTIFIER + len(msg_pack).to_bytes(4, byteorder="little") + msg_pack
+
+                writer.write(full_message)
+                await writer.drain()
+
+                logger.info(f"✅ Detach request sent to {bs_eui} (opID: {self.opID})")
+                detach_count += 1
+                self.opID -= 1
+
+            except Exception as e:
+                failed_count += 1
+                logger.error(f"❌ Failed to send detach request to {bs_eui}: {e}")
+
+        # Update registration status
+        eui_key = sensor_eui.lower()
+        if eui_key in self.registered_sensors:
+            self.registered_sensors[eui_key]['status'] = 'detached'
+            self.registered_sensors[eui_key]['detach_time'] = self._get_local_time()
+            self.registered_sensors[eui_key]['base_stations'] = []
+
+        logger.info(f"✅ BSSCI DETACH REQUEST COMPLETED")
+        logger.info(f"   Detach requests sent: {detach_count}")
+        logger.info(f"   Failed requests: {failed_count}")
+        logger.info(f"   =====================================")
+
+        return detach_count > 0
+
+    async def detach_all_sensors(self) -> bool:
+        """Send detach requests for all registered sensors"""
+        if not self.registered_sensors:
+            logger.warning(f"❌ DETACH ALL FAILED - No registered sensors")
+            return False
+
+        logger.info(f"📤 BSSCI BULK DETACH REQUEST INITIATED")
+        logger.info(f"   Total registered sensors: {len(self.registered_sensors)}")
+
+        success_count = 0
+        for eui_key in list(self.registered_sensors.keys()):
+            sensor_eui = eui_key.upper()  # Convert back to uppercase for display
+            try:
+                success = await self.detach_sensor(sensor_eui)
+                if success:
+                    success_count += 1
+            except Exception as e:
+                logger.error(f"❌ Failed to detach sensor {sensor_eui}: {e}")
+
+        logger.info(f"✅ BULK DETACH COMPLETED - {success_count} sensors processed")
+        return success_count > 0
+
+    async def auto_detach_inactive_sensors(self) -> None:
+        """Auto-detach sensors that haven't sent data for 48 hours"""
+        logger.info(f"🕐 AUTO-DETACH TASK STARTED")
+        logger.info(f"   Auto-detach interval: 48 hours (172800 seconds)")
+
+        try:
+            while True:
+                await asyncio.sleep(3600)  # Check every hour
+                current_time = asyncio.get_event_loop().time()
+                cutoff_time = current_time - (48 * 3600)  # 48 hours ago
+
+                sensors_to_detach = []
+                for eui_key, sensor_info in self.registered_sensors.items():
+                    if sensor_info.get('status') != 'registered':
+                        continue
+
+                    last_activity = sensor_info.get('last_data_timestamp', sensor_info.get('timestamp', 0))
+                    if last_activity < cutoff_time:
+                        sensors_to_detach.append(eui_key)
+
+                if sensors_to_detach:
+                    logger.info(f"🕐 AUTO-DETACH: Found {len(sensors_to_detach)} inactive sensors")
+                    for eui_key in sensors_to_detach:
+                        sensor_eui = eui_key.upper()
+                        logger.info(f"   Auto-detaching inactive sensor: {sensor_eui}")
+                        try:
+                            await self.detach_sensor(sensor_eui)
+                            # Mark as auto-detached
+                            if eui_key in self.registered_sensors:
+                                self.registered_sensors[eui_key]['auto_detached'] = True
+                                self.registered_sensors[eui_key]['auto_detach_reason'] = '48h_inactive'
+                        except Exception as e:
+                            logger.error(f"❌ Auto-detach failed for {sensor_eui}: {e}")
+                else:
+                    logger.debug(f"🕐 AUTO-DETACH: No inactive sensors found")
+
+        except asyncio.CancelledError:
+            logger.info(f"🕐 AUTO-DETACH TASK CANCELLED")
+            raise
+        except Exception as e:
+            logger.error(f"❌ AUTO-DETACH TASK ERROR: {e}")
+            raise
+
+    async def process_mqtt_commands(self, topic: str, payload: dict) -> None:
+        """Process MQTT commands for sensor management"""
+        try:
+            # Extract EUI from topic (bssci/ep/{eui}/cmd)
+            topic_parts = topic.split("/")
+            if len(topic_parts) >= 3 and topic_parts[-1] == "cmd":
+                sensor_eui = topic_parts[-2]
+                command = payload.get("command", "").lower()
+
+                logger.info(f"📡 MQTT COMMAND RECEIVED")
+                logger.info(f"   Sensor EUI: {sensor_eui}")
+                logger.info(f"   Command: {command}")
+                logger.info(f"   Payload: {payload}")
+
+                if command == "detach":
+                    logger.info(f"🔌 Processing MQTT detach command for {sensor_eui}")
+                    success = await self.detach_sensor(sensor_eui)
+                    
+                    # Send response back to MQTT
+                    response_topic = f"ep/{sensor_eui}/cmd/response"
+                    response_payload = {
+                        "command": "detach",
+                        "status": "success" if success else "failed",
+                        "sensor_eui": sensor_eui,
+                        "timestamp": self._get_local_time()
+                    }
+                    
+                    await self.mqtt_out_queue.put({
+                        "topic": response_topic,
+                        "payload": json.dumps(response_payload)
+                    })
+                    
+                elif command == "status":
+                    logger.info(f"📊 Processing MQTT status command for {sensor_eui}")
+                    eui_key = sensor_eui.lower()
+                    sensor_status = self.registered_sensors.get(eui_key, {})
+                    
+                    # Send status response back to MQTT
+                    response_topic = f"ep/{sensor_eui}/cmd/response"
+                    response_payload = {
+                        "command": "status",
+                        "sensor_eui": sensor_eui,
+                        "registered": eui_key in self.registered_sensors,
+                        "status": sensor_status.get('status', 'unknown'),
+                        "base_stations": sensor_status.get('base_stations', []),
+                        "last_activity": sensor_status.get('last_data_timestamp', 0),
+                        "timestamp": self._get_local_time()
+                    }
+                    
+                    await self.mqtt_out_queue.put({
+                        "topic": response_topic,
+                        "payload": json.dumps(response_payload)
+                    })
+                    
+                else:
+                    logger.warning(f"⚠️  Unknown MQTT command: {command}")
+
+        except Exception as e:
+            logger.error(f"❌ Error processing MQTT command: {e}")
 
     def update_or_add_entry(self, msg: dict[str, Any]) -> None:
         # Update existing entry or add new one
