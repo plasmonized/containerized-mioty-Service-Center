@@ -5,10 +5,10 @@ CERT_FILE = "certs/service_center_cert.pem"
 KEY_FILE = "certs/service_center_key.pem"
 CA_FILE = "certs/ca_cert.pem"
 
-MQTT_BROKER = "akahlig.selfhost.co"
+MQTT_BROKER = ""
 MQTT_PORT = 1887
-MQTT_USERNAME = "Hasso"
-MQTT_PASSWORD = "test=1234"
+MQTT_USERNAME = ""
+MQTT_PASSWORD = ""
 BASE_TOPIC = "bssci/"
 
 SENSOR_CONFIG_FILE = "endpoints.json"
