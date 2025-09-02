@@ -49,3 +49,7 @@ def build_status_complete(opID: int) -> dict[str, object]:
 
 def build_ul_response(opID: int) -> dict[str, object]:
     return {"command": "ulDataRsp", "opId": opID}
+
+
+def build_detach_response(opID: int) -> dict[str, object]:
+    return {"command": "detachRsp", "opId": opID}

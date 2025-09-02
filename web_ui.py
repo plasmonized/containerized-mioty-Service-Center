@@ -203,6 +203,38 @@ def reload_sensors():
             return jsonify({'success': False, 'message': 'TLS server not available'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/sensors/unregister/<sensor_eui>', methods=['DELETE'])
+def unregister_sensor(sensor_eui):
+    """Unregister (detach) a specific sensor from all base stations"""
+    try:
+        from web_main import get_tls_server
+        tls_server = get_tls_server()
+        if tls_server:
+            # Send detach requests to all connected base stations
+            success = tls_server.detach_sensor(sensor_eui)
+            if success:
+                return jsonify({'success': True, 'message': f'Sensor {sensor_eui} detach request sent to base stations'})
+            else:
+                return jsonify({'success': False, 'message': 'No connected base stations to send detach request'})
+        else:
+            return jsonify({'success': False, 'message': 'TLS server not available'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/sensors/unregister-all', methods=['POST'])
+def unregister_all_sensors():
+    """Unregister all sensors from all base stations"""
+    try:
+        from web_main import get_tls_server
+        tls_server = get_tls_server()
+        if tls_server:
+            success = tls_server.detach_all_sensors()
+            return jsonify({'success': True, 'message': f'Detach requests sent for all registered sensors'})
+        else:
+            return jsonify({'success': False, 'message': 'TLS server not available'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
         
 @app.route('/config')
 def config():
