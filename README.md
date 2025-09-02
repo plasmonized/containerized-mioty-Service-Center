@@ -1,4 +1,3 @@
-
 # mioty BSSCI Service Center
 
 A comprehensive implementation of the mioty Base Station Service Center Interface (BSSCI) protocol v1.0.0.0 with web-based management interface and MQTT integration.
@@ -17,6 +16,9 @@ A comprehensive implementation of the mioty Base Station Service Center Interfac
 - [API Documentation](#api-documentation)
 - [Troubleshooting](#troubleshooting)
 - [Advanced Features](#advanced-features)
+- [License](#license)
+- [Contributing](#contributing)
+- [Support the Project](#support-the-project)
 
 ## Overview
 
@@ -141,7 +143,7 @@ Base Station → Service Center → MQTT → Your Application
    # Create CA certificate
    openssl genrsa -out certs/ca_key.pem 4096
    openssl req -x509 -new -key certs/ca_key.pem -sha256 -days 3650 -out certs/ca_cert.pem
-   
+
    # Create service center certificate
    openssl genrsa -out certs/service_center_key.pem 2048
    openssl req -new -key certs/service_center_key.pem -out certs/service_center.csr
@@ -325,9 +327,9 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, msg):
     topic_parts = msg.topic.split('/')
     sensor_eui = topic_parts[2]
-    
+
     data = json.loads(msg.payload.decode())
-    
+
     print(f"Sensor {sensor_eui}:")
     print(f"  Base Station: {data['bs_eui']}")
     print(f"  Signal: SNR={data['snr']:.1f}dB, RSSI={data['rssi']:.1f}dBm")
@@ -350,10 +352,10 @@ def configure_sensor(client, sensor_eui, network_key, short_addr, bidirectional=
         "shortAddr": short_addr,
         "bidi": bidirectional
     }
-    
+
     topic = f"bssci/ep/{sensor_eui}/config"
     payload = json.dumps(config)
-    
+
     client.publish(topic, payload)
     print(f"Configuration sent for sensor {sensor_eui}")
 
@@ -367,16 +369,16 @@ configure_sensor(client, "fca84a0300001234", "0011223344556677889AABBCCDDEEFF00"
 def on_base_station_status(client, userdata, msg):
     topic_parts = msg.topic.split('/')
     bs_eui = topic_parts[2]
-    
+
     status = json.loads(msg.payload.decode())
-    
+
     # Check for high resource usage
     if status['cpuLoad'] > 0.8:
         print(f"WARNING: Base station {bs_eui} high CPU usage: {status['cpuLoad']:.1%}")
-    
+
     if status['memLoad'] > 0.9:
         print(f"WARNING: Base station {bs_eui} high memory usage: {status['memLoad']:.1%}")
-    
+
     # Monitor uptime
     uptime_hours = status['uptime'] / 3600
     print(f"Base station {bs_eui} uptime: {uptime_hours:.1f} hours")
@@ -414,13 +416,13 @@ def parse_sensor_data(raw_data, sensor_type="temperature_humidity"):
             temp = int.from_bytes(raw_data[0:2], byteorder='little', signed=True) / 100
             humidity = int.from_bytes(raw_data[2:4], byteorder='little') / 100
             return {"temperature": temp, "humidity": humidity}
-    
+
     elif sensor_type == "gps_tracker":
         if len(raw_data) >= 8:
             lat = int.from_bytes(raw_data[0:4], byteorder='little', signed=True) / 1000000
             lon = int.from_bytes(raw_data[4:8], byteorder='little', signed=True) / 1000000
             return {"latitude": lat, "longitude": lon}
-    
+
     return {"raw_data": raw_data}
 ```
 
@@ -578,18 +580,48 @@ Automatically tracks best base station for each sensor:
 
 ---
 
-## Contributing
+## 📄 License
 
-Feel free to submit issues and enhancement requests. When contributing:
+This project is licensed under a **Non-Commercial License**. 
+
+### What you CAN do:
+- ✅ Use for personal projects
+- ✅ Use for educational purposes  
+- ✅ Use for research
+- ✅ Modify and distribute (non-commercially)
+- ✅ Study the code
+
+### What you CANNOT do:
+- ❌ Use in commercial products or services
+- ❌ Sell the software or derivatives
+- ❌ Use to generate revenue
+
+### Commercial Use
+For commercial licensing, enterprise support, or custom development, please open an issue on GitHub or contact us through the repository.
+
+**Full license terms**: See [LICENSE](LICENSE) file
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! By contributing, you agree that your contributions will be licensed under the same non-commercial terms.
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes with tests
-4. Submit a pull request
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
-## License
+---
 
-This project is licensed under the MIT License. See LICENSE file for details.
+## ⭐ Support the Project
+
+If this project helps you, please:
+- Give it a star on GitHub ⭐
+- Share it with others who might find it useful
+- Report bugs and suggest improvements
+- Consider contributing code or documentation
 
 ---
 
