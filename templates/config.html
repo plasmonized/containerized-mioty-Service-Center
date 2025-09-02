@@ -30,6 +30,16 @@
                         <input type="number" step="0.1" min="0.5" max="10" class="form-control" id="DEDUPLICATION_DELAY" value="{{ config.DEDUPLICATION_DELAY }}">
                         <div class="form-text">Time to wait for duplicate messages before forwarding the best one (0.5-10 seconds)</div>
                     </div>
+                    <div class="mb-3">
+                        <label for="AUTO_DETACH_HOURS" class="form-label">Auto-Detach Hours</label>
+                        <input type="number" min="1" max="168" class="form-control" id="AUTO_DETACH_HOURS" value="{{ config.AUTO_DETACH_HOURS }}">
+                        <div class="form-text">Hours of inactivity before automatically detaching sensors (1-168 hours)</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="AUTO_DETACH_CHECK_INTERVAL" class="form-label">Auto-Detach Check Interval (seconds)</label>
+                        <input type="number" min="300" max="86400" class="form-control" id="AUTO_DETACH_CHECK_INTERVAL" value="{{ config.AUTO_DETACH_CHECK_INTERVAL }}">
+                        <div class="form-text">Interval between auto-detach checks (300-86400 seconds)</div>
+                    </div>
                 </div>
 
                 <div class="col-md-6">
@@ -84,6 +94,8 @@ function saveConfig() {
         BASE_TOPIC: document.getElementById('BASE_TOPIC').value,
         STATUS_INTERVAL: parseInt(document.getElementById('STATUS_INTERVAL').value),
         DEDUPLICATION_DELAY: parseFloat(document.getElementById('DEDUPLICATION_DELAY').value),
+        AUTO_DETACH_HOURS: parseInt(document.getElementById('AUTO_DETACH_HOURS').value),
+        AUTO_DETACH_CHECK_INTERVAL: parseInt(document.getElementById('AUTO_DETACH_CHECK_INTERVAL').value),
     };
 
     fetch('/api/config', {

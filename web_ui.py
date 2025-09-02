@@ -287,7 +287,9 @@ def config():
         'MQTT_PASSWORD': bssci_config.MQTT_PASSWORD,
         'BASE_TOPIC': bssci_config.BASE_TOPIC,
         'STATUS_INTERVAL': bssci_config.STATUS_INTERVAL,
-        'DEDUPLICATION_DELAY': bssci_config.DEDUPLICATION_DELAY
+        'DEDUPLICATION_DELAY': bssci_config.DEDUPLICATION_DELAY,
+        'AUTO_DETACH_HOURS': bssci_config.AUTO_DETACH_HOURS,
+        'AUTO_DETACH_CHECK_INTERVAL': bssci_config.AUTO_DETACH_CHECK_INTERVAL
     }
     return render_template('config.html', config=config_data)
     
@@ -310,6 +312,10 @@ BASE_TOPIC = "{data['BASE_TOPIC']}"
 SENSOR_CONFIG_FILE = "endpoints.json"
 STATUS_INTERVAL = {data['STATUS_INTERVAL']}  # seconds
 DEDUPLICATION_DELAY = {data['DEDUPLICATION_DELAY']}  # seconds to wait for duplicate messages before forwarding
+
+# Auto-detach configuration
+AUTO_DETACH_HOURS = {data['AUTO_DETACH_HOURS']}  # hours of inactivity before auto-detaching sensors
+AUTO_DETACH_CHECK_INTERVAL = {data['AUTO_DETACH_CHECK_INTERVAL']}  # seconds between auto-detach checks (1 hour)
 '''
 
     try:
