@@ -16,5 +16,5 @@ STATUS_INTERVAL = 30  # seconds
 DEDUPLICATION_DELAY = 2  # seconds to wait for duplicate messages before forwarding
 
 # Auto-detach configuration
-AUTO_DETACH_HOURS = 48  # hours of inactivity before auto-detaching sensors
-AUTO_DETACH_CHECK_INTERVAL = 3600  # seconds between auto-detach checks (1 hour)
+AUTO_DETACH_HOURS = 48  # hours of inactivity before auto-detaching
+AUTO_DETACH_CHECK_INTERVAL = 3600  # seconds between checks (1 hour)

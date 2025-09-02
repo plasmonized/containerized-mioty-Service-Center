@@ -1,110 +1,129 @@
 import asyncio
 import logging
-
-import bssci_config
-from bssci_config import SENSOR_CONFIG_FILE, LISTEN_HOST, LISTEN_PORT, MQTT_BROKER, MQTT_PORT
-from mqtt_interface import MQTTClient
+import threading
+import signal
+from bssci_config import LISTEN_PORT, CERT_FILE, KEY_FILE, CA_FILE
 from TLSServer import TLSServer
-
-# Configure logging with timezone
+from mqtt_interface import MQTTInterface
+import bssci_config
 import time
-from datetime import datetime, timezone, timedelta
 
-class TimezoneFormatter(logging.Formatter):
-    def __init__(self, fmt, datefmt=None):
-        super().__init__(fmt, datefmt)
-        # Set timezone to UTC+2 (Central European Time)
-        self.timezone = timezone(timedelta(hours=2))
-
-    def formatTime(self, record, datefmt=None):
-        # Convert UTC timestamp to local timezone
-        utc_time = datetime.fromtimestamp(record.created, tz=timezone.utc)
-        local_time = utc_time.astimezone(self.timezone)
-        if datefmt:
-            return local_time.strftime(datefmt)
-        else:
-            return local_time.strftime('%Y-%m-%d %H:%M:%S')
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-
-# Apply timezone formatter to all handlers
-timezone_formatter = TimezoneFormatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    '%Y-%m-%d %H:%M:%S'
-)
-for handler in logging.root.handlers:
-    handler.setFormatter(timezone_formatter)
 logger = logging.getLogger(__name__)
 
-# Global TLS server instance for web UI access
+
+def signal_handler(sig, frame):
+    """Handle shutdown signals gracefully"""
+    logger.info("Shutdown signal received, stopping services...")
+
+    # Stop TLS server
+    if tls_server_instance:
+        try:
+            tls_server_instance.stop()
+        except Exception as e:
+            logger.error(f"Error stopping TLS server: {e}")
+
+    # Stop MQTT interface
+    if mqtt_interface_instance:
+        try:
+            # Use asyncio to run the async stop method
+            if hasattr(mqtt_interface_instance, 'stop'):
+                asyncio.run(mqtt_interface_instance.stop())
+        except Exception as e:
+            logger.error(f"Error stopping MQTT interface: {e}")
+
+    exit(0)
+
+
 tls_server_instance = None
+mqtt_interface_instance = None
 
-async def main() -> None:
-    global tls_server_instance
-    mqtt_out_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
-    mqtt_in_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
 
-    logger.info("Initializing BSSCI Service Center...")
-    logger.info(f"Config: TLS Port {LISTEN_PORT}, MQTT Broker {MQTT_BROKER}:{MQTT_PORT}")
+def setup_logging():
+    """Configure logging for the application"""
+    # Configure logging with timezone
+    import time
+    from datetime import datetime, timezone, timedelta
 
-    # Setup queue logging to monitor queue usage
-    from queue_logger import setup_queue_logging, log_all_queue_stats
-    queue_loggers = setup_queue_logging({
-        'mqtt_out_queue': mqtt_out_queue,
-        'mqtt_in_queue': mqtt_in_queue
-    })
+    class TimezoneFormatter(logging.Formatter):
+        def __init__(self, fmt, datefmt=None):
+            super().__init__(fmt, datefmt)
+            # Set timezone to UTC+2 (Central European Time)
+            self.timezone = timezone(timedelta(hours=2))
 
-    logger.info("🔍 Queue Instance Analysis:")
-    logger.info(f"   mqtt_out_queue ID: {id(mqtt_out_queue)}")
-    logger.info(f"   mqtt_in_queue ID: {id(mqtt_in_queue)}")
+        def formatTime(self, record, datefmt=None):
+            # Convert UTC timestamp to local timezone
+            utc_time = datetime.fromtimestamp(record.created, tz=timezone.utc)
+            local_time = utc_time.astimezone(self.timezone)
+            if datefmt:
+                return local_time.strftime(datefmt)
+            else:
+                return local_time.strftime('%Y-%m-%d %H:%M:%S')
 
-    # Fixed parameter order - both should use the same queue instances consistently
-    tls_server = TLSServer(
-        bssci_config.SENSOR_CONFIG_FILE, mqtt_out_queue, mqtt_in_queue
+    # Configure logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
     )
-    tls_server_instance = tls_server  # Store global reference
-    mqtt_client = MQTTClient(mqtt_out_queue, mqtt_in_queue)
 
-    logger.info("🔍 Queue Assignment Verification:")
-    logger.info(f"   TLS Server mqtt_out_queue ID: {id(tls_server.mqtt_out_queue)}")
-    logger.info(f"   TLS Server mqtt_in_queue ID: {id(tls_server.mqtt_in_queue)}")
-    logger.info(f"   MQTT Client mqtt_out_queue ID: {id(mqtt_client.mqtt_out_queue)}")
-    logger.info(f"   MQTT Client mqtt_in_queue ID: {id(mqtt_client.mqtt_in_queue)}")
+    # Apply timezone formatter to all handlers
+    timezone_formatter = TimezoneFormatter(
+        '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        '%Y-%m-%d %H:%M:%S'
+    )
+    for handler in logging.root.handlers:
+        handler.setFormatter(timezone_formatter)
 
-    # Periodic queue statistics
-    async def queue_stats_reporter():
-        while True:
-            await asyncio.sleep(60)  # Log stats every minute
-            log_all_queue_stats(queue_loggers)
+    logger.info("Logging configured with timezone.")
 
-    # Start the stats reporter task
-    asyncio.create_task(queue_stats_reporter())
 
-    logger.info("Starting BSSCI Service Center...")
-    logger.info("✓ Both TLS Server and MQTT Interface are starting...")
+def run_bssci_service():
+    """Run the main BSSCI service"""
+    global tls_server_instance, mqtt_interface_instance
+
+    setup_logging()
+    logger.info("Starting BSSCI Service Center")
+
+    # Register signal handlers
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
 
     try:
-        # Start both services concurrently
-        await asyncio.gather(
-            tls_server.start_server(),
-            mqtt_client.start(),
-            return_exceptions=True
-        )
-    except KeyboardInterrupt:
-        logger.info("Shutting down BSSCI Service Center...")
-    except Exception as e:
-        logger.error(f"Service error: {e}")
+        # Initialize TLS Server
+        logger.info("Initializing TLS Server...")
+        tls_server_instance = TLSServer(
+            bssci_config.LISTEN_HOST, bssci_config.LISTEN_PORT,
+            bssci_config.CERT_FILE, bssci_config.KEY_FILE,
+            bssci_config.CA_FILE)
 
-    logger.info("✓ BSSCI Service Center shut down complete")
+        # Initialize MQTT Interface
+        logger.info("Initializing MQTT Interface...")
+        mqtt_interface_instance = MQTTInterface(tls_server_instance)
+
+        # Set MQTT interface in TLS server for bidirectional communication
+        tls_server_instance.set_mqtt_interface(mqtt_interface_instance)
+
+        # Start TLS server in a separate thread
+        tls_thread = threading.Thread(
+            target=tls_server_instance.start, daemon=True)
+        tls_thread.start()
+        logger.info(
+            f"TLS Server started on "
+            f"{bssci_config.LISTEN_HOST}:{bssci_config.LISTEN_PORT}")
+
+        # Start MQTT interface
+        logger.info("Starting MQTT Interface...")
+        asyncio.run(mqtt_interface_instance.start())
+
+    except KeyboardInterrupt:
+        logger.info("Shutdown requested by user")
+        signal_handler(signal.SIGINT, None)
+    except Exception as e:
+        logger.error(f"Error in main service: {e}")
+        import traceback
+        traceback.print_exc()
+        signal_handler(signal.SIGTERM, None)
 
 
 if __name__ == "__main__":
-    policy_cls = getattr(asyncio, "WindowsSelectorEventLoopPolicy", None)
-    if policy_cls is not None:
-        asyncio.set_event_loop_policy(policy_cls())
-    asyncio.run(main())
+    run_bssci_service()
