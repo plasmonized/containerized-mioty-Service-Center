@@ -2,6 +2,10 @@
 
 Eine umfassende Implementierung des mioty Base Station Service Center Interface (BSSCI) Protokolls v1.0.0.0 mit webbasierter Verwaltungsoberfläche und MQTT-Integration.
 
+## Danksagung
+
+Dieses Projekt basiert auf der ursprünglichen Codebasis von [IronMate/mioty_BSSCI](https://github.com/IronMate/mioty_BSSCI). Vielen Dank an **Ironmate** für die Bereitstellung der grundlegenden BSSCI-Implementierung, die als Fundament für diese erweiterte Version dient.
+
 ## Inhaltsverzeichnis
 
 - [Überblick](#überblick)
