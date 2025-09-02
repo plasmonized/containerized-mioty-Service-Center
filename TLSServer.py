@@ -24,15 +24,19 @@ class TLSServer:
         self.opID = -1
         self.mqtt_out_queue = mqtt_out_queue
         self.mqtt_in_queue = mqtt_in_queue
-        self.connected_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
-        self.connecting_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
+        self.connected_base_stations: Dict[
+            asyncio.streams.StreamWriter, str
+        ] = {}
+        self.connecting_base_stations: Dict[
+            asyncio.streams.StreamWriter, str
+        ] = {}
         self.sensor_config_file = sensor_config_file
-        self.registered_sensors: Dict[str, Dict[str, Any]] = {}  # EUI -> {status, base_stations: [], timestamp}
-        self.pending_attach_requests: Dict[int, Dict[str, Any]] = {}  # opID -> {sensor_eui, timestamp, base_station}
-        self._status_task_running = False  # Track if status request task is running
+        self.registered_sensors: Dict[str, Dict[str, Any]] = {}
+        self.pending_attach_requests: Dict[int, Dict[str, Any]] = {}
+        self._status_task_running = False
 
         # Deduplication variables
-        self.deduplication_buffer: Dict[str, Dict[str, Any]] = {}  # message_key -> {message, timestamp, snr, bs_eui}
+        self.deduplication_buffer: Dict[str, Dict[str, Any]] = {}
         self.deduplication_delay = bssci_config.DEDUPLICATION_DELAY
         self.deduplication_stats = {
             'total_messages': 0,
@@ -42,7 +46,6 @@ class TLSServer:
         # Start the deduplication task
         asyncio.create_task(self.process_deduplication_buffer())
 
-
         try:
             with open(sensor_config_file, "r") as f:
                 self.sensor_config = json.load(f)
@@ -50,7 +53,7 @@ class TLSServer:
             self.sensor_config = []
 
         # Add queue logging
-        logger.info(f"🔍 TLS Server Queue Assignment:")
+        logger.info("🔍 TLS Server Queue Assignment:")
         logger.info(f"   mqtt_out_queue ID: {id(self.mqtt_out_queue)}")
         logger.info(f"   mqtt_in_queue ID: {id(self.mqtt_in_queue)}")
 
@@ -75,8 +78,13 @@ class TLSServer:
             ssl_ctx.verify_mode = ssl.CERT_REQUIRED
 
             # Log SSL context details
-            logger.info(f"   TLS Protocol versions: {ssl_ctx.minimum_version.name} - {ssl_ctx.maximum_version.name}")
-            logger.info("✓ SSL context configured successfully with client certificate verification")
+            min_ver = ssl_ctx.minimum_version.name
+            max_ver = ssl_ctx.maximum_version.name
+            logger.info(f"   TLS Protocol versions: {min_ver} - {max_ver}")
+            logger.info(
+                "✓ SSL context configured successfully with client "
+                "certificate verification"
+            )
 
         except FileNotFoundError as e:
             logger.error(f"❌ SSL certificate file not found: {e}")
@@ -88,8 +96,11 @@ class TLSServer:
             logger.error(f"❌ Unexpected error setting up SSL: {e}")
             raise
 
-        logger.info(f"🚀 Starting BSSCI TLS server...")
-        logger.info(f"   Listen address: {bssci_config.LISTEN_HOST}:{bssci_config.LISTEN_PORT}")
+        logger.info("🚀 Starting BSSCI TLS server...")
+        logger.info(
+            f"   Listen address: "
+            f"{bssci_config.LISTEN_HOST}:{bssci_config.LISTEN_PORT}"
+        )
         logger.info(f"   Sensor config file: {self.sensor_config_file}")
         logger.info(f"   Loaded sensors: {len(self.sensor_config)}")
 
@@ -103,7 +114,10 @@ class TLSServer:
         logger.info("📨 Starting MQTT queue watcher task...")
         asyncio.create_task(self.queue_watcher())
 
-        logger.info("✓ BSSCI TLS Server is ready and listening for base station connections")
+        logger.info(
+            "✓ BSSCI TLS Server is ready and listening for "
+            "base station connections"
+        )
         async with server:
             await server.serve_forever()
 
@@ -112,8 +126,8 @@ class TLSServer:
     ) -> None:
         bs_eui = self.connected_base_stations.get(writer, "unknown")
         try:
-            logger.info(f"📤 BSSCI ATTACH REQUEST INITIATED")
-            logger.info(f"   =====================================")
+            logger.info("📤 BSSCI ATTACH REQUEST INITIATED")
+            logger.info("   =====================================")
             logger.info(f"   Sensor EUI: {sensor['eui']}")
             logger.info(f"   Target Base Station: {bs_eui}")
             logger.info(f"   Operation ID: {self.opID}")
@@ -125,40 +139,68 @@ class TLSServer:
 
             # EUI validation
             if len(sensor["eui"]) != 16:
-                validation_errors.append(f"EUI length {len(sensor['eui'])} != 16 characters")
+                validation_errors.append(
+                    f"EUI length {len(sensor['eui'])} != 16 characters"
+                )
             else:
                 try:
                     int(sensor["eui"], 16)  # Test hex validity
                     logger.info(f"   ✓ EUI format valid: {sensor['eui']}")
                 except ValueError:
-                    validation_errors.append(f"EUI contains invalid hex characters: {sensor['eui']}")
+                    validation_errors.append(
+                        f"EUI contains invalid hex characters: {sensor['eui']}"
+                    )
 
             # Network Key validation and normalization
             original_nw_key = sensor["nwKey"]
-            nw_key = original_nw_key[:32] if len(original_nw_key) >= 32 else original_nw_key
+            nw_key = (original_nw_key[:32] if len(original_nw_key) >= 32
+                     else original_nw_key)
 
             if len(original_nw_key) != 32:
                 if len(original_nw_key) > 32:
-                    validation_warnings.append(f"Network key truncated from {len(original_nw_key)} to 32 characters")
-                    logger.warning(f"   ⚠️  Network key too long, truncating: {original_nw_key} -> {nw_key}")
+                    validation_warnings.append(
+                        f"Network key truncated from "
+                        f"{len(original_nw_key)} to 32 characters"
+                    )
+                    logger.warning(
+                        f"   ⚠️  Network key too long, truncating: "
+                        f"{original_nw_key} -> {nw_key}"
+                    )
                 else:
-                    validation_errors.append(f"Network key length {len(original_nw_key)} < 32 characters required")
+                    validation_errors.append(
+                        f"Network key length {len(original_nw_key)} < "
+                        f"32 characters required"
+                    )
             else:
                 try:
                     int(nw_key, 16)  # Test hex validity
-                    logger.info(f"   ✓ Network key format valid: {nw_key[:8]}...{nw_key[-8:]}")
+                    logger.info(
+                        f"   ✓ Network key format valid: "
+                        f"{nw_key[:8]}...{nw_key[-8:]}"
+                    )
                 except ValueError:
-                    validation_errors.append(f"Network key contains invalid hex characters: {nw_key}")
+                    validation_errors.append(
+                        f"Network key contains invalid hex characters: {nw_key}"
+                    )
 
             # Short Address validation
             if len(sensor["shortAddr"]) != 4:
-                validation_errors.append(f"Short address length {len(sensor['shortAddr'])} != 4 characters")
+                validation_errors.append(
+                    f"Short address length {len(sensor['shortAddr'])} != "
+                    f"4 characters"
+                )
             else:
                 try:
                     int(sensor["shortAddr"], 16)  # Test hex validity
-                    logger.info(f"   ✓ Short address format valid: {sensor['shortAddr']}")
+                    logger.info(
+                        f"   ✓ Short address format valid: "
+                        f"{sensor['shortAddr']}"
+                    )
                 except ValueError:
-                    validation_errors.append(f"Short address contains invalid hex characters: {sensor['shortAddr']}")
+                    validation_errors.append(
+                        f"Short address contains invalid hex characters: "
+                        f"{sensor['shortAddr']}"
+                    )
 
             # Bidirectional flag validation
             bidi_value = sensor.get("bidi", False)
@@ -171,19 +213,31 @@ class TLSServer:
                 if reg_info.get('status') == 'registered':
                     existing_bases = reg_info.get('base_stations', [])
                     if bs_eui in existing_bases:
-                        validation_warnings.append(f"Sensor {sensor['eui']} already registered to base station {bs_eui}")
-                        logger.warning(f"   ⚠️  Re-registering sensor to same base station")
+                        validation_warnings.append(
+                            f"Sensor {sensor['eui']} already registered "
+                            f"to base station {bs_eui}"
+                        )
+                        logger.warning(
+                            "   ⚠️  Re-registering sensor to same base station"
+                        )
                     else:
-                        validation_warnings.append(f"Sensor {sensor['eui']} already registered to {len(existing_bases)} other base station(s): {existing_bases}")
-                        logger.warning(f"   ⚠️  Adding registration to additional base station")
+                        validation_warnings.append(
+                            f"Sensor {sensor['eui']} already registered to "
+                            f"{len(existing_bases)} other base station(s): "
+                            f"{existing_bases}"
+                        )
+                        logger.warning(
+                            "   ⚠️  Adding registration to additional "
+                            "base station"
+                        )
 
             # Log all warnings
             for warning in validation_warnings:
                 logger.warning(f"   ⚠️  {warning}")
 
             if not validation_errors:
-                logger.info(f"   ✅ All validations passed")
-                logger.info(f"   📋 Final parameters:")
+                logger.info("   ✅ All validations passed")
+                logger.info("   📋 Final parameters:")
                 logger.info(f"     EUI: {sensor['eui']}")
                 logger.info(f"     Network Key: {nw_key[:8]}...{nw_key[-8:]}")
                 logger.info(f"     Short Address: {sensor['shortAddr']}")
@@ -227,31 +281,35 @@ class TLSServer:
 
                 self.opID -= 1
             else:
-                logger.error(f"❌ ATTACH REQUEST VALIDATION FAILED")
+                logger.error("❌ ATTACH REQUEST VALIDATION FAILED")
                 logger.error(f"   Sensor EUI: {sensor.get('eui', 'unknown')}")
                 logger.error(f"   Base Station: {bs_eui}")
-                logger.error(f"   Validation errors found:")
+                logger.error("   Validation errors found:")
                 for i, error in enumerate(validation_errors, 1):
                     logger.error(f"     {i}. {error}")
-                logger.error(f"   ❌ Attach request NOT sent due to validation failures")
-                logger.error(f"   =====================================")
+                logger.error(
+                    "   ❌ Attach request NOT sent due to validation failures"
+                )
+                logger.error("   =====================================")
 
         except Exception as e:
-            logger.error(f"❌ CRITICAL ERROR during attach request preparation")
+            logger.error("❌ CRITICAL ERROR during attach request preparation")
             logger.error(f"   Sensor EUI: {sensor.get('eui', 'unknown')}")
             logger.error(f"   Base Station: {bs_eui}")
             logger.error(f"   Exception type: {type(e).__name__}")
             logger.error(f"   Exception message: {str(e)}")
             import traceback
-            logger.error(f"   Full traceback:")
+            logger.error("   Full traceback:")
             for line in traceback.format_exc().strip().split('\n'):
                 logger.error(f"     {line}")
-            logger.error(f"   =====================================")
+            logger.error("   =====================================")
             raise  # Re-raise to handle upstream
 
     async def attach_file(self, writer: asyncio.streams.StreamWriter) -> None:
         bs_eui = self.connected_base_stations.get(writer, "unknown")
-        logger.info(f"🔗 BATCH SENSOR ATTACHMENT started for base station {bs_eui}")
+        logger.info(
+            f"🔗 BATCH SENSOR ATTACHMENT started for base station {bs_eui}"
+        )
         logger.info(f"   Total sensors to process: {len(self.sensor_config)}")
 
         successful_attachments = 0
@@ -271,63 +329,100 @@ class TLSServer:
                 logger.error(f"   ❌ Failed to attach sensor {sensor.get('eui', 'unknown')}: {e}")
                 logger.error(f"     Exception type: {type(e).__name__}")
 
-        logger.info(f"✅ BATCH SENSOR ATTACHMENT completed for base station {bs_eui}")
+        logger.info(
+            f"✅ BATCH SENSOR ATTACHMENT completed for base station {bs_eui}"
+        )
         logger.info(f"   Successful: {successful_attachments}")
         logger.info(f"   Failed: {failed_attachments}")
         logger.info(f"   Total processed: {len(self.sensor_config)}")
 
         if failed_attachments > 0:
-            logger.warning(f"   ⚠️  {failed_attachments} sensors failed to attach - check individual sensor logs above")
+            logger.warning(
+                f"   ⚠️  {failed_attachments} sensors failed to attach - "
+                f"check individual sensor logs above"
+            )
 
     async def send_status_requests(self) -> None:
-        logger.info(f"📊 STATUS REQUEST TASK STARTED")
-        logger.info(f"   Status request interval: {bssci_config.STATUS_INTERVAL} seconds")
+        logger.info("📊 STATUS REQUEST TASK STARTED")
+        logger.info(
+            f"   Status request interval: {bssci_config.STATUS_INTERVAL} seconds"
+        )
 
         try:
             while True:
                 await asyncio.sleep(bssci_config.STATUS_INTERVAL)
                 if self.connected_base_stations:
-                    logger.info(f"📊 PERIODIC STATUS REQUEST CYCLE STARTING")
-                    logger.info(f"   Connected base stations: {len(self.connected_base_stations)}")
-                    logger.info(f"   Base stations: {list(self.connected_base_stations.values())}")
+                    logger.info("📊 PERIODIC STATUS REQUEST CYCLE STARTING")
+                    logger.info(
+                        f"   Connected base stations: "
+                        f"{len(self.connected_base_stations)}"
+                    )
+                    logger.info(
+                        f"   Base stations: "
+                        f"{list(self.connected_base_stations.values())}"
+                    )
 
                     requests_sent = 0
                     failed_requests = 0
 
-                    for writer, bs_eui in self.connected_base_stations.copy().items():  # Use copy to avoid dict change during iteration
+                    # Use copy to avoid dict change during iteration
+                    for writer, bs_eui in self.connected_base_stations.copy().items():
                         try:
-                            logger.info(f"📤 Sending status request to base station {bs_eui}")
+                            logger.info(
+                                f"📤 Sending status request to base station {bs_eui}"
+                            )
                             logger.info(f"   Operation ID: {self.opID}")
 
-                            msg_pack = encode_message(messages.build_status_request(self.opID))
-                            full_message = IDENTIFIER + len(msg_pack).to_bytes(4, byteorder="little") + msg_pack
+                            msg_pack = encode_message(
+                                messages.build_status_request(self.opID)
+                            )
+                            full_message = (
+                                IDENTIFIER +
+                                len(msg_pack).to_bytes(4, byteorder="little") +
+                                msg_pack
+                            )
 
                             writer.write(full_message)
                             await writer.drain()
 
-                            logger.info(f"✅ Status request transmitted to {bs_eui} (opID: {self.opID})")
+                            logger.info(
+                                f"✅ Status request transmitted to {bs_eui} "
+                                f"(opID: {self.opID})"
+                            )
                             requests_sent += 1
                             self.opID -= 1
 
                         except Exception as e:
                             failed_requests += 1
-                            logger.error(f"❌ Failed to send status request to base station {bs_eui}")
+                            logger.error(
+                                f"❌ Failed to send status request to "
+                                f"base station {bs_eui}"
+                            )
                             logger.error(f"   Error: {type(e).__name__}: {e}")
-                            logger.warning(f"🔌 Removing disconnected base station {bs_eui} from active list")
+                            logger.warning(
+                                f"🔌 Removing disconnected base station "
+                                f"{bs_eui} from active list"
+                            )
                             # Remove disconnected base station
                             if writer in self.connected_base_stations:
                                 self.connected_base_stations.pop(writer)
 
-                    logger.info(f"📊 STATUS REQUEST CYCLE COMPLETE")
+                    logger.info("📊 STATUS REQUEST CYCLE COMPLETE")
                     logger.info(f"   Requests sent: {requests_sent}")
                     logger.info(f"   Failed requests: {failed_requests}")
-                    logger.info(f"   Remaining connected base stations: {len(self.connected_base_stations)}")
+                    logger.info(
+                        f"   Remaining connected base stations: "
+                        f"{len(self.connected_base_stations)}"
+                    )
 
                 else:
-                    logger.info(f"⏸️  STATUS REQUEST CYCLE SKIPPED - No base stations connected")
+                    logger.info(
+                        "⏸️  STATUS REQUEST CYCLE SKIPPED - "
+                        "No base stations connected"
+                    )
 
         except asyncio.CancelledError:
-            logger.info(f"📊 STATUS REQUEST TASK CANCELLED")
+            logger.info("📊 STATUS REQUEST TASK CANCELLED")
             self._status_task_running = False
             raise
         except Exception as e:
@@ -354,11 +449,19 @@ class TLSServer:
                             if name == 'commonName':
                                 cn = value
                                 break
-                    logger.info(f"   ✓ SSL handshake successful - Client certificate CN: {cn}")
+                    logger.info(
+                        f"   ✓ SSL handshake successful - "
+                        f"Client certificate CN: {cn}"
+                    )
                 else:
-                    logger.warning(f"   ⚠️  SSL handshake completed but no client certificate provided")
+                    logger.warning(
+                        "   ⚠️  SSL handshake completed but no client "
+                        "certificate provided"
+                    )
             else:
-                logger.error(f"   ❌ No SSL object found - connection may not be encrypted")
+                logger.error(
+                    "   ❌ No SSL object found - connection may not be encrypted"
+                )
 
         except Exception as e:
             logger.error(f"   ❌ SSL connection error from {addr}: {e}")
@@ -415,45 +518,84 @@ class TLSServer:
                             self.connected_base_stations[writer] = bs_eui
                             connection_time = asyncio.get_event_loop().time() - connection_start_time
 
-                            logger.info(f"✅ BSSCI CONNECTION ESTABLISHED with base station {bs_eui}")
-                            logger.info(f"   =====================================")
+                            logger.info(
+                                f"✅ BSSCI CONNECTION ESTABLISHED with "
+                                f"base station {bs_eui}"
+                            )
+                            logger.info("   =====================================")
                             logger.info(f"   Base Station EUI: {bs_eui}")
-                            logger.info(f"   Connection established at: {self._get_local_time()}")
-                            logger.info(f"   Connection setup duration: {connection_time:.2f} seconds")
+                            logger.info(
+                                f"   Connection established at: "
+                                f"{self._get_local_time()}"
+                            )
+                            logger.info(
+                                f"   Connection setup duration: "
+                                f"{connection_time:.2f} seconds"
+                            )
                             logger.info(f"   Client address: {addr}")
-                            logger.info(f"   Total connected base stations: {len(self.connected_base_stations)}")
-                            logger.info(f"   All connected stations: {list(self.connected_base_stations.values())}")
+                            logger.info(
+                                f"   Total connected base stations: "
+                                f"{len(self.connected_base_stations)}"
+                            )
+                            logger.info(
+                                f"   All connected stations: "
+                                f"{list(self.connected_base_stations.values())}"
+                            )
 
-                            logger.info(f"🔗 INITIATING SENSOR ATTACHMENT PROCESS")
-                            logger.info(f"   Total sensors to attach: {len(self.sensor_config)}")
+                            logger.info("🔗 INITIATING SENSOR ATTACHMENT PROCESS")
+                            logger.info(
+                                f"   Total sensors to attach: "
+                                f"{len(self.sensor_config)}"
+                            )
                             if self.sensor_config:
-                                logger.info(f"   Sensors to be attached:")
+                                logger.info("   Sensors to be attached:")
                                 for i, sensor in enumerate(self.sensor_config, 1):
-                                    logger.info(f"     {i:2d}. EUI: {sensor['eui']}, Short Addr: {sensor['shortAddr']}")
+                                    logger.info(
+                                        f"     {i:2d}. EUI: {sensor['eui']}, "
+                                        f"Short Addr: {sensor['shortAddr']}"
+                                    )
                             else:
-                                logger.warning(f"   ⚠️  No sensors configured for attachment")
-                            logger.info(f"   =====================================")
+                                logger.warning(
+                                    "   ⚠️  No sensors configured for attachment"
+                                )
+                            logger.info("   =====================================")
 
                             # Start attachment process
                             await self.attach_file(writer)
 
                             # Always ensure status request task is running
-                            if not hasattr(self, '_status_task_running') or not self._status_task_running:
-                                logger.info(f"📊 Starting periodic status request task for all base stations")
+                            if (not hasattr(self, '_status_task_running') or
+                                    not self._status_task_running):
+                                logger.info(
+                                    "📊 Starting periodic status request task "
+                                    "for all base stations"
+                                )
                                 self._status_task_running = True
                                 asyncio.create_task(self.send_status_requests())
                             else:
-                                logger.info(f"📊 Status request task already running, will include this base station")
+                                logger.info(
+                                    "📊 Status request task already running, "
+                                    "will include this base station"
+                                )
 
                             # Start auto-detach task if not already running
-                            if not hasattr(self, '_auto_detach_task_running') or not self._auto_detach_task_running:
-                                logger.info(f"🕐 Starting auto-detach task for inactive sensors")
+                            if (not hasattr(self, '_auto_detach_task_running') or
+                                    not self._auto_detach_task_running):
+                                logger.info(
+                                    "🕐 Starting auto-detach task for "
+                                    "inactive sensors"
+                                )
                                 self._auto_detach_task_running = True
-                                asyncio.create_task(self.auto_detach_inactive_sensors())
+                                asyncio.create_task(
+                                    self.auto_detach_inactive_sensors()
+                                )
                             else:
-                                logger.info(f"🕐 Auto-detach task already running")
+                                logger.info("🕐 Auto-detach task already running")
                         else:
-                            logger.warning(f"⚠️  Received connection complete from unknown or already connected base station")
+                            logger.warning(
+                                "⚠️  Received connection complete from unknown "
+                                "or already connected base station"
+                            )
 
                     elif msg_type == "ping":
                         logger.debug(f"Ping request received from {addr}")
@@ -675,16 +817,25 @@ class TLSServer:
 
                         self.deduplication_stats['total_messages'] += 1
 
-                        # Check if message is a duplicate and if the new one has better SNR
+                        # Check if message is a duplicate and if new one has better SNR
                         is_duplicate = message_key in self.deduplication_buffer
                         if is_duplicate:
                             existing_message = self.deduplication_buffer[message_key]
                             if snr > existing_message['snr']:
-                                logger.info(f"🔄 DEDUPLICATION: Better signal found for {eui}")
+                                logger.info(
+                                    f"🔄 DEDUPLICATION: Better signal found for {eui}"
+                                )
                                 logger.info(f"   Message counter: {packet_cnt}")
-                                logger.info(f"   Previous SNR: {existing_message['snr']:.2f} dB (via {existing_message['bs_eui']})")
+                                logger.info(
+                                    f"   Previous SNR: "
+                                    f"{existing_message['snr']:.2f} dB "
+                                    f"(via {existing_message['bs_eui']})"
+                                )
                                 logger.info(f"   New SNR: {snr:.2f} dB (via {bs_eui})")
-                                logger.info(f"   Updating preferred path: {existing_message['bs_eui']} → {bs_eui}")
+                                logger.info(
+                                    f"   Updating preferred path: "
+                                    f"{existing_message['bs_eui']} → {bs_eui}"
+                                )
 
                                 # Update preferred downlink path in sensor config
                                 self.update_preferred_downlink_path(eui, bs_eui, snr)
@@ -696,7 +847,12 @@ class TLSServer:
                                     'bs_eui': bs_eui
                                 }
                             else:
-                                logger.debug(f"   🔽 DEDUPLICATION: Filtered duplicate message for {eui} with lower SNR ({snr:.2f} dB <= {existing_message['snr']:.2f} dB)")
+                                logger.debug(
+                                    f"   🔽 DEDUPLICATION: Filtered duplicate "
+                                    f"message for {eui} with lower SNR "
+                                    f"({snr:.2f} dB <= "
+                                    f"{existing_message['snr']:.2f} dB)"
+                                )
                                 self.deduplication_stats['duplicate_messages'] += 1
 
                                 # Send acknowledgment but don't queue for MQTT
@@ -728,48 +884,73 @@ class TLSServer:
 
                         # Parse received timestamp if available
                         try:
-                            rx_datetime = datetime.fromtimestamp(rx_time / 1_000_000_000)
-                            rx_time_str = rx_datetime.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-                        except:
+                            rx_datetime = datetime.fromtimestamp(
+                                rx_time / 1_000_000_000
+                            )
+                            rx_time_str = rx_datetime.strftime(
+                                "%Y-%m-%d %H:%M:%S.%f"
+                            )[:-3]
+                        except Exception:
                             rx_time_str = str(rx_time)
 
-                        logger.info(f"📡 UPLINK DATA BUFFERED FOR DEDUPLICATION")
-                        logger.info(f"   =================================")
+                        logger.info("📡 UPLINK DATA BUFFERED FOR DEDUPLICATION")
+                        logger.info("   =================================")
                         logger.info(f"   Endpoint EUI: {eui}")
                         logger.info(f"   Via Base Station: {bs_eui}")
                         logger.info(f"   Reception Time: {rx_time_str}")
                         logger.info(f"   Operation ID: {op_id}")
-                        logger.info(f"   Signal Quality:")
+                        logger.info("   Signal Quality:")
                         logger.info(f"     SNR: {snr:.2f} dB")
                         logger.info(f"     RSSI: {message['rssi']:.2f} dBm")
                         logger.info(f"   Packet Counter: {packet_cnt}")
-                        logger.info(f"   Payload:")
+                        logger.info("   Payload:")
                         logger.info(f"     Length: {len(message['userData'])} bytes")
-                        logger.info(f"     Data (hex): {' '.join(f'{b:02x}' for b in message['userData'])}")
+                        hex_data = ' '.join(f'{b:02x}' for b in message['userData'])
+                        logger.info(f"     Data (hex): {hex_data}")
                         logger.info(f"     Data (dec): {message['userData']}")
 
-                        # Check if this sensor is registered and update activity timestamp
+                        # Check if sensor is registered and update activity timestamp
                         is_registered = eui.lower() in self.registered_sensors
                         if is_registered:
                             reg_info = self.registered_sensors[eui.lower()]
                             # Update last activity timestamp for auto-detach tracking
-                            self.registered_sensors[eui.lower()]['last_data_timestamp'] = asyncio.get_event_loop().time()
-                            self.registered_sensors[eui.lower()]['last_data_time_str'] = self._get_local_time()
+                            eui_key = eui.lower()
+                            self.registered_sensors[eui_key]['last_data_timestamp'] = (
+                                asyncio.get_event_loop().time()
+                            )
+                            self.registered_sensors[eui_key]['last_data_time_str'] = (
+                                self._get_local_time()
+                            )
 
-                            logger.info(f"   Registration Status: ✅ REGISTERED")
-                            logger.info(f"     Registered to {len(reg_info.get('base_stations', []))} base station(s): {reg_info.get('base_stations', [])}")
+                            logger.info("   Registration Status: ✅ REGISTERED")
+                            base_stations = reg_info.get('base_stations', [])
+                            logger.info(
+                                f"     Registered to {len(base_stations)} "
+                                f"base station(s): {base_stations}"
+                            )
                             logger.info(f"     Data received via: {bs_eui}")
-                            logger.info(f"     Registration time: {reg_info.get('registration_time', 'unknown')}")
+                            logger.info(
+                                f"     Registration time: "
+                                f"{reg_info.get('registration_time', 'unknown')}"
+                            )
                             logger.info(f"     Last activity: {self._get_local_time()}")
                         else:
-                            logger.warning(f"   Registration Status: ⚠️  NOT REGISTERED")
-                            logger.warning(f"     This sensor may not be configured in endpoints.json")
+                            logger.warning("   Registration Status: ⚠️  NOT REGISTERED")
+                            logger.warning(
+                                "     This sensor may not be configured "
+                                "in endpoints.json"
+                            )
 
                         # Message will be published after deduplication delay
-                        logger.info(f"⏳ Message queued for deduplication processing")
-                        logger.info(f"   Will be published in {self.deduplication_delay} seconds if no better signal received")
-                        logger.info(f"   Buffer size: {len(self.deduplication_buffer)} messages")
-                        logger.info(f"   =================================")
+                        logger.info("⏳ Message queued for deduplication processing")
+                        logger.info(
+                            f"   Will be published in {self.deduplication_delay} "
+                            f"seconds if no better signal received"
+                        )
+                        logger.info(
+                            f"   Buffer size: {len(self.deduplication_buffer)} messages"
+                        )
+                        logger.info("   =================================")
 
                         msg_pack = encode_message(
                             messages.build_ul_response(message.get("opId", ""))
@@ -781,7 +962,7 @@ class TLSServer:
                         )
                         await writer.drain()
                         logger.info(f"✅ UPLINK DATA PROCESSING COMPLETE for {eui}")
-                        logger.info(f"   =================================")
+                        logger.info("   =================================")
 
                     elif msg_type == "ulDataCmp":
                         pass
@@ -831,18 +1012,22 @@ class TLSServer:
                 self.connecting_base_stations.pop(writer)
 
     async def process_deduplication_buffer(self) -> None:
-        """Processes the deduplication buffer, forwards best messages, and cleans up old entries."""
-        logger.info(f"🧠 Starting deduplication buffer processing task with delay: {self.deduplication_delay}s")
+        """Process deduplication buffer, forward best messages, clean old entries."""
+        logger.info(
+            f"🧠 Starting deduplication buffer processing task with "
+            f"delay: {self.deduplication_delay}s"
+        )
         while True:
             await asyncio.sleep(self.deduplication_delay)
             current_time = asyncio.get_event_loop().time()
 
             # Find messages that have been in the buffer longer than the delay
             messages_to_publish = []
-            for key, value in list(self.deduplication_buffer.items()): # Use list to allow modification during iteration
+            # Use list to allow modification during iteration
+            for key, value in list(self.deduplication_buffer.items()):
                 if current_time - value['timestamp'] >= self.deduplication_delay:
                     messages_to_publish.append((key, value))
-                    del self.deduplication_buffer[key] # Remove from buffer
+                    del self.deduplication_buffer[key]  # Remove from buffer
 
             # Sort messages to publish by SNR (highest first)
             messages_to_publish.sort(key=lambda item: item[1]['snr'], reverse=True)
@@ -904,21 +1089,32 @@ class TLSServer:
                 logger.info(f"   =======================================")
 
             # Clean up old entries from the buffer that were not published
-            oldest_allowed_time = current_time - (self.deduplication_delay * 2) # Keep entries for a bit longer to ensure they are processed
+            # Keep entries for a bit longer to ensure they are processed
+            oldest_allowed_time = current_time - (self.deduplication_delay * 2)
             for key, value in list(self.deduplication_buffer.items()):
-                 if current_time - value['timestamp'] > oldest_allowed_time:
-                     logger.warning(f"   🧹 Cleaning up old unduplicated message from buffer: {key}")
-                     del self.deduplication_buffer[key]
+                if current_time - value['timestamp'] > oldest_allowed_time:
+                    logger.warning(
+                        f"   🧹 Cleaning up old unduplicated message "
+                        f"from buffer: {key}"
+                    )
+                    del self.deduplication_buffer[key]
 
 
     async def queue_watcher(self) -> None:
-        logger.info("📨 MQTT queue watcher started - monitoring for configuration updates and commands")
+        logger.info(
+            "📨 MQTT queue watcher started - monitoring for "
+            "configuration updates and commands"
+        )
         logger.info(f"   Watching queue ID: {id(self.mqtt_in_queue)}")
         try:
             while True:
-                logger.debug(f"⏳ Queue watcher waiting for message (queue size: {self.mqtt_in_queue.qsize()})")
+                queue_size = self.mqtt_in_queue.qsize()
+                logger.debug(
+                    f"⏳ Queue watcher waiting for message "
+                    f"(queue size: {queue_size})"
+                )
                 msg = dict(await self.mqtt_in_queue.get())
-                logger.info(f"📥 MQTT MESSAGE received")
+                logger.info("📥 MQTT MESSAGE received")
                 logger.debug(f"   Raw message: {msg}")
 
                 # Check if this is a command message
@@ -945,17 +1141,29 @@ class TLSServer:
                     logger.info(f"   Bidirectional: {msg['bidi']}")
 
                     if self.connected_base_stations:
-                        logger.info(f"📤 PROPAGATING to {len(self.connected_base_stations)} connected base stations")
+                        logger.info(
+                            f"📤 PROPAGATING to "
+                            f"{len(self.connected_base_stations)} "
+                            f"connected base stations"
+                        )
                         for writer, bs_eui in self.connected_base_stations.items():
-                            logger.info(f"   Sending attach request to base station: {bs_eui}")
+                            logger.info(
+                                f"   Sending attach request to "
+                                f"base station: {bs_eui}"
+                            )
                             await self.send_attach_request(writer, msg)
                     else:
-                        logger.warning("No base stations connected - attach requests will be "
-                                      "sent when base stations connect")
+                        logger.warning(
+                            "No base stations connected - attach requests "
+                            "will be sent when base stations connect"
+                        )
 
-                    logger.info(f"💾 UPDATING local configuration file")
+                    logger.info("💾 UPDATING local configuration file")
                     self.update_or_add_entry(msg)
-                    logger.info(f"✅ ENDPOINT CONFIGURATION processing complete for {msg['eui']}")
+                    logger.info(
+                        f"✅ ENDPOINT CONFIGURATION processing complete "
+                        f"for {msg['eui']}"
+                    )
                 else:
                     logger.error(f"❌ INVALID MQTT message - missing required fields")
                     logger.error(f"   Expected config fields: eui, nwKey, shortAddr, bidi")
@@ -992,7 +1200,7 @@ class TLSServer:
                                 if name == 'commonName':
                                     station_info['certificate_cn'] = value
                                     break
-                except:
+                except Exception:
                     pass
 
             connected_stations.append(station_info)
@@ -1178,8 +1386,8 @@ class TLSServer:
 
     async def auto_detach_inactive_sensors(self) -> None:
         """Auto-detach sensors that haven't sent data for 48 hours"""
-        logger.info(f"🕐 AUTO-DETACH TASK STARTED")
-        logger.info(f"   Auto-detach interval: 48 hours (172800 seconds)")
+        logger.info("🕐 AUTO-DETACH TASK STARTED")
+        logger.info("   Auto-detach interval: 48 hours (172800 seconds)")
 
         try:
             while True:
@@ -1192,28 +1400,39 @@ class TLSServer:
                     if sensor_info.get('status') != 'registered':
                         continue
 
-                    last_activity = sensor_info.get('last_data_timestamp', sensor_info.get('timestamp', 0))
+                    last_activity = sensor_info.get(
+                        'last_data_timestamp',
+                        sensor_info.get('timestamp', 0)
+                    )
                     if last_activity < cutoff_time:
                         sensors_to_detach.append(eui_key)
 
                 if sensors_to_detach:
-                    logger.info(f"🕐 AUTO-DETACH: Found {len(sensors_to_detach)} inactive sensors")
+                    logger.info(
+                        f"🕐 AUTO-DETACH: Found {len(sensors_to_detach)} "
+                        f"inactive sensors"
+                    )
                     for eui_key in sensors_to_detach:
                         sensor_eui = eui_key.upper()
-                        logger.info(f"   Auto-detaching inactive sensor: {sensor_eui}")
+                        logger.info(
+                            f"   Auto-detaching inactive sensor: {sensor_eui}"
+                        )
                         try:
                             await self.detach_sensor(sensor_eui)
                             # Mark as auto-detached
                             if eui_key in self.registered_sensors:
-                                self.registered_sensors[eui_key]['auto_detached'] = True
-                                self.registered_sensors[eui_key]['auto_detach_reason'] = '48h_inactive'
+                                reg_info = self.registered_sensors[eui_key]
+                                reg_info['auto_detached'] = True
+                                reg_info['auto_detach_reason'] = '48h_inactive'
                         except Exception as e:
-                            logger.error(f"❌ Auto-detach failed for {sensor_eui}: {e}")
+                            logger.error(
+                                f"❌ Auto-detach failed for {sensor_eui}: {e}"
+                            )
                 else:
-                    logger.debug(f"🕐 AUTO-DETACH: No inactive sensors found")
+                    logger.debug("🕐 AUTO-DETACH: No inactive sensors found")
 
         except asyncio.CancelledError:
-            logger.info(f"🕐 AUTO-DETACH TASK CANCELLED")
+            logger.info("🕐 AUTO-DETACH TASK CANCELLED")
             raise
         except Exception as e:
             logger.error(f"❌ AUTO-DETACH TASK ERROR: {e}")
@@ -1286,8 +1505,9 @@ class TLSServer:
                 sensor["nwKey"] = msg["nwKey"]
                 sensor["shortAddr"] = msg["shortAddr"]
                 sensor["bidi"] = msg["bidi"]
-                logger.info("Updated configuration for existing endpoint "
-                           f"{msg['eui']}")
+                logger.info(
+                f"Updated configuration for existing endpoint {msg['eui']}"
+            )
                 break
         else:
             # No existing entry found → add new one

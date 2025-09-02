@@ -6,7 +6,6 @@ from bssci_config import LISTEN_PORT, CERT_FILE, KEY_FILE, CA_FILE
 from TLSServer import TLSServer
 from mqtt_interface import MQTTInterface
 import bssci_config
-import time
 
 logger = logging.getLogger(__name__)
 
@@ -116,12 +115,12 @@ def run_bssci_service():
         asyncio.run(mqtt_interface_instance.start())
 
     except KeyboardInterrupt:
-        logger.info("Shutdown requested by user")
+        logger.info("Shutdown signal received via keyboard interrupt")
         signal_handler(signal.SIGINT, None)
     except Exception as e:
         logger.error(f"Error in main service: {e}")
         import traceback
-        traceback.print_exc()
+        logger.error(f"Traceback: {traceback.format_exc()}")
         signal_handler(signal.SIGTERM, None)
 
 

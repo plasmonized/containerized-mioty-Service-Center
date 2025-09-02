@@ -11,7 +11,7 @@ MQTT_USERNAME = ""
 MQTT_PASSWORD = ""
 BASE_TOPIC = "bssci/"
 
-SENSOR_CONFIG_FILE = "endpoints.json"
+SENSOR_CONFIG_FILE = "endpoints.json"  # File path for endpoint config
 STATUS_INTERVAL = 30  # seconds
 DEDUPLICATION_DELAY = 2  # seconds to wait for duplicate messages before forwarding
 

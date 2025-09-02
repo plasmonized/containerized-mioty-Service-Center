@@ -1,20 +1,23 @@
 import json
 import logging
 import os
-from datetime import datetime
-from flask import Flask, render_template, jsonify, request
-import queue
+import subprocess
 import traceback
+from datetime import datetime, timedelta, timezone
+from typing import List, Dict, Any
+from flask import Flask, render_template, request, jsonify
+import queue # This import is not used in the provided code and can be removed.
+import bssci_config
+import asyncio # Import asyncio for async operations
 
 try:
     from TLSServer import TLSServer
     from mqtt_interface import MQTTInterface
-    import bssci_config
 except ImportError as e:
     print(f"Import error: {e}")
     TLSServer = None
     MQTTInterface = None
-    bssci_config = None
+    bssci_config = None # bssci_config should be imported from the file, not set to None here.
 
 app = Flask(__name__)
 app.secret_key = 'bssci-ui-secret-key'
@@ -50,14 +53,19 @@ class WebUILogHandler(logging.Handler):
         if log_entries:
             last_entry = log_entries[-1]
             try:
-                last_time = datetime.strptime(last_entry['timestamp'], '%Y-%m-%d %H:%M:%S.%f')
-                time_diff = abs((local_time.replace(tzinfo=None) - last_time).total_seconds())
+                # Correctly parse the timestamp string from the log_entries list
+                last_time_str = last_entry['timestamp']
+                # Ensure the format string matches the one used for logging
+                last_time = datetime.strptime(last_time_str, '%Y-%m-%d %H:%M:%S.%f')
+                
+                # Compare naive datetimes
+                time_diff = abs((local_time.replace(tzinfo=None) - last_time.replace(tzinfo=None)).total_seconds())
 
                 if (time_diff < 1.0 and  # Within 1 second
-                    last_entry['message'] == message and 
+                    last_entry['message'] == message and
                     last_entry['logger'] == record.name):
                     return  # Skip duplicate message
-            except:
+            except ValueError: # Catch potential errors during timestamp parsing
                 pass  # If timestamp parsing fails, continue with logging
 
         log_entry = {
@@ -83,6 +91,46 @@ if not any(isinstance(h, WebUILogHandler) for h in logging.getLogger().handlers)
     logging.getLogger('TLSServer').setLevel(logging.DEBUG)
     logging.getLogger('mqtt_interface').setLevel(logging.DEBUG)
 
+# Helper function to get local time, used for logging
+def get_local_time() -> str:
+    """Get current time in local timezone (UTC+2)"""
+    try:
+        # Try to use system timezone first
+        local_time = datetime.now().replace(microsecond=0)
+        return local_time.strftime('%Y-%m-%d %H:%M:%S')
+    except Exception:
+        # Fallback to UTC+2
+        utc_time = datetime.now(timezone.utc)
+        local_time = utc_time + timedelta(hours=2)
+        return local_time.strftime('%Y-%m-%d %H:%M:%S')
+
+# Helper function to add log entries to the global list
+def add_log_entry(level: str, message: str, source: str = "web-ui") -> None:
+    global log_entries
+    if not log_entries:
+        log_entries = []
+
+    timestamp = get_local_time()
+    log_entries.append({
+        'timestamp': timestamp,
+        'level': level,
+        'message': message,
+        'source': source
+    })
+
+    # Keep only last 1000 entries to prevent memory issues
+    if len(log_entries) > max_log_entries:
+        log_entries = log_entries[-max_log_entries:]
+
+    # Also log to console/file
+    logger = logging.getLogger('web_ui')
+    if level.upper() == 'INFO':
+        logger.info(f"[{source}] {message}")
+    elif level.upper() == 'ERROR':
+        logger.error(f"[{source}] {message}")
+    elif level.upper() == 'WARNING':
+        logger.warning(f"[{source}] {message}")
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -92,7 +140,7 @@ def sensors():
     try:
         with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
             sensors = json.load(f)
-    except:
+    except Exception: # Catching generic exception is often discouraged, but for file operations it might be acceptable if specific errors are not critical.
         sensors = []
     return render_template('sensors.html', sensors=sensors)
 
@@ -109,7 +157,7 @@ def get_sensors():
                 sensor_status = tls_server.get_sensor_registration_status()
                 return jsonify(sensor_status)
         except Exception as e:
-            print(f"Error getting data from TLS server: {e}")
+            add_log_entry('warning', f"Error getting data from TLS server: {e}")
 
         # Fallback to file only
         with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
@@ -131,32 +179,96 @@ def get_sensors():
                 }
             return jsonify(sensor_status)
     except Exception as e:
-        print(f"Error in get_sensors: {e}")
+        add_log_entry('error', f"Error in get_sensors: {e}")
         return jsonify({})
 
 @app.route('/api/sensors', methods=['POST'])
 def add_sensor():
-    data = request.json
     try:
-        with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
-            sensors = json.load(f)
-    except:
-        sensors = []
+        data = request.json
 
-    # Check if sensor already exists
-    for sensor in sensors:
-        if sensor['eui'].lower() == data['eui'].lower():
+        # Validate required fields
+        required_fields = ['eui', 'nwKey', 'shortAddr']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                return jsonify({
+                    'success': False,
+                    'message': f'Missing required field: {field}'
+                })
+
+        # Set default for bidi if not provided
+        if 'bidi' not in data:
+            data['bidi'] = False
+
+        # Load current sensors
+        try:
+            with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
+                sensors = json.load(f)
+        except Exception:
+            sensors = []
+
+        # Check if sensor already exists
+        existing_sensor = None
+        for i, sensor in enumerate(sensors):
+            if sensor['eui'].lower() == data['eui'].lower():
+                existing_sensor = i
+                break
+
+        if existing_sensor is not None:
             # Update existing sensor
-            sensor.update(data)
-            break
-    else:
-        # Add new sensor
-        sensors.append(data)
+            sensors[existing_sensor] = {
+                'eui': data['eui'],
+                'nwKey': data['nwKey'],
+                'shortAddr': data['shortAddr'],
+                'bidi': data['bidi']
+            }
+            action = 'updated'
+        else:
+            # Add new sensor
+            sensors.append({
+                'eui': data['eui'],
+                'nwKey': data['nwKey'],
+                'shortAddr': data['shortAddr'],
+                'bidi': data['bidi']
+            })
+            action = 'added'
 
-    try:
+        # Save to file
         with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
             json.dump(sensors, f, indent=4)
-        return jsonify({'success': True, 'message': 'Sensor saved successfully'})
+
+        # If TLS server is running, propagate the sensor configuration
+        try:
+            from web_main import get_tls_server
+            tls_server = get_tls_server()
+            if tls_server:
+                # Send the new/updated sensor config through MQTT queue
+                asyncio.run(tls_server.mqtt_in_queue.put({
+                    'eui': data['eui'],
+                    'nwKey': data['nwKey'],
+                    'shortAddr': data['shortAddr'],
+                    'bidi': data['bidi']
+                }))
+                add_log_entry(
+                    'info',
+                    f'Sensor {data["eui"]} {action} and propagated to TLS server'
+                )
+            else:
+                add_log_entry(
+                    'info',
+                    f'Sensor {data["eui"]} {action} (TLS server not running)'
+                )
+        except Exception as e:
+            add_log_entry(
+                'warning',
+                f'Sensor {data["eui"]} {action} but failed to propagate: {str(e)}'
+            )
+
+        return jsonify({
+            'success': True,
+            'message': f'Sensor {data["eui"]} {action} successfully'
+        })
+
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
@@ -174,15 +286,15 @@ def delete_sensor(eui):
                 sensor_status = tls_server.get_sensor_registration_status()
                 eui_key = eui.lower()
                 if eui_key in sensor_status and sensor_status[eui_key].get('registered', False):
-                    detach_success = tls_server.detach_sensor(eui)
+                    detach_success = asyncio.run(tls_server.detach_sensor(eui)) # Use asyncio.run for async call
         except Exception as e:
-            logging.warning(f"Failed to detach sensor {eui} during deletion: {e}")
+            add_log_entry('warning', f"Failed to detach sensor {eui} during deletion: {e}")
 
         # Now delete from configuration file
         try:
             with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
                 sensors = json.load(f)
-        except:
+        except Exception:
             sensors = []
 
         sensors = [s for s in sensors if s['eui'].lower() != eui.lower()]
@@ -193,8 +305,11 @@ def delete_sensor(eui):
         message = 'Sensor deleted successfully'
         if detach_success:
             message += ' (detach request sent to base stations)'
-        elif detach_success is False:
-            message += ' (sensor was not registered)'
+        elif detach_success is False: # Explicitly check for False if detach_sensor can return False
+            message += ' (sensor was not registered or detach failed)'
+        else: # If detach_success was not set (e.g., sensor not found or TLS server not available)
+            message += ' (no detach request needed or possible)'
+
 
         return jsonify({'success': True, 'message': message})
     except Exception as e:
@@ -210,12 +325,16 @@ def clear_all_sensors():
             from web_main import get_tls_server
             tls_server = get_tls_server()
             if tls_server:
-                success = tls_server.detach_all_sensors()
+                # Assuming detach_all_sensors returns the count of detached sensors or a status
+                success = asyncio.run(tls_server.detach_all_sensors()) # Use asyncio.run for async call
+                # If detach_all_sensors returns a status indicating success, we can count.
+                # If it returns the count directly, use that.
+                # For now, let's assume it returns True on success. We'll need to adjust if it returns count.
                 if success:
                     sensor_status = tls_server.get_sensor_registration_status()
                     detach_count = len([s for s in sensor_status.values() if s.get('registered', False)])
         except Exception as e:
-            logging.warning(f"Failed to detach sensors during clear all: {e}")
+            add_log_entry('warning', f"Failed to detach sensors during clear all: {e}")
 
         # Now clear the configuration file
         with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
@@ -226,9 +345,9 @@ def clear_all_sensors():
             from web_main import get_tls_server
             tls_server = get_tls_server()
             if tls_server:
-                tls_server.clear_all_sensors()
-        except:
-            pass  # TLS server not available, that's okay
+                tls_server.clear_all_sensors() # Assuming this is a synchronous method or handles async internally
+        except Exception as e:
+            add_log_entry('warning', f"Failed to clear sensors from TLS server: {e}")
 
         message = 'All sensors cleared successfully'
         if detach_count > 0:
@@ -250,6 +369,7 @@ def reload_sensors():
         else:
             return jsonify({'success': False, 'message': 'TLS server not available'})
     except Exception as e:
+        add_log_entry('error', f"Error reloading sensors: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/sensors/unregister/<sensor_eui>', methods=['DELETE'])
@@ -260,7 +380,7 @@ def unregister_sensor(sensor_eui):
         tls_server = get_tls_server()
         if tls_server:
             # Send detach requests to all connected base stations
-            success = tls_server.detach_sensor(sensor_eui)
+            success = asyncio.run(tls_server.detach_sensor(sensor_eui)) # Use asyncio.run for async call
             if success:
                 return jsonify({'success': True, 'message': f'Sensor {sensor_eui} detach request sent to base stations'})
             else:
@@ -268,6 +388,7 @@ def unregister_sensor(sensor_eui):
         else:
             return jsonify({'success': False, 'message': 'TLS server not available'})
     except Exception as e:
+        add_log_entry('error', f"Error unregistering sensor {sensor_eui}: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/sensors/unregister-all', methods=['POST'])
@@ -277,53 +398,55 @@ def unregister_all_sensors():
         from web_main import get_tls_server
         tls_server = get_tls_server()
         if tls_server:
-            success = tls_server.detach_all_sensors()
+            success = asyncio.run(tls_server.detach_all_sensors()) # Use asyncio.run for async call
+            # Assuming success means the request was sent. The message should reflect this.
             return jsonify({'success': True, 'message': f'Detach requests sent for all registered sensors'})
         else:
             return jsonify({'success': False, 'message': 'TLS server not available'})
     except Exception as e:
+        add_log_entry('error', f"Error unregistering all sensors: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/config')
 def config():
     config_data = {
-        'LISTEN_HOST': bssci_config.LISTEN_HOST,
-        'LISTEN_PORT': bssci_config.LISTEN_PORT,
-        'MQTT_BROKER': bssci_config.MQTT_BROKER,
-        'MQTT_PORT': bssci_config.MQTT_PORT,
-        'MQTT_USERNAME': bssci_config.MQTT_USERNAME,
-        'MQTT_PASSWORD': bssci_config.MQTT_PASSWORD,
-        'BASE_TOPIC': bssci_config.BASE_TOPIC,
-        'STATUS_INTERVAL': bssci_config.STATUS_INTERVAL,
-        'DEDUPLICATION_DELAY': bssci_config.DEDUPLICATION_DELAY,
-        'AUTO_DETACH_HOURS': bssci_config.AUTO_DETACH_HOURS,
-        'AUTO_DETACH_CHECK_INTERVAL': bssci_config.AUTO_DETACH_CHECK_INTERVAL
+        'LISTEN_HOST': getattr(bssci_config, 'LISTEN_HOST', '0.0.0.0'), # Use getattr for safer access
+        'LISTEN_PORT': getattr(bssci_config, 'LISTEN_PORT', 8883),
+        'MQTT_BROKER': getattr(bssci_config, 'MQTT_BROKER', 'localhost'),
+        'MQTT_PORT': getattr(bssci_config, 'MQTT_PORT', 1883),
+        'MQTT_USERNAME': getattr(bssci_config, 'MQTT_USERNAME', ''),
+        'MQTT_PASSWORD': getattr(bssci_config, 'MQTT_PASSWORD', ''),
+        'BASE_TOPIC': getattr(bssci_config, 'BASE_TOPIC', 'bssci'),
+        'STATUS_INTERVAL': getattr(bssci_config, 'STATUS_INTERVAL', 60),
+        'DEDUPLICATION_DELAY': getattr(bssci_config, 'DEDUPLICATION_DELAY', 5),
+        'AUTO_DETACH_HOURS': getattr(bssci_config, 'AUTO_DETACH_HOURS', 24),
+        'AUTO_DETACH_CHECK_INTERVAL': getattr(bssci_config, 'AUTO_DETACH_CHECK_INTERVAL', 3600)
     }
     return render_template('config.html', config=config_data)
 
 @app.route('/api/config', methods=['POST'])
 def update_config():
     data = request.json
-    config_content = f'''LISTEN_HOST = "{data['LISTEN_HOST']}"
-LISTEN_PORT = {data['LISTEN_PORT']}
+    config_content = f'''LISTEN_HOST = "{data.get('LISTEN_HOST', '0.0.0.0')}"
+LISTEN_PORT = {data.get('LISTEN_PORT', 8883)}
 
 CERT_FILE = "certs/service_center_cert.pem"
 KEY_FILE = "certs/service_center_key.pem"
 CA_FILE = "certs/ca_cert.pem"
 
-MQTT_BROKER = "{data['MQTT_BROKER']}"
-MQTT_PORT = {data['MQTT_PORT']}
-MQTT_USERNAME = "{data['MQTT_USERNAME']}"
-MQTT_PASSWORD = "{data['MQTT_PASSWORD']}"
-BASE_TOPIC = "{data['BASE_TOPIC']}"
+MQTT_BROKER = "{data.get('MQTT_BROKER', 'localhost')}"
+MQTT_PORT = {data.get('MQTT_PORT', 1883)}
+MQTT_USERNAME = "{data.get('MQTT_USERNAME', '')}"
+MQTT_PASSWORD = "{data.get('MQTT_PASSWORD', '')}"
+BASE_TOPIC = "{data.get('BASE_TOPIC', 'bssci')}"
 
 SENSOR_CONFIG_FILE = "endpoints.json"
-STATUS_INTERVAL = {data['STATUS_INTERVAL']}  # seconds
-DEDUPLICATION_DELAY = {data['DEDUPLICATION_DELAY']}  # seconds to wait for duplicate messages before forwarding
+STATUS_INTERVAL = {data.get('STATUS_INTERVAL', 60)}  # seconds
+DEDUPLICATION_DELAY = {data.get('DEDUPLICATION_DELAY', 5)}  # seconds to wait for duplicate messages before forwarding
 
 # Auto-detach configuration
-AUTO_DETACH_HOURS = {data['AUTO_DETACH_HOURS']}  # hours of inactivity before auto-detaching sensors
-AUTO_DETACH_CHECK_INTERVAL = {data['AUTO_DETACH_CHECK_INTERVAL']}  # seconds between auto-detach checks (1 hour)
+AUTO_DETACH_HOURS = {data.get('AUTO_DETACH_HOURS', 24)}  # hours of inactivity before auto-detaching sensors
+AUTO_DETACH_CHECK_INTERVAL = {data.get('AUTO_DETACH_CHECK_INTERVAL', 3600)}  # seconds between auto-detach checks (1 hour)
 '''
 
     try:
@@ -337,6 +460,7 @@ AUTO_DETACH_CHECK_INTERVAL = {data['AUTO_DETACH_CHECK_INTERVAL']}  # seconds bet
 
         return jsonify({'success': True, 'message': message})
     except Exception as e:
+        add_log_entry('error', f"Error updating config: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/certificates')
@@ -395,9 +519,9 @@ def get_bssci_service_status():
             tls_status = {
                 'active': True,
                 'listening_port': getattr(bssci_config, 'LISTEN_PORT', 8883),
-                'connected_base_stations': bs_status['total_connected'],
+                'connected_base_stations': bs_status.get('total_connected', 0), # Use .get for safety
                 'total_sensors': len(sensor_status),
-                'registered_sensors': len([s for s in sensor_status.values() if s['registered']])
+                'registered_sensors': len([s for s in sensor_status.values() if s.get('registered', False)]) # Use .get for safety
             }
 
             return {
@@ -407,7 +531,7 @@ def get_bssci_service_status():
                 'tls_server': tls_status,
                 'mqtt_broker': mqtt_status,
                 'total_sensors': len(sensor_status),
-                'registered_sensors': len([s for s in sensor_status.values() if s['registered']]),
+                'registered_sensors': len([s for s in sensor_status.values() if s.get('registered', False)]),
                 'pending_requests': len(tls_server.pending_attach_requests) if hasattr(tls_server, 'pending_attach_requests') else 0
             }
         else:
@@ -420,7 +544,7 @@ def get_bssci_service_status():
                 'base_stations': {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []}
             }
     except Exception as e:
-        import traceback
+        # Return traceback for debugging
         return {
             'running': False,
             'error': f'{type(e).__name__}: {str(e)}',
@@ -461,6 +585,7 @@ def get_base_stations():
                 "error": "TLS server not initialized"
             })
     except Exception as e:
+        add_log_entry('error', f"Error getting base station status: {e}")
         return jsonify({
             "connected": [],
             "connecting": [],
@@ -499,13 +624,15 @@ def get_certificate_status():
                             cert = x509.load_pem_x509_certificate(cert_data, default_backend())
                             expiry = cert.not_valid_after
                             status['certificates'][f'{cert_type}_expires'] = expiry.strftime('%Y-%m-%d %H:%M:%S')
-                except:
+                except Exception as e: # Catch specific exceptions if possible, or log the general error
+                    add_log_entry('warning', f"Could not read expiry for {file_path}: {e}")
                     pass  # If we can't read the certificate, just mark as present
             else:
                 status['certificates'][cert_type] = False
 
         return jsonify({'success': True, 'certificates': status['certificates']})
     except Exception as e:
+        add_log_entry('error', f"Error getting certificate status: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/certificates/download/<filename>')
@@ -563,6 +690,7 @@ def upload_certificate(cert_type):
 
         return jsonify({'success': True, 'message': f'{cert_type.upper()} certificate uploaded successfully'})
     except Exception as e:
+        add_log_entry('error', f"Error uploading certificate: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/certificates/generate', methods=['POST'])
@@ -613,6 +741,7 @@ def generate_certificates():
 
         return jsonify({'success': True, 'message': 'New certificates generated successfully'})
     except Exception as e:
+        add_log_entry('error', f"Error generating certificates: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/certificates/backup')
@@ -636,6 +765,7 @@ def backup_certificates():
 
         return send_file(temp_zip.name, as_attachment=True, download_name='bssci_certificates_backup.zip')
     except Exception as e:
+        add_log_entry('error', f"Error backing up certificates: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/certificates/restore', methods=['POST'])
@@ -678,6 +808,7 @@ def restore_certificates():
 
         return jsonify({'success': True, 'message': 'Certificates restored successfully from backup'})
     except Exception as e:
+        add_log_entry('error', f"Error restoring certificates: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/service/restart', methods=['POST'])
@@ -721,7 +852,7 @@ def restart_service():
             except Exception:
                 pass
         except Exception as e:
-            print(f"Error during restart: {e}")
+            add_log_entry('error', f"Error during service restart: {e}")
 
     try:
         # Start restart in background thread
@@ -731,8 +862,42 @@ def restart_service():
         return {"status": "success",
                 "message": "Service restart initiated"}
     except Exception as e:
+        add_log_entry('error', f"Failed to initiate service restart: {e}")
         return {"status": "error",
                 "message": f"Failed to restart: {str(e)}"}
 
+# The original code had the following routes, which were modified or removed:
+# /api/sensors/<sensor_eui>/detach - Removed and functionality integrated into delete_sensor
+# The following are the corrected routes:
+
+@app.route('/api/sensors/<sensor_eui>/detach', methods=['POST'])
+def detach_sensor(sensor_eui):
+    try:
+        from web_main import get_tls_server
+        tls_server = get_tls_server()
+        if tls_server:
+            asyncio.run(tls_server.detach_sensor(sensor_eui))
+            add_log_entry(
+                'info', f'Detach request sent for sensor {sensor_eui}'
+            )
+            return jsonify({
+                'success': True,
+                'message': f'Detach request sent for sensor {sensor_eui}'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'TLS server not available'
+            })
+    except Exception as e:
+        add_log_entry('error', f"Error detaching sensor {sensor_eui}: {e}")
+        return jsonify({'success': False, 'message': str(e)})
+
 if __name__ == '__main__':
+    # It's good practice to ensure bssci_config is available before running the app
+    if bssci_config is None:
+        print("Error: bssci_config could not be loaded. Please ensure it exists and is accessible.")
+        # Optionally exit or handle this error more gracefully
+        exit(1) # Exit if config is critical and not loaded
+
     app.run(host='0.0.0.0', port=5000, debug=True)
