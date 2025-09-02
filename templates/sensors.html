@@ -8,8 +8,7 @@
         <button class="btn me-2" onclick="reloadSensors()" title="Reload sensor configuration" style="background-color: #6c757d; color: white; border-color: #6c757d;">
             Reload Config
         </button>
-        <button type="button" class="btn btn-outline-warning ms-2" onclick="detachAllSensors()">Detach All</button>
-        <button type="button" class="btn btn-outline-danger ms-2" onclick="clearAllSensors()">Clear All</button>
+        <button type="button" class="btn btn-outline-danger ms-2" onclick="clearAllSensors()">Clear All (with Detach)</button>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sensorModal" onclick="openSensorModal()" style="background-color: #ff8c00; border-color: #ff8c00;">
             Add New Sensor
         </button>
@@ -150,8 +149,7 @@ function loadSensors() {
                         <td><small>${preferredPathText}</small></td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary" onclick="editSensor('${eui}')">Edit</button>
-                            <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteSensor('${eui}')">Delete</button>
-                            ${sensorData.registered ? `<button class="btn btn-sm btn-warning ms-1" onclick="detachSensor('${eui}')">Detach</button>` : ''}
+                            <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteSensor('${eui}')" title="${sensorData.registered ? 'Will detach from base stations and delete from config' : 'Delete from config'}">Delete${sensorData.registered ? ' (+ Detach)' : ''}</button>
                         </td>
                     </tr>
                 `;
@@ -214,13 +212,13 @@ function saveSensor() {
 }
 
 function deleteSensor(eui) {
-    if (confirm(`Are you sure you want to delete sensor ${eui}?`)) {
+    if (confirm(`Are you sure you want to delete sensor ${eui}?\n\nThis will:\n• Send detach requests to all base stations (if registered)\n• Remove sensor from configuration`)) {
         fetch(`/api/sensors/${eui}`, { method: 'DELETE' })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showAlert('Sensor deleted successfully', 'success');
-                    loadSensors();
+                    showAlert(data.message, 'success');
+                    setTimeout(loadSensors, 2000); // Reload after 2 seconds to see status change
                 } else {
                     showAlert(data.message, 'error');
                 }
@@ -231,41 +229,7 @@ function deleteSensor(eui) {
     }
 }
 
-function detachSensor(eui) {
-    if (confirm(`Are you sure you want to detach sensor ${eui} from all base stations?`)) {
-        fetch(`/api/sensors/unregister/${eui}`, { method: 'DELETE' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showAlert('Sensor detach request sent successfully', 'success');
-                    setTimeout(loadSensors, 2000); // Reload after 2 seconds to see status change
-                } else {
-                    showAlert(data.message, 'error');
-                }
-            })
-            .catch(error => {
-                showAlert('Error detaching sensor', 'error');
-            });
-    }
-}
-
-function detachAllSensors() {
-    if (confirm('Are you sure you want to detach ALL registered sensors from all base stations?')) {
-        fetch('/api/sensors/unregister-all', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showAlert('Detach requests sent for all sensors', 'success');
-                    setTimeout(loadSensors, 3000); // Reload after 3 seconds to see status change
-                } else {
-                    showAlert(data.message, 'error');
-                }
-            })
-            .catch(error => {
-                showAlert('Error detaching sensors', 'error');
-            });
-    }
-}
+// Detach functionality is now integrated into delete and clear operations
 
 function reloadSensors() {
     fetch('/api/sensors/reload', {
@@ -283,13 +247,13 @@ function reloadSensors() {
 }
 
 function clearAllSensors() {
-    if (confirm('Are you sure you want to clear ALL sensor configurations? This cannot be undone!')) {
+    if (confirm('Are you sure you want to clear ALL sensor configurations?\n\nThis will:\n• Send detach requests for all registered sensors\n• Remove all sensors from configuration\n• This cannot be undone!')) {
         fetch('/api/sensors/clear', { method: 'POST' })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showAlert('All sensors cleared successfully', 'success');
-                    loadSensors();
+                    showAlert(data.message, 'success');
+                    setTimeout(loadSensors, 3000); // Reload after 3 seconds to see status change
                 } else {
                     showAlert(data.message, 'error');
                 }

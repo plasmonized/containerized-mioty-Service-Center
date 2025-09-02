@@ -154,26 +154,62 @@ def add_sensor():
         
 @app.route('/api/sensors/<eui>', methods=['DELETE'])
 def delete_sensor(eui):
+    """Delete sensor with automatic detach request"""
     try:
-        with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
-            sensors = json.load(f)
-    except:
-        sensors = []
-    
-    sensors = [s for s in sensors if s['eui'].lower() != eui.lower()]
-    
-    try:
+        # First, try to detach the sensor if it's registered
+        detach_success = False
+        try:
+            from web_main import get_tls_server
+            tls_server = get_tls_server()
+            if tls_server:
+                # Check if sensor is registered
+                sensor_status = tls_server.get_sensor_registration_status()
+                eui_key = eui.lower()
+                if eui_key in sensor_status and sensor_status[eui_key].get('registered', False):
+                    detach_success = tls_server.detach_sensor(eui)
+        except Exception as e:
+            logging.warning(f"Failed to detach sensor {eui} during deletion: {e}")
+        
+        # Now delete from configuration file
+        try:
+            with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
+                sensors = json.load(f)
+        except:
+            sensors = []
+        
+        sensors = [s for s in sensors if s['eui'].lower() != eui.lower()]
+        
         with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
             json.dump(sensors, f, indent=4)
-        return jsonify({'success': True, 'message': 'Sensor deleted successfully'})
+        
+        message = 'Sensor deleted successfully'
+        if detach_success:
+            message += ' (detach request sent to base stations)'
+        elif detach_success is False:
+            message += ' (sensor was not registered)'
+            
+        return jsonify({'success': True, 'message': message})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
         
 @app.route('/api/sensors/clear', methods=['POST'])
 def clear_all_sensors():
-    """Clear all sensor configurations"""
+    """Clear all sensor configurations with bulk detach"""
     try:
-        # Clear the file
+        # First, detach all registered sensors
+        detach_count = 0
+        try:
+            from web_main import get_tls_server
+            tls_server = get_tls_server()
+            if tls_server:
+                success = tls_server.detach_all_sensors()
+                if success:
+                    sensor_status = tls_server.get_sensor_registration_status()
+                    detach_count = len([s for s in sensor_status.values() if s.get('registered', False)])
+        except Exception as e:
+            logging.warning(f"Failed to detach sensors during clear all: {e}")
+        
+        # Now clear the configuration file
         with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
             json.dump([], f, indent=4)
         
@@ -186,7 +222,11 @@ def clear_all_sensors():
         except:
             pass  # TLS server not available, that's okay
         
-        return jsonify({'success': True, 'message': 'All sensors cleared successfully'})
+        message = 'All sensors cleared successfully'
+        if detach_count > 0:
+            message += f' (detach requests sent for {detach_count} registered sensors)'
+            
+        return jsonify({'success': True, 'message': message})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
         
