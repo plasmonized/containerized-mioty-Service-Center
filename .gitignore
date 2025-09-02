@@ -1,4 +1,5 @@
 certs/*
+attached_assets/*
 # Environment variables
 .env
 __pycache__
