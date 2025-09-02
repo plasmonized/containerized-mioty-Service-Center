@@ -12,12 +12,11 @@ import asyncio # Import asyncio for async operations
 
 try:
     from TLSServer import TLSServer
-    from mqtt_interface import MQTTInterface
+    from mqtt_interface import MQTTClient
 except ImportError as e:
     print(f"Import error: {e}")
     TLSServer = None
-    MQTTInterface = None
-    bssci_config = None # bssci_config should be imported from the file, not set to None here.
+    MQTTClient = None
 
 app = Flask(__name__)
 app.secret_key = 'bssci-ui-secret-key'

@@ -4,7 +4,7 @@ import threading
 import signal
 from bssci_config import LISTEN_PORT, CERT_FILE, KEY_FILE, CA_FILE
 from TLSServer import TLSServer
-from mqtt_interface import MQTTInterface
+from mqtt_interface import MQTTClient
 import bssci_config
 
 logger = logging.getLogger(__name__)
@@ -97,7 +97,7 @@ def run_bssci_service():
 
         # Initialize MQTT Interface
         logger.info("Initializing MQTT Interface...")
-        mqtt_interface_instance = MQTTInterface(tls_server_instance)
+        mqtt_interface_instance = MQTTClient(tls_server_instance)
 
         # Set MQTT interface in TLS server for bidirectional communication
         tls_server_instance.set_mqtt_interface(mqtt_interface_instance)
