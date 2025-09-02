@@ -3,7 +3,7 @@ run = "python main.py"
 
 [nix]
 channel = "stable-25_05"
-packages = ["borgbackup", "cargo", "libiconv", "libxcrypt", "openssl", "pkg-config", "rustc"]
+packages = ["borgbackup", "cargo", "libiconv", "libxcrypt", "openssl", "pkg-config", "rustc", "python313Packages.flake8"]
 
 [deployment]
 run = ["sh", "-c", "py main.py"]
