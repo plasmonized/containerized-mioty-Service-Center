@@ -9,9 +9,9 @@ LISTEN_HOST: str = os.getenv("LISTEN_HOST", "0.0.0.0")
 LISTEN_PORT: int = int(os.getenv("LISTEN_PORT", "8000"))
 
 # SSL/TLS Certificate Configuration
-CERT_FILE: str = os.getenv("CERT_FILE", "certificates/server.crt")
-KEY_FILE: str = os.getenv("KEY_FILE", "certificates/server.key")
-CA_FILE: str = os.getenv("CA_FILE", "certificates/ca.crt")
+CERT_FILE: str = os.getenv("CERT_FILE", "certs/service_center_cert.pem")
+KEY_FILE: str = os.getenv("KEY_FILE", "certs/service_center_key.pem")
+CA_FILE: str = os.getenv("CA_FILE", "certs/ca_cert.pem")
 
 # MQTT Configuration
 MQTT_BROKER: str = os.getenv("MQTT_BROKER", "localhost")
