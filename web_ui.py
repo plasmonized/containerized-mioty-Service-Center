@@ -418,6 +418,10 @@ def config():
             base_topic = request.form.get('base_topic', 'bssci/').strip()
             listen_host = request.form.get('listen_host', '0.0.0.0').strip()
             listen_port = request.form.get('listen_port', '16018')
+            status_interval = request.form.get('status_interval', '30')
+            deduplication_delay = request.form.get('deduplication_delay', '2')
+            auto_detach_hours = request.form.get('auto_detach_hours', '48')
+            auto_detach_check_interval = request.form.get('auto_detach_check_interval', '3600')
 
             # Update .env file
             env_content = f'''# MQTT Broker Configuration
@@ -438,12 +442,12 @@ CA_FILE=certs/ca_cert.pem
 
 # File and timing configuration
 SENSOR_CONFIG_FILE=endpoints.json
-STATUS_INTERVAL=30
-DEDUPLICATION_DELAY=2
+STATUS_INTERVAL={status_interval}
+DEDUPLICATION_DELAY={deduplication_delay}
 
 # Auto-detach configuration
-AUTO_DETACH_HOURS=48
-AUTO_DETACH_CHECK_INTERVAL=3600
+AUTO_DETACH_HOURS={auto_detach_hours}
+AUTO_DETACH_CHECK_INTERVAL={auto_detach_check_interval}
 '''
 
             with open('.env', 'w') as f:
@@ -458,6 +462,10 @@ AUTO_DETACH_CHECK_INTERVAL=3600
             os.environ['BASE_TOPIC'] = base_topic
             os.environ['LISTEN_HOST'] = listen_host
             os.environ['LISTEN_PORT'] = listen_port
+            os.environ['STATUS_INTERVAL'] = status_interval
+            os.environ['DEDUPLICATION_DELAY'] = deduplication_delay
+            os.environ['AUTO_DETACH_HOURS'] = auto_detach_hours
+            os.environ['AUTO_DETACH_CHECK_INTERVAL'] = auto_detach_check_interval
 
             add_log_entry('INFO', 'Configuration updated successfully in .env file')
             return jsonify({'status': 'success', 'message': 'Configuration updated successfully. Restart required for changes to take effect.'})
@@ -481,6 +489,10 @@ AUTO_DETACH_CHECK_INTERVAL=3600
             'base_topic': getattr(bssci_config, 'BASE_TOPIC', 'bssci/'),
             'listen_host': getattr(bssci_config, 'LISTEN_HOST', '0.0.0.0'),
             'listen_port': getattr(bssci_config, 'LISTEN_PORT', 16018),
+            'status_interval': getattr(bssci_config, 'STATUS_INTERVAL', 30),
+            'deduplication_delay': getattr(bssci_config, 'DEDUPLICATION_DELAY', 2),
+            'auto_detach_hours': getattr(bssci_config, 'AUTO_DETACH_HOURS', 48),
+            'auto_detach_check_interval': getattr(bssci_config, 'AUTO_DETACH_CHECK_INTERVAL', 3600),
         }
     except Exception as e:
         add_log_entry('ERROR', f'Failed to load configuration: {str(e)}')
@@ -492,6 +504,10 @@ AUTO_DETACH_CHECK_INTERVAL=3600
             'base_topic': 'bssci/',
             'listen_host': '0.0.0.0',
             'listen_port': 16018,
+            'status_interval': 30,
+            'deduplication_delay': 2,
+            'auto_detach_hours': 48,
+            'auto_detach_check_interval': 3600,
         }
 
     return render_template('config.html', config=config_data)
