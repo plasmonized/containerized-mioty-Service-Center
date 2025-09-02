@@ -685,10 +685,10 @@ class TLSServer:
                                 logger.info(f"   Previous SNR: {existing_message['snr']:.2f} dB (via {existing_message['bs_eui']})")
                                 logger.info(f"   New SNR: {snr:.2f} dB (via {bs_eui})")
                                 logger.info(f"   Updating preferred path: {existing_message['bs_eui']} → {bs_eui}")
-                                
+
                                 # Update preferred downlink path in sensor config
                                 self.update_preferred_downlink_path(eui, bs_eui, snr)
-                                
+
                                 self.deduplication_buffer[message_key] = {
                                     'message': message,
                                     'timestamp': asyncio.get_event_loop().time(),
@@ -698,7 +698,7 @@ class TLSServer:
                             else:
                                 logger.debug(f"   🔽 DEDUPLICATION: Filtered duplicate message for {eui} with lower SNR ({snr:.2f} dB <= {existing_message['snr']:.2f} dB)")
                                 self.deduplication_stats['duplicate_messages'] += 1
-                                
+
                                 # Send acknowledgment but don't queue for MQTT
                                 msg_pack = encode_message(
                                     messages.build_ul_response(message.get("opId", ""))
@@ -715,10 +715,10 @@ class TLSServer:
                             logger.debug(f"📨 DEDUPLICATION: New message received for {eui}")
                             logger.debug(f"   Message counter: {packet_cnt}")
                             logger.debug(f"   SNR: {snr:.2f} dB (via {bs_eui})")
-                            
+
                             # Update preferred downlink path for new messages too
                             self.update_preferred_downlink_path(eui, bs_eui, snr)
-                            
+
                             self.deduplication_buffer[message_key] = {
                                 'message': message,
                                 'timestamp': asyncio.get_event_loop().time(),
@@ -755,7 +755,7 @@ class TLSServer:
                             # Update last activity timestamp for auto-detach tracking
                             self.registered_sensors[eui.lower()]['last_data_timestamp'] = asyncio.get_event_loop().time()
                             self.registered_sensors[eui.lower()]['last_data_time_str'] = self._get_local_time()
-                            
+
                             logger.info(f"   Registration Status: ✅ REGISTERED")
                             logger.info(f"     Registered to {len(reg_info.get('base_stations', []))} base station(s): {reg_info.get('base_stations', [])}")
                             logger.info(f"     Data received via: {bs_eui}")
@@ -836,7 +836,7 @@ class TLSServer:
         while True:
             await asyncio.sleep(self.deduplication_delay)
             current_time = asyncio.get_event_loop().time()
-            
+
             # Find messages that have been in the buffer longer than the delay
             messages_to_publish = []
             for key, value in list(self.deduplication_buffer.items()): # Use list to allow modification during iteration
@@ -875,7 +875,7 @@ class TLSServer:
                 logger.info(f"   Data Preview: SNR={data_dict['snr']:.1f}dB, RSSI={data_dict['rssi']:.1f}dBm, Count={data_dict['cnt']}")
                 logger.info(f"   Queue size before add: {self.mqtt_out_queue.qsize()}")
                 logger.debug(f"   Full Payload: {payload_json}")
-                
+
                 try:
                     await self.mqtt_out_queue.put(
                         {"topic": mqtt_topic, "payload": payload_json}
@@ -925,7 +925,7 @@ class TLSServer:
                 if "mqtt_topic" in msg and "mqtt_payload" in msg:
                     topic = msg["mqtt_topic"]
                     payload = msg["mqtt_payload"]
-                    
+
                     if "/cmd" in topic:
                         logger.info(f"📡 MQTT COMMAND detected in topic: {topic}")
                         await self.process_mqtt_commands(topic, payload)
@@ -950,8 +950,8 @@ class TLSServer:
                             logger.info(f"   Sending attach request to base station: {bs_eui}")
                             await self.send_attach_request(writer, msg)
                     else:
-                        logger.warning("⚠️  NO BASE STATIONS CONNECTED")
-                        logger.warning("   Configuration saved but attach requests will be sent when base stations connect")
+                        logger.warning("No base stations connected - attach requests will be "
+                                      "sent when base stations connect")
 
                     logger.info(f"💾 UPDATING local configuration file")
                     self.update_or_add_entry(msg)
@@ -1041,12 +1041,12 @@ class TLSServer:
         for sensor in self.sensor_config:
             eui = sensor['eui'].lower()
             reg_info = self.registered_sensors.get(eui, {})
-            
+
             # Get preferred downlink path from sensor config or from instance attribute
             preferred_path = sensor.get('preferredDownlinkPath', None)
             if hasattr(self, 'preferred_downlink_paths') and eui in self.preferred_downlink_paths:
                 preferred_path = self.preferred_downlink_paths[eui]
-            
+
             status[eui] = {
                 'eui': sensor['eui'],
                 'nwKey': sensor['nwKey'],
@@ -1074,26 +1074,26 @@ class TLSServer:
     def update_preferred_downlink_path(self, eui: str, bs_eui: str, snr: float) -> None:
         """Update the preferred downlink path for a sensor based on signal quality"""
         eui_lower = eui.lower()
-        
+
         # Find the sensor in configuration
         for sensor in self.sensor_config:
             if sensor["eui"].lower() == eui_lower:
                 # Update preferred downlink path
                 if "preferredDownlinkPath" not in sensor:
                     sensor["preferredDownlinkPath"] = {}
-                
+
                 sensor["preferredDownlinkPath"] = {
                     "baseStation": bs_eui,
                     "snr": round(snr, 2),
                     "lastUpdated": self._get_local_time(),
                     "messageCount": sensor["preferredDownlinkPath"].get("messageCount", 0) + 1
                 }
-                
+
                 logger.info(f"📊 PREFERRED PATH UPDATED for sensor {eui}")
                 logger.info(f"   Base Station: {bs_eui}")
                 logger.info(f"   SNR: {snr:.2f} dB")
                 logger.info(f"   Total messages: {sensor['preferredDownlinkPath']['messageCount']}")
-                
+
                 # Save configuration
                 try:
                     with open(self.sensor_config_file, "w") as f:
@@ -1236,7 +1236,7 @@ class TLSServer:
                 if command == "detach":
                     logger.info(f"🔌 Processing MQTT detach command for {sensor_eui}")
                     success = await self.detach_sensor(sensor_eui)
-                    
+
                     # Send response back to MQTT
                     response_topic = f"ep/{sensor_eui}/cmd/response"
                     response_payload = {
@@ -1245,17 +1245,17 @@ class TLSServer:
                         "sensor_eui": sensor_eui,
                         "timestamp": self._get_local_time()
                     }
-                    
+
                     await self.mqtt_out_queue.put({
                         "topic": response_topic,
                         "payload": json.dumps(response_payload)
                     })
-                    
+
                 elif command == "status":
                     logger.info(f"📊 Processing MQTT status command for {sensor_eui}")
                     eui_key = sensor_eui.lower()
                     sensor_status = self.registered_sensors.get(eui_key, {})
-                    
+
                     # Send status response back to MQTT
                     response_topic = f"ep/{sensor_eui}/cmd/response"
                     response_payload = {
@@ -1267,12 +1267,12 @@ class TLSServer:
                         "last_activity": sensor_status.get('last_data_timestamp', 0),
                         "timestamp": self._get_local_time()
                     }
-                    
+
                     await self.mqtt_out_queue.put({
                         "topic": response_topic,
                         "payload": json.dumps(response_payload)
                     })
-                    
+
                 else:
                     logger.warning(f"⚠️  Unknown MQTT command: {command}")
 
@@ -1286,7 +1286,8 @@ class TLSServer:
                 sensor["nwKey"] = msg["nwKey"]
                 sensor["shortAddr"] = msg["shortAddr"]
                 sensor["bidi"] = msg["bidi"]
-                logger.info(f"Updated configuration for existing endpoint {msg['eui']}")
+                logger.info("Updated configuration for existing endpoint "
+                           f"{msg['eui']}")
                 break
         else:
             # No existing entry found → add new one
