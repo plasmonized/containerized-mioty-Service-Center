@@ -106,17 +106,17 @@ def run_bssci_service():
         # Set MQTT interface in TLS server for bidirectional communication
         tls_server_instance.set_mqtt_interface(mqtt_interface_instance)
 
-        # Start TLS server in a separate thread
-        tls_thread = threading.Thread(
-            target=tls_server_instance.start, daemon=True)
-        tls_thread.start()
-        logger.info(
-            f"TLS Server started on "
-            f"{bssci_config.LISTEN_HOST}:{bssci_config.LISTEN_PORT}")
+        # Create the main event loop
+        async def run_services():
+            # Start both services concurrently
+            await asyncio.gather(
+                tls_server_instance.start_server(),
+                mqtt_interface_instance.start()
+            )
 
-        # Start MQTT interface
-        logger.info("Starting MQTT Interface...")
-        asyncio.run(mqtt_interface_instance.start())
+        # Start both services
+        logger.info("Starting TLS Server and MQTT Interface...")
+        asyncio.run(run_services())
 
     except KeyboardInterrupt:
         logger.info("Shutdown signal received via keyboard interrupt")

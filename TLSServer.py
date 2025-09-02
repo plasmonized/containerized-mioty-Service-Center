@@ -1499,6 +1499,11 @@ class TLSServer:
         except Exception as e:
             logger.error(f"❌ Error processing MQTT command: {e}")
 
+    def set_mqtt_interface(self, mqtt_interface) -> None:
+        """Set the MQTT interface for bidirectional communication"""
+        self.mqtt_interface = mqtt_interface
+        logger.info("🔗 MQTT interface linked to TLS server")
+
     def update_or_add_entry(self, msg: dict[str, Any]) -> None:
         # Update existing entry or add new one
         for sensor in self.sensor_config:
