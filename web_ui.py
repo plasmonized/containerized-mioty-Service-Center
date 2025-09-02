@@ -56,7 +56,7 @@ class WebUILogHandler(logging.Handler):
                 last_time_str = last_entry['timestamp']
                 # Ensure the format string matches the one used for logging
                 last_time = datetime.strptime(last_time_str, '%Y-%m-%d %H:%M:%S.%f')
-                
+
                 # Compare naive datetimes
                 time_diff = abs((local_time.replace(tzinfo=None) - last_time.replace(tzinfo=None)).total_seconds())
 
@@ -406,61 +406,95 @@ def unregister_all_sensors():
         add_log_entry('error', f"Error unregistering all sensors: {e}")
         return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/config')
+@app.route('/config', methods=['GET', 'POST'])
 def config():
-    config_data = {
-        'LISTEN_HOST': getattr(bssci_config, 'LISTEN_HOST', '0.0.0.0'), # Use getattr for safer access
-        'LISTEN_PORT': getattr(bssci_config, 'LISTEN_PORT', 8883),
-        'MQTT_BROKER': getattr(bssci_config, 'MQTT_BROKER', 'localhost'),
-        'MQTT_PORT': getattr(bssci_config, 'MQTT_PORT', 1883),
-        'MQTT_USERNAME': getattr(bssci_config, 'MQTT_USERNAME', ''),
-        'MQTT_PASSWORD': getattr(bssci_config, 'MQTT_PASSWORD', ''),
-        'BASE_TOPIC': getattr(bssci_config, 'BASE_TOPIC', 'bssci'),
-        'STATUS_INTERVAL': getattr(bssci_config, 'STATUS_INTERVAL', 60),
-        'DEDUPLICATION_DELAY': getattr(bssci_config, 'DEDUPLICATION_DELAY', 5),
-        'AUTO_DETACH_HOURS': getattr(bssci_config, 'AUTO_DETACH_HOURS', 24),
-        'AUTO_DETACH_CHECK_INTERVAL': getattr(bssci_config, 'AUTO_DETACH_CHECK_INTERVAL', 3600)
-    }
-    return render_template('config.html', config=config_data)
+    if request.method == 'POST':
+        try:
+            # Get form data
+            mqtt_broker = request.form.get('mqtt_broker', '').strip()
+            mqtt_port = request.form.get('mqtt_port', '1887')
+            mqtt_username = request.form.get('mqtt_username', '').strip()
+            mqtt_password = request.form.get('mqtt_password', '').strip()
+            base_topic = request.form.get('base_topic', 'bssci/').strip()
+            listen_host = request.form.get('listen_host', '0.0.0.0').strip()
+            listen_port = request.form.get('listen_port', '16018')
 
-@app.route('/api/config', methods=['POST'])
-def update_config():
-    data = request.json
-    config_content = f'''LISTEN_HOST = "{data.get('LISTEN_HOST', '0.0.0.0')}"
-LISTEN_PORT = {data.get('LISTEN_PORT', 8883)}
+            # Update .env file
+            env_content = f'''# MQTT Broker Configuration
+MQTT_BROKER={mqtt_broker}
+MQTT_PORT={mqtt_port}
+MQTT_USERNAME={mqtt_username}
+MQTT_PASSWORD={mqtt_password}
+BASE_TOPIC={base_topic}
 
-CERT_FILE = "certs/service_center_cert.pem"
-KEY_FILE = "certs/service_center_key.pem"
-CA_FILE = "certs/ca_cert.pem"
+# Server Configuration
+LISTEN_HOST={listen_host}
+LISTEN_PORT={listen_port}
 
-MQTT_BROKER = "{data.get('MQTT_BROKER', 'localhost')}"
-MQTT_PORT = {data.get('MQTT_PORT', 1883)}
-MQTT_USERNAME = "{data.get('MQTT_USERNAME', '')}"
-MQTT_PASSWORD = "{data.get('MQTT_PASSWORD', '')}"
-BASE_TOPIC = "{data.get('BASE_TOPIC', 'bssci')}"
+# Certificate Configuration
+CERT_FILE=certs/service_center_cert.pem
+KEY_FILE=certs/service_center_key.pem
+CA_FILE=certs/ca_cert.pem
 
-SENSOR_CONFIG_FILE = "endpoints.json"
-STATUS_INTERVAL = {data.get('STATUS_INTERVAL', 60)}  # seconds
-DEDUPLICATION_DELAY = {data.get('DEDUPLICATION_DELAY', 5)}  # seconds to wait for duplicate messages before forwarding
+# File and timing configuration
+SENSOR_CONFIG_FILE=endpoints.json
+STATUS_INTERVAL=30
+DEDUPLICATION_DELAY=2
 
 # Auto-detach configuration
-AUTO_DETACH_HOURS = {data.get('AUTO_DETACH_HOURS', 24)}  # hours of inactivity before auto-detaching sensors
-AUTO_DETACH_CHECK_INTERVAL = {data.get('AUTO_DETACH_CHECK_INTERVAL', 3600)}  # seconds between auto-detach checks (1 hour)
+AUTO_DETACH_HOURS=48
+AUTO_DETACH_CHECK_INTERVAL=3600
 '''
 
+            with open('.env', 'w') as f:
+                f.write(env_content)
+
+            # Also update the environment variables immediately
+            import os
+            os.environ['MQTT_BROKER'] = mqtt_broker
+            os.environ['MQTT_PORT'] = mqtt_port
+            os.environ['MQTT_USERNAME'] = mqtt_username
+            os.environ['MQTT_PASSWORD'] = mqtt_password
+            os.environ['BASE_TOPIC'] = base_topic
+            os.environ['LISTEN_HOST'] = listen_host
+            os.environ['LISTEN_PORT'] = listen_port
+
+            add_log_entry('INFO', 'Configuration updated successfully in .env file')
+            return jsonify({'status': 'success', 'message': 'Configuration updated successfully. Restart required for changes to take effect.'})
+
+        except Exception as e:
+            add_log_entry('ERROR', f'Failed to update configuration: {str(e)}')
+            return jsonify({'status': 'error', 'message': f'Failed to update configuration: {str(e)}'})
+
+    # GET request - show current configuration
     try:
-        with open('bssci_config.py', 'w') as f:
-            f.write(config_content)
+        import bssci_config
+        # Reload the config module to get latest values
+        import importlib
+        importlib.reload(bssci_config)
 
-        # Add note for Synology users
-        message = 'Configuration updated successfully. Restart required.'
-        if os.environ.get('SYNOLOGY_DOCKER') == '1':
-            message += ' Note: On Synology, config changes are container-local. Back up /app/bssci_config.py from container if needed.'
-
-        return jsonify({'success': True, 'message': message})
+        config_data = {
+            'mqtt_broker': getattr(bssci_config, 'MQTT_BROKER', ''),
+            'mqtt_port': getattr(bssci_config, 'MQTT_PORT', 1887),
+            'mqtt_username': getattr(bssci_config, 'MQTT_USERNAME', ''),
+            'mqtt_password': getattr(bssci_config, 'MQTT_PASSWORD', ''),
+            'base_topic': getattr(bssci_config, 'BASE_TOPIC', 'bssci/'),
+            'listen_host': getattr(bssci_config, 'LISTEN_HOST', '0.0.0.0'),
+            'listen_port': getattr(bssci_config, 'LISTEN_PORT', 16018),
+        }
     except Exception as e:
-        add_log_entry('error', f"Error updating config: {e}")
-        return jsonify({'success': False, 'message': str(e)})
+        add_log_entry('ERROR', f'Failed to load configuration: {str(e)}')
+        config_data = {
+            'mqtt_broker': '',
+            'mqtt_port': 1887,
+            'mqtt_username': '',
+            'mqtt_password': '',
+            'base_topic': 'bssci/',
+            'listen_host': '0.0.0.0',
+            'listen_port': 16018,
+        }
+
+    return render_template('config.html', config=config_data)
 
 @app.route('/certificates')
 def certificates():
