@@ -346,6 +346,8 @@ def create_app() -> Flask:
             "DEDUPLICATION_DELAY": bssci_config.DEDUPLICATION_DELAY,
             "AUTO_DETACH_ENABLED": bssci_config.AUTO_DETACH_ENABLED,
             "AUTO_DETACH_TIMEOUT": bssci_config.AUTO_DETACH_TIMEOUT,
+            "AUTO_DETACH_HOURS": getattr(bssci_config, 'AUTO_DETACH_HOURS', 24),
+            "AUTO_DETACH_CHECK_INTERVAL": getattr(bssci_config, 'AUTO_DETACH_CHECK_INTERVAL', 3600),
         }
         return render_template("config.html", config=config_data)
 
@@ -359,38 +361,40 @@ import os
 from typing import Optional
 
 # TLS Server Configuration
-LISTEN_HOST: str = "{data['LISTEN_HOST']}"
-LISTEN_PORT: int = {data['LISTEN_PORT']}
+LISTEN_HOST: str = os.getenv("LISTEN_HOST", "{data['LISTEN_HOST']}")
+LISTEN_PORT: int = int(os.getenv("LISTEN_PORT", "{data['LISTEN_PORT']}"))
 
 # SSL/TLS Certificate Configuration
-CERT_FILE: str = "certs/service_center_cert.pem"
-KEY_FILE: str = "certs/service_center_key.pem"
-CA_FILE: str = "certs/ca_cert.pem"
+CERT_FILE: str = os.getenv("CERT_FILE", "certs/service_center_cert.pem")
+KEY_FILE: str = os.getenv("KEY_FILE", "certs/service_center_key.pem")
+CA_FILE: str = os.getenv("CA_FILE", "certs/ca_cert.pem")
 
 # MQTT Configuration
-MQTT_BROKER: str = "{data['MQTT_BROKER']}"
-MQTT_PORT: int = {data['MQTT_PORT']}
-MQTT_USERNAME: Optional[str] = "{data['MQTT_USERNAME']}"
-MQTT_PASSWORD: Optional[str] = "{data['MQTT_PASSWORD']}"
-BASE_TOPIC: str = "{data['BASE_TOPIC']}"
+MQTT_BROKER: str = os.getenv("MQTT_BROKER", "{data['MQTT_BROKER']}")
+MQTT_PORT: int = int(os.getenv("MQTT_PORT", "{data['MQTT_PORT']}"))
+MQTT_USERNAME: Optional[str] = os.getenv("MQTT_USERNAME", "{data['MQTT_USERNAME']}")
+MQTT_PASSWORD: Optional[str] = os.getenv("MQTT_PASSWORD", "{data['MQTT_PASSWORD']}")
+BASE_TOPIC: str = os.getenv("BASE_TOPIC", "{data['BASE_TOPIC']}")
 
 # Application Configuration
-SENSOR_CONFIG_FILE: str = "endpoints.json"
-STATUS_INTERVAL: int = {data['STATUS_INTERVAL']}  # seconds
-DEDUPLICATION_DELAY: float = {data['DEDUPLICATION_DELAY']}  # seconds
+SENSOR_CONFIG_FILE: str = os.getenv("SENSOR_CONFIG_FILE", "endpoints.json")
+STATUS_INTERVAL: int = int(os.getenv("STATUS_INTERVAL", "{data['STATUS_INTERVAL']}"))  # seconds
+DEDUPLICATION_DELAY: float = float(os.getenv("DEDUPLICATION_DELAY", "{data['DEDUPLICATION_DELAY']}"))  # seconds
 
 # Web Interface Configuration
-WEB_HOST: str = "0.0.0.0"
-WEB_PORT: int = 5000
-WEB_DEBUG: bool = False
+WEB_HOST: str = os.getenv("WEB_HOST", "0.0.0.0")
+WEB_PORT: int = int(os.getenv("WEB_PORT", "5000"))
+WEB_DEBUG: bool = os.getenv("WEB_DEBUG", "false").lower() == "true"
 
 # Auto-detach Configuration
-AUTO_DETACH_ENABLED: bool = {str(data.get('AUTO_DETACH_ENABLED', True)).lower()}
-AUTO_DETACH_TIMEOUT: int = {data.get('AUTO_DETACH_TIMEOUT', 86400)}  # seconds
+AUTO_DETACH_ENABLED: bool = os.getenv("AUTO_DETACH_ENABLED", "{str(data.get('AUTO_DETACH_ENABLED', True)).lower()}").lower() == "true"
+AUTO_DETACH_TIMEOUT: int = int(os.getenv("AUTO_DETACH_TIMEOUT", "{data.get('AUTO_DETACH_TIMEOUT', 86400)}"))  # seconds
+AUTO_DETACH_HOURS: int = int(os.getenv("AUTO_DETACH_HOURS", "{data.get('AUTO_DETACH_HOURS', 24)}"))  # hours
+AUTO_DETACH_CHECK_INTERVAL: int = int(os.getenv("AUTO_DETACH_CHECK_INTERVAL", "{data.get('AUTO_DETACH_CHECK_INTERVAL', 3600)}"))  # seconds
 
 # Logging Configuration
-LOG_LEVEL: str = "INFO"
-LOG_FILE: Optional[str] = None
+LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+LOG_FILE: Optional[str] = os.getenv("LOG_FILE", None)
 '''
 
         try:
