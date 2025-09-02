@@ -43,8 +43,6 @@ class TLSServer:
             'duplicate_messages': 0,
             'published_messages': 0
         }
-        # Start the deduplication task
-        asyncio.create_task(self.process_deduplication_buffer())
 
         try:
             with open(sensor_config_file, "r") as f:
@@ -113,6 +111,9 @@ class TLSServer:
 
         logger.info("📨 Starting MQTT queue watcher task...")
         asyncio.create_task(self.queue_watcher())
+
+        logger.info("🧠 Starting deduplication buffer processing task...")
+        asyncio.create_task(self.process_deduplication_buffer())
 
         logger.info(
             "✓ BSSCI TLS Server is ready and listening for "
