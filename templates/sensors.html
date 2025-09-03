@@ -28,6 +28,7 @@
                         <th>Short Address</th>
                         <th>Bidirectional</th>
                         <th>Registration Status</th>
+                        <th>Activity Status</th>
                         <th>Preferred Downlink Path</th>
                         <th>Actions</th>
                     </tr>
@@ -85,6 +86,51 @@
 <script>
 let editingEui = null;
 
+function getActivityStatusHtml(sensor) {
+    if (!sensor.last_seen_timestamp || sensor.last_seen_timestamp === 0) {
+        return '<span class="badge bg-secondary">No Data</span>';
+    }
+    
+    const lastSeenHours = sensor.hours_since_last_seen || 0;
+    
+    if (sensor.activity_status === 'auto_detached') {
+        const autoDetachInfo = sensor.auto_detach_info || {};
+        return `<span class="badge bg-danger">Auto-Detached</span>
+                <br><small><strong>Reason:</strong> ${autoDetachInfo.reason || 'inactivity'}</small>
+                <br><small><strong>Inactive:</strong> ${autoDetachInfo.inactive_hours || 'N/A'}h</small>
+                <br><small><strong>Detached:</strong> ${autoDetachInfo.detach_time || 'N/A'}</small>`;
+    }
+    
+    if (sensor.activity_status === 'warning') {
+        const warningInfo = sensor.warning_info || {};
+        return `<span class="badge bg-warning text-dark">⚠️ Warning</span>
+                <br><small><strong>Inactive:</strong> ${warningInfo.hours_inactive || lastSeenHours}h</small>
+                <br><small><strong>Auto-detach in:</strong> ${warningInfo.hours_until_detach || 'N/A'}h</small>
+                <br><small><strong>Warning sent:</strong> ${warningInfo.warning_sent ? 'Yes' : 'No'}</small>`;
+    }
+    
+    if (sensor.activity_status === 'auto_detach_pending') {
+        return `<span class="badge bg-danger">Detach Pending</span>
+                <br><small><strong>Inactive:</strong> ${lastSeenHours}h</small>
+                <br><small><strong>Status:</strong> Will be detached soon</small>`;
+    }
+    
+    // Active status
+    let statusClass = 'bg-success';
+    let statusText = 'Active';
+    
+    if (lastSeenHours > 24) {
+        statusClass = 'bg-info';
+        statusText = 'Idle';
+    } else if (lastSeenHours > 12) {
+        statusClass = 'bg-secondary';
+        statusText = 'Quiet';
+    }
+    
+    return `<span class="badge ${statusClass}">${statusText}</span>
+            <br><small><strong>Last seen:</strong> ${lastSeenHours}h ago</small>`;
+}
+
 function loadSensors() {
     fetch('/api/sensors')
         .then(response => response.json())
@@ -102,6 +148,7 @@ function loadSensors() {
                             <br><small>Base Stations (${sensor.total_registrations || 0}):</small>
                             <br><small>${sensor.base_stations ? sensor.base_stations.join(', ') : 'N/A'}</small>` : 
                             '<span class="badge bg-warning">Not Registered</span>'}</td>
+                    <td>${getActivityStatusHtml(sensor)}</td>
                     <td>${sensor.preferredDownlinkPath ? 
                             `<strong>BS:</strong> ${sensor.preferredDownlinkPath.baseStation}
                             <br><small><strong>SNR:</strong> ${sensor.preferredDownlinkPath.snr} dB</small>

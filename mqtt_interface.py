@@ -1,7 +1,7 @@
-
 import asyncio
 import json
 import logging
+from typing import Dict, Any
 from aiomqtt import Client, MqttError
 import paho.mqtt.client
 
@@ -56,11 +56,11 @@ class MQTTClient:
 
                 # Use the working simple pattern with authentication
                 logger.info("🔧 Creating MQTT client...")
-                
+
                 async with Client(
-                    hostname=self.broker_host, 
-                    port=MQTT_PORT, 
-                    username=MQTT_USERNAME, 
+                    hostname=self.broker_host,
+                    port=MQTT_PORT,
+                    username=MQTT_USERNAME,
                     password=MQTT_PASSWORD,
                     keepalive=60,  # Send keepalive every 60 seconds
                     timeout=30     # Connection timeout after 30 seconds
@@ -81,9 +81,9 @@ class MQTTClient:
                     # Run both handlers with health monitoring
                     logger.info("🎭 Starting concurrent MQTT handlers with health monitoring...")
                     self.log_queue_info()
-                    
+
                     await asyncio.gather(
-                        self._handle_incoming(client), 
+                        self._handle_incoming(client),
                         self._handle_outgoing(client),
                         self._connection_health_monitor(client),
                         return_exceptions=True
@@ -95,11 +95,11 @@ class MQTTClient:
                 logger.error("=" * 60)
                 logger.error(f"🚨 Error: {e}")
                 logger.error(f"🔍 Error Type: {type(e).__name__}")
-                
+
                 logger.error("⏰ RETRY INFORMATION:")
                 logger.error(f"   Next attempt in: {retry_delay} seconds")
                 logger.error("=" * 60)
-                
+
                 await asyncio.sleep(retry_delay)
                 retry_delay = min(retry_delay * 1.5, max_delay)
 
@@ -107,13 +107,20 @@ class MQTTClient:
         logger.info("🔔 MQTT INCOMING HANDLER STARTING")
         logger.info("=" * 50)
         logger.info(f"📌 Subscription Topic: {self.config_topic}")
-        
+
         try:
-            await client.subscribe(self.config_topic)
-            await client.subscribe(self.command_topic)
+            # Subscribe to topics with retained messages handling
+            topics = [
+                (f"{self.base_topic}ep/+/dl", 0),  # Downlink messages
+                (f"{self.base_topic}ep/+/cmd", 0),  # Command messages
+                (f"{self.base_topic}config/+", 0),  # Configuration messages
+                ("EP/+/cmd/", 0),  # Remote EP command messages from application center
+            ]
+            await client.subscribe(topics)
             logger.info("✅ MQTT SUBSCRIPTION SUCCESSFUL")
             logger.info(f"👂 MQTT listening on config topic: {self.config_topic}")
             logger.info(f"👂 MQTT listening on command topic: {self.command_topic}")
+            logger.info(f"👂 MQTT listening on EP command topic: EP/+/cmd/")
             logger.info("👂 MQTT incoming message handler is now ACTIVE and listening...")
         except Exception as sub_error:
             logger.error(f"❌ MQTT subscription failed: {sub_error}")
@@ -130,45 +137,44 @@ class MQTTClient:
                     # Extract EUI like the working version
                     topic_parts = str(message.topic).split("/")
                     base_parts = self.base_topic.split("/")
-                    
+
                     if len(topic_parts) > len(base_parts) + 1:
                         eui = topic_parts[len(base_parts) + 1]
                         logger.info(f"🔑 Extracted EUI: {eui}")
-                        
+
                         payload_str = message.payload.decode('utf-8')
                         logger.info(f"📄 Payload: {payload_str}")
-                        
-                        # Check if this is a command or config message
-                        if topic_parts[-1] == "cmd":
-                            # This is a command message
-                            try:
-                                command_data = json.loads(payload_str)
-                                command_data["eui"] = eui
-                                command_data["message_type"] = "command"
-                                
-                                logger.info(f"🎯 Command received for EUI {eui}: {command_data.get('action', 'unknown')}")
-                                await self.mqtt_in_queue.put(command_data)
-                                logger.info(f"✅ Command queued successfully")
-                            except Exception as cmd_error:
-                                logger.error(f"❌ Command processing failed: {cmd_error}")
-                        else:
-                            # This is a config message
-                            config = json.loads(payload_str)
-                            config["eui"] = eui
-                            config["message_type"] = "config"
-                            
-                            logger.info(f"✅ Configuration received for EUI {eui}")
-                            logger.info(f"   Queue size before put: {self.mqtt_in_queue.qsize()}")
-                            await self.mqtt_in_queue.put(config)
-                            logger.info(f"✅ Configuration queued successfully")
-                            logger.info(f"   Queue size after put: {self.mqtt_in_queue.qsize()}")
-                            logger.info(f"📋 Config: {json.dumps(config, indent=2)}")
+
+                        payload_dict = json.loads(payload_str)
+
+                        # Check if this is a command message
+                        if "/cmd/" in str(message.topic):
+                            await self.handle_command_message(str(message.topic), payload_dict)
+                            return
+
+                        # Check if this is an EP command message (/EP/+/cmd/)
+                        if str(message.topic).startswith("EP/") and "/cmd/" in str(message.topic):
+                            await self.handle_ep_command_message(str(message.topic), payload_dict)
+                            return
+
+                        # This is a config message
+                        config = payload_dict
+                        config["eui"] = eui
+                        config["message_type"] = "config"
+
+                        logger.info(f"✅ Configuration received for EUI {eui}")
+                        logger.info(f"   Queue size before put: {self.mqtt_in_queue.qsize()}")
+                        await self.mqtt_in_queue.put(config)
+                        logger.info(f"✅ Configuration queued successfully")
+                        logger.info(f"   Queue size after put: {self.mqtt_in_queue.qsize()}")
+                        logger.info(f"📋 Config: {json.dumps(config, indent=2)}")
+
                     else:
                         logger.warning(f"⚠️  Invalid topic format: {message.topic}")
 
                 except Exception as e:
                     logger.error(f"❌ Message processing failed: {e}")
-                    
+
         except Exception as handler_error:
             logger.error(f"❌ MQTT INCOMING HANDLER FAILED: {handler_error}")
             raise
@@ -176,24 +182,24 @@ class MQTTClient:
     async def _connection_health_monitor(self, client: Client) -> None:
         """Monitor connection health and force reconnection if needed"""
         logger.info("💓 MQTT CONNECTION HEALTH MONITOR STARTED")
-        
+
         while True:
             try:
                 await asyncio.sleep(300)  # Check every 5 minutes
-                
+
                 # Send a test message to verify connection
                 test_topic = f"{self.base_topic}/health_check"
                 test_payload = f'{{"timestamp": "{asyncio.get_event_loop().time()}", "status": "alive"}}'
-                
+
                 logger.debug("💓 Performing MQTT health check...")
                 await client.publish(test_topic, test_payload)
                 logger.debug("✅ MQTT health check successful")
-                
+
             except Exception as e:
                 logger.error(f"💀 MQTT HEALTH CHECK FAILED: {e}")
                 logger.error("🔄 Triggering connection reset...")
                 raise  # This will cause reconnection
-                
+
     async def _handle_outgoing(self, client: Client) -> None:
         logger.info("🚀 MQTT OUTGOING HANDLER INITIALIZED")
         logger.info("📤 Ready to publish messages")
@@ -230,6 +236,95 @@ class MQTTClient:
         except Exception as e:
             logger.error(f"❌ MQTT OUTGOING HANDLER FATAL ERROR: {e}")
             raise
+
+    async def handle_command_message(self, topic: str, payload: Dict[str, Any]) -> None:
+        """Handle command messages from MQTT"""
+        logger.info(f"🎯 Processing command message from topic: {topic}")
+
+        try:
+            # Extract EUI from topic
+            topic_parts = topic.split('/')
+            if len(topic_parts) >= 4 and topic_parts[0] == "ep":
+                eui = topic_parts[1]
+                command = payload.get('command', '').lower()
+
+                logger.info(f"Command for sensor {eui}: {command}")
+
+                # Create command message for TLS server processing
+                command_msg = {
+                    'message_type': 'command',
+                    'eui': eui,
+                    'action': command,
+                    'timestamp': payload.get('timestamp', asyncio.get_event_loop().time())
+                }
+
+                # Add to in_queue for TLS server processing
+                await self.mqtt_in_queue.put(command_msg)
+                logger.info(f"✅ Command queued for TLS server processing")
+
+        except Exception as e:
+            logger.error(f"❌ Error handling command message: {e}")
+            logger.error(f"   Topic: {topic}")
+            logger.error(f"   Payload: {payload}")
+
+    async def handle_ep_command_message(self, topic: str, payload: Dict[str, Any]) -> None:
+        """Handle EP command messages from MQTT (/EP/+/cmd/)"""
+        logger.info(f"🎯 Processing EP command message from topic: {topic}")
+
+        try:
+            # Extract EUI from topic pattern /EP/{eui}/cmd/
+            topic_parts = topic.split('/')
+            if len(topic_parts) >= 4 and topic_parts[0] == "EP" and topic_parts[2] == "cmd":
+                eui = topic_parts[1]
+
+                # Handle different command types
+                if isinstance(payload, str):
+                    command = payload.lower().strip()
+                    payload_dict = {"command": command}
+                else:
+                    command = payload.get('command', payload.get('action', '')).lower().strip()
+                    payload_dict = payload
+
+                logger.info(f"EP Command for sensor {eui}: {command}")
+
+                # Validate command
+                valid_commands = ['detach', 'attach', 'status']
+                if command not in valid_commands:
+                    logger.warning(f"⚠️  Invalid EP command: {command}. Valid commands: {valid_commands}")
+                    return
+
+                # Create command message for TLS server processing
+                command_msg = {
+                    'message_type': 'command',
+                    'eui': eui,
+                    'action': command,
+                    'source': 'ep_command',
+                    'timestamp': payload_dict.get('timestamp', asyncio.get_event_loop().time())
+                }
+
+                # Add to in_queue for TLS server processing
+                await self.mqtt_in_queue.put(command_msg)
+                logger.info(f"✅ EP Command queued for TLS server processing")
+
+                # Send acknowledgment back to application center
+                ack_topic = f"EP/{eui}/response"
+                ack_payload = {
+                    "command": command,
+                    "status": "received",
+                    "timestamp": asyncio.get_event_loop().time()
+                }
+
+                await self.mqtt_out_queue.put({
+                    "topic": ack_topic,
+                    "payload": json.dumps(ack_payload)
+                })
+
+                logger.info(f"📤 EP Command acknowledgment sent to {ack_topic}")
+
+        except Exception as e:
+            logger.error(f"❌ Error handling EP command message: {e}")
+            logger.error(f"   Topic: {topic}")
+            logger.error(f"   Payload: {payload}")
 
 
 if __name__ == "__main__":

@@ -16,3 +16,9 @@ BASE_TOPIC = os.getenv("BASE_TOPIC", "bssci/")
 SENSOR_CONFIG_FILE = "endpoints.json"
 STATUS_INTERVAL = 30  # seconds
 DEDUPLICATION_DELAY = 2  # seconds to wait for duplicate messages before forwarding
+
+# Auto-detach Configuration
+AUTO_DETACH_ENABLED = True
+AUTO_DETACH_TIMEOUT = 72 * 3600  # 72 hours in seconds (3 days)
+AUTO_DETACH_WARNING_TIMEOUT = 36 * 3600  # 36 hours in seconds (1.5 days)
+AUTO_DETACH_CHECK_INTERVAL = 3600  # Check every hour

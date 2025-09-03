@@ -256,7 +256,11 @@ def config():
         'MQTT_PASSWORD': bssci_config.MQTT_PASSWORD,
         'BASE_TOPIC': bssci_config.BASE_TOPIC,
         'STATUS_INTERVAL': bssci_config.STATUS_INTERVAL,
-        'DEDUPLICATION_DELAY': bssci_config.DEDUPLICATION_DELAY
+        'DEDUPLICATION_DELAY': bssci_config.DEDUPLICATION_DELAY,
+        'AUTO_DETACH_ENABLED': getattr(bssci_config, 'AUTO_DETACH_ENABLED', True),
+        'AUTO_DETACH_TIMEOUT': getattr(bssci_config, 'AUTO_DETACH_TIMEOUT', 259200),
+        'AUTO_DETACH_WARNING_TIMEOUT': getattr(bssci_config, 'AUTO_DETACH_WARNING_TIMEOUT', 129600),
+        'AUTO_DETACH_CHECK_INTERVAL': getattr(bssci_config, 'AUTO_DETACH_CHECK_INTERVAL', 3600)
     }
     return render_template('config.html', config=config_data)
 
@@ -270,15 +274,23 @@ CERT_FILE = "certs/service_center_cert.pem"
 KEY_FILE = "certs/service_center_key.pem"
 CA_FILE = "certs/ca_cert.pem"
 
-MQTT_BROKER = "{data['MQTT_BROKER']}"
-MQTT_PORT = {data['MQTT_PORT']}
-MQTT_USERNAME = "{data['MQTT_USERNAME']}"
-MQTT_PASSWORD = "{data['MQTT_PASSWORD']}"
-BASE_TOPIC = "{data['BASE_TOPIC']}"
+import os
+
+MQTT_BROKER = os.getenv("MQTT_BROKER", "{data['MQTT_BROKER']}")
+MQTT_PORT = int(os.getenv("MQTT_PORT", "{data['MQTT_PORT']}"))
+MQTT_USERNAME = os.getenv("MQTT_USERNAME", "{data['MQTT_USERNAME']}")
+MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "{data['MQTT_PASSWORD']}")
+BASE_TOPIC = os.getenv("BASE_TOPIC", "{data['BASE_TOPIC']}")
 
 SENSOR_CONFIG_FILE = "endpoints.json"
 STATUS_INTERVAL = {data['STATUS_INTERVAL']}  # seconds
 DEDUPLICATION_DELAY = {data['DEDUPLICATION_DELAY']}  # seconds to wait for duplicate messages before forwarding
+
+# Auto-detach Configuration
+AUTO_DETACH_ENABLED = {str(data.get('AUTO_DETACH_ENABLED', True))}
+AUTO_DETACH_TIMEOUT = {data.get('AUTO_DETACH_TIMEOUT', 259200)}  # {data.get('AUTO_DETACH_TIMEOUT', 259200) / 3600:.1f} hours in seconds
+AUTO_DETACH_WARNING_TIMEOUT = {data.get('AUTO_DETACH_WARNING_TIMEOUT', 129600)}  # {data.get('AUTO_DETACH_WARNING_TIMEOUT', 129600) / 3600:.1f} hours in seconds
+AUTO_DETACH_CHECK_INTERVAL = {data.get('AUTO_DETACH_CHECK_INTERVAL', 3600)}  # Check every hour
 '''
     
     try:

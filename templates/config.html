@@ -57,7 +57,40 @@
                 </div>
             </div>
 
-            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <h5>Auto-Detach Configuration</h5>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="AUTO_DETACH_ENABLED" {% if config.AUTO_DETACH_ENABLED %}checked{% endif %}>
+                            <label class="form-check-label" for="AUTO_DETACH_ENABLED">
+                                Enable Auto-Detach
+                            </label>
+                        </div>
+                        <div class="form-text">Automatically detach sensors after period of inactivity</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="AUTO_DETACH_TIMEOUT" class="form-label">Auto-Detach Timeout (hours)</label>
+                        <input type="number" class="form-control" id="AUTO_DETACH_TIMEOUT" value="{{ config.AUTO_DETACH_TIMEOUT // 3600 }}" min="1">
+                        <div class="form-text">Hours of inactivity before auto-detach (default: 72 hours)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="AUTO_DETACH_WARNING_TIMEOUT" class="form-label">Warning Timeout (hours)</label>
+                        <input type="number" class="form-control" id="AUTO_DETACH_WARNING_TIMEOUT" value="{{ config.AUTO_DETACH_WARNING_TIMEOUT // 3600 }}" min="1">
+                        <div class="form-text">Hours of inactivity before warning (default: 36 hours)</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="AUTO_DETACH_CHECK_INTERVAL" class="form-label">Check Interval (hours)</label>
+                        <input type="number" class="form-control" id="AUTO_DETACH_CHECK_INTERVAL" value="{{ config.AUTO_DETACH_CHECK_INTERVAL // 3600 }}" min="1">
+                        <div class="form-text">How often to check for inactive sensors (default: 1 hour)</div>
+                    </div>
+                </div>
+            </div>
+
+
 
             <div class="mt-3">
                 <button type="button" class="btn btn-primary" onclick="saveConfig()">Save Configuration</button>
@@ -74,7 +107,7 @@
 {% block scripts %}
 <script>
 function saveConfig() {
-    const formData = {
+    const configData = {
         LISTEN_HOST: document.getElementById('LISTEN_HOST').value,
         LISTEN_PORT: parseInt(document.getElementById('LISTEN_PORT').value),
         MQTT_BROKER: document.getElementById('MQTT_BROKER').value,
@@ -84,6 +117,10 @@ function saveConfig() {
         BASE_TOPIC: document.getElementById('BASE_TOPIC').value,
         STATUS_INTERVAL: parseInt(document.getElementById('STATUS_INTERVAL').value),
         DEDUPLICATION_DELAY: parseFloat(document.getElementById('DEDUPLICATION_DELAY').value),
+        AUTO_DETACH_ENABLED: document.getElementById('AUTO_DETACH_ENABLED').checked,
+        AUTO_DETACH_TIMEOUT: parseInt(document.getElementById('AUTO_DETACH_TIMEOUT').value) * 3600,
+        AUTO_DETACH_WARNING_TIMEOUT: parseInt(document.getElementById('AUTO_DETACH_WARNING_TIMEOUT').value) * 3600,
+        AUTO_DETACH_CHECK_INTERVAL: parseInt(document.getElementById('AUTO_DETACH_CHECK_INTERVAL').value) * 3600
     };
 
     fetch('/api/config', {
@@ -91,7 +128,7 @@ function saveConfig() {
         headers: {
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(configData)
     })
     .then(response => response.json())
     .then(result => {
@@ -112,7 +149,7 @@ function restartService() {
         const originalText = button.textContent;
         button.disabled = true;
         button.textContent = 'Restarting...';
-        
+
         fetch('/api/service/restart', {
             method: 'POST',
             headers: {
