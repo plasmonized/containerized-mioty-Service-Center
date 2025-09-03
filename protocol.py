@@ -10,11 +10,11 @@ def decode_messages(data: bytes) -> list[dict[str, Any]]:
     while len(data) > 12:
         try:
             unpacker = msgpack.Unpacker(raw=False, strict_map_key=False)
-            length = int.from_bytes(data[8:8 + 4], byteorder="little")
+            length = int.from_bytes(data[8 : 8 + 4], byteorder="little")
             if length + 8 > len(data):
                 break
-            unpacker.feed(data[12:12 + length])
-            data = data[12 + length:]
+            unpacker.feed(data[12 : 12 + length])
+            data = data[12 + length :]
             for msg in unpacker:
                 messages.append(msg)
         except Exception as e:
@@ -33,7 +33,6 @@ def decode_message(data: bytes) -> dict[str, Any]:
     except Exception as e:
         print(f"[ERROR] Error decoding message: {e}")
         return {}
-
 
 def encode_message(data: dict[str, Any]) -> bytes:
     encoded_message = bytes(msgpack.packb(data))

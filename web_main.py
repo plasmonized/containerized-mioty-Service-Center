@@ -36,13 +36,10 @@ class TimezoneFormatter(logging.Formatter):
         else:
             return local_time.strftime('%Y-%m-%d %H:%M:%S')
 
-# Configure logging - FORCE CONSOLE OUTPUT
-import sys
+# Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    stream=sys.stdout,  # FORCE console output
-    force=True  # Override any existing handlers
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 
 # Apply timezone formatter to all handlers
@@ -58,12 +55,10 @@ logger = logging.getLogger(__name__)
 # Global reference for TLS server instance
 tls_server_instance = None
 
-
 def run_web_ui():
     """Run the Flask web UI in a separate thread"""
     logger.info("Starting Web UI on port 5000")
     app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
-
 
 def run_bssci_service():
     """Run the BSSCI service"""
@@ -71,11 +66,10 @@ def run_bssci_service():
     import main
     asyncio.run(main.main())
 
-
 def get_tls_server():
     """Get the TLS server instance"""
+    global tls_server_instance
     return tls_server_instance
-
 
 def set_tls_server(server):
     """Set the TLS server instance"""
@@ -86,13 +80,10 @@ def set_tls_server(server):
     try:
         import web_ui
         web_ui.set_tls_server(tls_server_instance)
-        logger.info("✅ TLS server instance passed to web UI successfully")
+        logger.info(f"✅ TLS server instance passed to web UI successfully")
         logger.info(f"   TLS server ID: {id(tls_server_instance)}")
         if hasattr(tls_server_instance, 'connected_base_stations'):
-            logger.info(
-                f"   Connected base stations count: "
-                f"{len(tls_server_instance.connected_base_stations)}"
-            )
+            logger.info(f"   Connected base stations count: {len(tls_server_instance.connected_base_stations)}")
     except ImportError as e:
         logger.error(f"❌ Failed to import web_ui: {e}")
     except Exception as e:
@@ -100,14 +91,6 @@ def set_tls_server(server):
 
 
 if __name__ == "__main__":
-    # FORCE console output
-    console_handler = logging.StreamHandler(sys.stdout)
-    console_handler.setFormatter(timezone_formatter)
-    logging.getLogger().addHandler(console_handler)
-    logging.getLogger().setLevel(logging.DEBUG)
-    
-    print("🚀 BSSCI SERVICE CENTER STARTING...")
-    print("=" * 50)
     logger.info("Starting BSSCI Service Center with Web UI")
 
     # Start web UI in a separate thread
@@ -117,12 +100,9 @@ if __name__ == "__main__":
     # Give web UI time to start
     time.sleep(2)
     logger.info("Web UI available at http://localhost:5000")
-    print("✅ Web UI started on http://localhost:5000")
 
     # Run BSSCI service in main thread
     try:
-        print("🔌 Starting BSSCI TLS service...")
         run_bssci_service()
     except KeyboardInterrupt:
         logger.info("Shutting down...")
-        print("👋 BSSCI Service Center shutting down...")

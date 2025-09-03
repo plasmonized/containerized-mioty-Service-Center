@@ -2,4 +2,3 @@ certs/*
 _pycache_
 attached_assets/*
 .env
-logs/

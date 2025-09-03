@@ -1,15 +1,14 @@
 import asyncio
 import logging
 
-from bssci_config import (
-    SENSOR_CONFIG_FILE, LISTEN_PORT, MQTT_BROKER, MQTT_PORT
-)
+import bssci_config
+from bssci_config import SENSOR_CONFIG_FILE, LISTEN_HOST, LISTEN_PORT, MQTT_BROKER, MQTT_PORT
 from mqtt_interface import MQTTClient
 from TLSServer import TLSServer
 
 # Configure logging with timezone
+import time
 from datetime import datetime, timezone, timedelta
-
 
 class TimezoneFormatter(logging.Formatter):
     def __init__(self, fmt, datefmt=None):
@@ -25,7 +24,6 @@ class TimezoneFormatter(logging.Formatter):
             return local_time.strftime(datefmt)
         else:
             return local_time.strftime('%Y-%m-%d %H:%M:%S')
-
 
 # Configure logging
 logging.basicConfig(
@@ -46,17 +44,13 @@ logger = logging.getLogger(__name__)
 # Global TLS server instance for web UI access
 tls_server_instance = None
 
-
 async def main() -> None:
     global tls_server_instance
     mqtt_out_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
     mqtt_in_queue: asyncio.Queue[dict[str, str]] = asyncio.Queue()
 
     logger.info("Initializing BSSCI Service Center...")
-    logger.info(
-        f"Config: TLS Port {LISTEN_PORT}, "
-        f"MQTT Broker {MQTT_BROKER}:{MQTT_PORT}"
-    )
+    logger.info(f"Config: TLS Port {LISTEN_PORT}, MQTT Broker {MQTT_BROKER}:{MQTT_PORT}")
 
     # Setup queue logging to monitor queue usage
     from queue_logger import setup_queue_logging, log_all_queue_stats
