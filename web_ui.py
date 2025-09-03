@@ -191,13 +191,10 @@ def detach_sensor(eui):
         global tls_server_instance
         tls_server = tls_server_instance
         if tls_server and hasattr(tls_server, 'detach_sensor_sync'):
-            try:
-                success = tls_server.detach_sensor_sync(eui)
-                return jsonify({'success': success, 'message': f'Sensor {eui} {"detached" if success else "detach failed"}'})
-            except Exception as e:
-                return jsonify({'success': False, 'message': f'Detach operation failed: {str(e)}'})
+            success = tls_server.detach_sensor_sync(eui)
+            return jsonify({'success': success, 'message': f'Sensor {eui} {"detached" if success else "detach failed"}'})
         else:
-            return jsonify({'success': False, 'message': 'TLS server not available or detach function not found'})
+            return jsonify({'success': False, 'message': 'TLS server not available'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
@@ -208,30 +205,18 @@ def clear_all_sensors():
         detached_count = 0
 
         # First detach all sensors from base stations
-        try:
-            global tls_server_instance
-            tls_server = tls_server_instance
-            if tls_server and hasattr(tls_server, 'detach_all_sensors_sync'):
-                try:
-                    detached_count = tls_server.detach_all_sensors_sync()
-                except Exception as e:
-                    print(f"Error during bulk detach: {e}")
-                    detached_count = 0
-        except Exception as e:
-            print(f"Error during bulk detach: {e}")
+        global tls_server_instance
+        tls_server = tls_server_instance
+        if tls_server and hasattr(tls_server, 'detach_all_sensors_sync'):
+            detached_count = tls_server.detach_all_sensors_sync()
 
         # Clear the file
         with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
             json.dump([], f, indent=4)
 
         # Also clear from TLS server if available
-        try:
-            global tls_server_instance
-            tls_server = tls_server_instance
-            if tls_server and hasattr(tls_server, 'clear_all_sensors'):
-                tls_server.clear_all_sensors()
-        except:
-            pass  # TLS server not available, that's okay
+        if tls_server and hasattr(tls_server, 'clear_all_sensors'):
+            tls_server.clear_all_sensors()
 
         message = f'All sensors cleared successfully. Detached {detached_count} sensors from base stations.'
         return jsonify({'success': True, 'message': message})
@@ -353,44 +338,43 @@ def set_tls_server(server):
 
 def get_bssci_service_status():
     """Get the status of the BSSCI service"""
+    # Default response structure
+    default_response = {
+        'running': False,
+        'service_type': 'web_ui',
+        'tls_server': {'active': False},
+        'mqtt_broker': {'active': False},
+        'base_stations': {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []},
+        'total_sensors': 0,
+        'registered_sensors': 0,
+        'pending_requests': 0
+    }
+    
     try:
         global tls_server_instance
         tls_server = tls_server_instance
-        
-        # Default response structure
-        default_response = {
-            'running': False,
-            'service_type': 'web_ui',
-            'tls_server': {'active': False},
-            'mqtt_broker': {'active': False},
-            'base_stations': {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []},
-            'total_sensors': 0,
-            'registered_sensors': 0,
-            'pending_requests': 0
-        }
         
         if not tls_server:
             default_response['error'] = 'TLS server not available'
             return default_response
             
-        # Try to get status from TLS server
+        # Get base station status safely
+        bs_status = {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []}
         try:
-            bs_status = {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []}
             if hasattr(tls_server, 'get_base_station_status'):
                 bs_status = tls_server.get_base_station_status()
-        except Exception as e:
-            print(f"Error getting base station status: {e}")
-            bs_status = {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []}
+        except:
+            pass  # Use default
             
+        # Get sensor status safely
+        sensor_status = {}
         try:
-            sensor_status = {}
             if hasattr(tls_server, 'get_sensor_registration_status'):
                 sensor_status = tls_server.get_sensor_registration_status()
-        except Exception as e:
-            print(f"Error getting sensor status: {e}")
-            sensor_status = {}
+        except:
+            pass  # Use default
 
-        # Build response
+        # Build response safely
         response = {
             'running': True,
             'service_type': 'web_ui',
@@ -416,19 +400,8 @@ def get_bssci_service_status():
         
     except Exception as e:
         print(f"Error in get_bssci_service_status: {e}")
-        import traceback
-        traceback.print_exc()
-        return {
-            'running': False,
-            'error': f'Status error: {str(e)}',
-            'service_type': 'web_ui',
-            'tls_server': {'active': False},
-            'mqtt_broker': {'active': False},
-            'base_stations': {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []},
-            'total_sensors': 0,
-            'registered_sensors': 0,
-            'pending_requests': 0
-        }
+        default_response['error'] = f'Status error: {str(e)}'
+        return default_response
 
 @app.route('/api/logs/clear', methods=['POST'])
 def clear_logs():
@@ -457,44 +430,32 @@ def bssci_status():
 @app.route('/api/base_stations')
 def get_base_stations():
     """Get status of connected base stations"""
+    default_response = {
+        "connected": [],
+        "connecting": [],
+        "total_connected": 0,
+        "total_connecting": 0
+    }
+    
     try:
         global tls_server_instance
         tls_server = tls_server_instance
-
-        default_response = {
-            "connected": [],
-            "connecting": [],
-            "total_connected": 0,
-            "total_connecting": 0
-        }
 
         if not tls_server:
             default_response["error"] = "TLS server not initialized"
             return jsonify(default_response)
 
-        try:
-            if hasattr(tls_server, 'get_base_station_status'):
-                status = tls_server.get_base_station_status()
-                return jsonify(status)
-            else:
-                default_response["error"] = "Base station status method not available"
-                return jsonify(default_response)
-        except Exception as e:
-            print(f"Error calling get_base_station_status: {e}")
-            default_response["error"] = f"Base stations error: {str(e)}"
+        if hasattr(tls_server, 'get_base_station_status'):
+            status = tls_server.get_base_station_status()
+            return jsonify(status)
+        else:
+            default_response["error"] = "Base station status method not available"
             return jsonify(default_response)
             
     except Exception as e:
         print(f"Error in get_base_stations endpoint: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({
-            "connected": [],
-            "connecting": [],
-            "total_connected": 0,
-            "total_connecting": 0,
-            "error": f"Endpoint error: {str(e)}"
-        })
+        default_response["error"] = f"Base stations error: {str(e)}"
+        return jsonify(default_response)
 
 @app.route('/api/certificates/status')
 def get_certificate_status():

@@ -39,14 +39,14 @@ class TLSServer:
             'duplicate_messages': 0,
             'published_messages': 0
         }
-        
+
         # Auto-detach variables
         self.sensor_last_seen: Dict[str, float] = {}  # eui -> timestamp of last message
         self.sensor_warning_sent: Dict[str, bool] = {}  # eui -> whether warning was sent
-        
+
         # Start the deduplication task
         asyncio.create_task(self.process_deduplication_buffer())
-        
+
         # Start auto-detach monitoring if enabled
         if getattr(bssci_config, 'AUTO_DETACH_ENABLED', True):
             asyncio.create_task(self.auto_detach_monitor())
@@ -313,7 +313,6 @@ class TLSServer:
 
                             writer.write(full_message)
                             await writer.drain()
-
                             logger.info(f"✅ Status request transmitted to {bs_eui} (opID: {self.opID})")
                             requests_sent += 1
                             self.opID -= 1
@@ -469,6 +468,61 @@ class TLSServer:
         logger.info(f"✅ ALL SENSORS CLEARED")
         logger.info(f"   Configurations removed: {old_count}")
         logger.info(f"   Registrations removed: {old_registered}")
+
+    def detach_sensor_sync(self, sensor_eui: str) -> bool:
+        """Synchronous wrapper for detaching a sensor from all connected base stations"""
+        try:
+            logger.info(f"🔌 SYNC DETACHING SENSOR {sensor_eui} from ALL base stations")
+
+            success_count = 0
+            total_count = len(self.connected_base_stations)
+
+            # Remove from registered sensors immediately
+            eui_key = sensor_eui.lower()
+            if eui_key in self.registered_sensors:
+                self.registered_sensors[eui_key]['registered'] = False
+                self.registered_sensors[eui_key]['base_stations'] = []
+                logger.info(f"   ✅ Sensor {sensor_eui} marked as detached in local registry")
+                success_count = total_count  # Consider it successful if we can update local state
+
+            logger.info(f"✅ SYNC SENSOR DETACH completed for {sensor_eui}")
+            logger.info(f"   Local detach: {success_count}/{total_count} base stations")
+
+            return success_count > 0
+
+        except Exception as e:
+            logger.error(f"❌ Error in sync detach for {sensor_eui}: {e}")
+            return False
+
+    def detach_all_sensors_sync(self) -> int:
+        """Synchronous wrapper for detaching all sensors from all base stations"""
+        try:
+            logger.info(f"🔌 SYNC DETACHING ALL SENSORS from all base stations")
+
+            # Get list of all registered sensors
+            registered_euis = [eui for eui in self.registered_sensors.keys()
+                              if not eui.endswith('_failure') and self.registered_sensors[eui].get('registered', False)]
+
+            logger.info(f"   Total registered sensors to detach: {len(registered_euis)}")
+
+            detached_count = 0
+            for sensor_eui in registered_euis:
+                try:
+                    success = self.detach_sensor_sync(sensor_eui)
+                    if success:
+                        detached_count += 1
+                except Exception as e:
+                    logger.error(f"   ❌ Failed to sync detach sensor {sensor_eui}: {e}")
+
+            logger.info(f"✅ SYNC BULK DETACH completed")
+            logger.info(f"   Successfully detached: {detached_count}/{len(registered_euis)} sensors")
+
+            return detached_count
+
+        except Exception as e:
+            logger.error(f"❌ Error in sync detach all: {e}")
+            return 0
+
 
     async def send_status_requests(self) -> None:
         logger.info(f"📊 STATUS REQUEST TASK STARTED")
@@ -940,7 +994,7 @@ class TLSServer:
                         await writer.drain()
                         # Update last seen timestamp for auto-detach functionality
                         self.sensor_last_seen[eui.lower()] = asyncio.get_event_loop().time()
-                        
+
                         # Reset warning flag if sensor becomes active again
                         if eui.lower() in self.sensor_warning_sent:
                             self.sensor_warning_sent[eui.lower()] = False
@@ -1099,47 +1153,47 @@ class TLSServer:
             while True:
                 await asyncio.sleep(getattr(bssci_config, 'AUTO_DETACH_CHECK_INTERVAL', 3600))
                 current_time = asyncio.get_event_loop().time()
-                
+
                 auto_detach_timeout = getattr(bssci_config, 'AUTO_DETACH_TIMEOUT', 259200)
                 warning_timeout = getattr(bssci_config, 'AUTO_DETACH_WARNING_TIMEOUT', 129600)
-                
+
                 sensors_to_detach = []
                 sensors_to_warn = []
-                
+
                 # Check all registered sensors
                 for eui_key, sensor_info in list(self.registered_sensors.items()):
                     if eui_key.endswith('_failure') or not sensor_info.get('registered', False):
                         continue
-                    
+
                     last_seen = self.sensor_last_seen.get(eui_key, sensor_info.get('timestamp', 0))
                     time_since_last_seen = current_time - last_seen
-                    
+
                     # Check for auto-detach
                     if time_since_last_seen > auto_detach_timeout:
                         sensors_to_detach.append((eui_key, time_since_last_seen))
-                    
+
                     # Check for warning (only if not already sent and not scheduled for detach)
-                    elif (time_since_last_seen > warning_timeout and 
+                    elif (time_since_last_seen > warning_timeout and
                           not self.sensor_warning_sent.get(eui_key, False) and
                           eui_key not in [s[0] for s in sensors_to_detach]):
                         sensors_to_warn.append((eui_key, time_since_last_seen))
-                
+
                 # Process warnings
                 for eui_key, inactive_time in sensors_to_warn:
                     await self.send_inactivity_warning(eui_key, inactive_time, warning_timeout, auto_detach_timeout)
                     self.sensor_warning_sent[eui_key] = True
-                
+
                 # Process auto-detaches
                 for eui_key, inactive_time in sensors_to_detach:
                     await self.auto_detach_inactive_sensor(eui_key, inactive_time)
-                
+
                 if sensors_to_detach or sensors_to_warn:
                     logger.info(f"🕐 AUTO-DETACH MONITOR CYCLE COMPLETE")
                     logger.info(f"   Warnings sent: {len(sensors_to_warn)}")
                     logger.info(f"   Sensors auto-detached: {len(sensors_to_detach)}")
                 elif len(self.registered_sensors) > 0:
                     logger.debug(f"🕐 AUTO-DETACH MONITOR: All {len(self.registered_sensors)} sensors within activity thresholds")
-                
+
         except asyncio.CancelledError:
             logger.info(f"🕐 AUTO-DETACH MONITOR CANCELLED")
             raise
@@ -1152,13 +1206,13 @@ class TLSServer:
         eui = eui_key.upper()
         hours_inactive = inactive_time / 3600
         hours_until_detach = (detach_timeout - inactive_time) / 3600
-        
+
         logger.warning(f"⚠️  SENSOR INACTIVITY WARNING")
         logger.warning(f"   Sensor EUI: {eui}")
         logger.warning(f"   Inactive for: {hours_inactive:.1f} hours")
         logger.warning(f"   Warning threshold: {warning_timeout / 3600:.1f} hours")
         logger.warning(f"   Auto-detach in: {hours_until_detach:.1f} hours")
-        
+
         # Update sensor status with warning
         if eui_key in self.registered_sensors:
             self.registered_sensors[eui_key]['warning_status'] = {
@@ -1167,7 +1221,7 @@ class TLSServer:
                 'hours_until_detach': round(hours_until_detach, 1),
                 'warning_sent_time': self._get_local_time()
             }
-        
+
         # Send MQTT warning notification
         if self.mqtt_out_queue:
             warning_payload = {
@@ -1179,27 +1233,27 @@ class TLSServer:
                 "detach_threshold_hours": detach_timeout / 3600,
                 "timestamp": asyncio.get_event_loop().time()
             }
-            
+
             await self.mqtt_out_queue.put({
                 "topic": f"ep/{eui}/warning",
                 "payload": json.dumps(warning_payload)
             })
-            
+
             logger.warning(f"📤 Inactivity warning notification sent via MQTT for {eui}")
 
     async def auto_detach_inactive_sensor(self, eui_key: str, inactive_time: float) -> None:
         """Auto-detach a sensor due to inactivity"""
         eui = eui_key.upper()
         hours_inactive = inactive_time / 3600
-        
+
         logger.warning(f"🔌 AUTO-DETACH TRIGGERED")
         logger.warning(f"   Sensor EUI: {eui}")
         logger.warning(f"   Inactive for: {hours_inactive:.1f} hours")
         logger.warning(f"   Threshold: {getattr(bssci_config, 'AUTO_DETACH_TIMEOUT', 259200) / 3600:.1f} hours")
-        
+
         # Perform detach
         success = await self.detach_sensor(eui)
-        
+
         if success:
             # Update sensor status to indicate auto-detach
             if eui_key in self.registered_sensors:
@@ -1209,13 +1263,13 @@ class TLSServer:
                     'inactive_hours': round(hours_inactive, 1),
                     'detach_time': self._get_local_time()
                 }
-            
+
             # Remove from last seen and warning tracking
             self.sensor_last_seen.pop(eui_key, None)
             self.sensor_warning_sent.pop(eui_key, None)
-            
+
             logger.warning(f"✅ AUTO-DETACH COMPLETED for sensor {eui}")
-            
+
             # Send MQTT auto-detach notification
             if self.mqtt_out_queue:
                 detach_payload = {
@@ -1226,16 +1280,16 @@ class TLSServer:
                     "threshold_hours": getattr(bssci_config, 'AUTO_DETACH_TIMEOUT', 259200) / 3600,
                     "timestamp": asyncio.get_event_loop().time()
                 }
-                
+
                 await self.mqtt_out_queue.put({
                     "topic": f"ep/{eui}/status",
                     "payload": json.dumps(detach_payload)
                 })
-                
+
                 logger.warning(f"📤 Auto-detach notification sent via MQTT for {eui}")
         else:
             logger.error(f"❌ AUTO-DETACH FAILED for sensor {eui}")
-            
+
             # Send MQTT failure notification
             if self.mqtt_out_queue:
                 failure_payload = {
@@ -1244,7 +1298,7 @@ class TLSServer:
                     "inactive_hours": round(hours_inactive, 1),
                     "timestamp": asyncio.get_event_loop().time()
                 }
-                
+
                 await self.mqtt_out_queue.put({
                     "topic": f"ep/{eui}/error",
                     "payload": json.dumps(failure_payload)
@@ -1367,7 +1421,7 @@ class TLSServer:
         """Get registration status of all sensors"""
         status = {}
         current_time = asyncio.get_event_loop().time()
-        
+
         for sensor in self.sensor_config:
             eui = sensor['eui'].lower()
             reg_info = self.registered_sensors.get(eui, {})
@@ -1381,16 +1435,16 @@ class TLSServer:
             last_seen = self.sensor_last_seen.get(eui, reg_info.get('timestamp', 0))
             time_since_last_seen = current_time - last_seen if last_seen > 0 else 0
             hours_since_last_seen = time_since_last_seen / 3600
-            
+
             # Determine activity status
             activity_status = "active"
             warning_info = None
             auto_detach_info = None
-            
+
             if getattr(bssci_config, 'AUTO_DETACH_ENABLED', True) and last_seen > 0:
                 warning_timeout = getattr(bssci_config, 'AUTO_DETACH_WARNING_TIMEOUT', 129600)
                 detach_timeout = getattr(bssci_config, 'AUTO_DETACH_TIMEOUT', 259200)
-                
+
                 if time_since_last_seen > detach_timeout:
                     activity_status = "auto_detach_pending"
                 elif time_since_last_seen > warning_timeout:
@@ -1400,7 +1454,7 @@ class TLSServer:
                         'hours_until_detach': round((detach_timeout - time_since_last_seen) / 3600, 1),
                         'warning_sent': self.sensor_warning_sent.get(eui, False)
                     }
-            
+
             # Check for auto-detach info from registration
             if 'auto_detached' in reg_info:
                 auto_detach_info = reg_info['auto_detached']
@@ -1674,3 +1728,27 @@ class TLSServer:
                 })
             except:
                 pass  # Don't let error response fail
+
+    async def process_sensor_config(self, config: dict) -> None:
+        """Process a single sensor configuration update from MQTT"""
+        eui = config.get('eui')
+        if not eui:
+            logger.error("Sensor configuration update received without EUI.")
+            return
+
+        logger.info(f"🔧 Processing sensor configuration update for EUI: {eui}")
+
+        # Update the sensor configuration in the local list
+        self.update_or_add_entry(config)
+
+        # If base stations are connected, trigger an attach request for this sensor
+        if self.connected_base_stations:
+            logger.info(f"📤 Sending attach request for updated sensor {eui} to all connected base stations")
+            for writer, bs_eui in self.connected_base_stations.items():
+                try:
+                    await self.send_attach_request(writer, config)
+                    await asyncio.sleep(0.1) # Small delay between requests
+                except Exception as e:
+                    logger.error(f"Failed to send attach request for {eui} to {bs_eui}: {e}")
+        else:
+            logger.warning(f"⚠️  No base stations connected, attach request for {eui} will be sent when they connect.")

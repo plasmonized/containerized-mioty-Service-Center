@@ -66,7 +66,7 @@ def set_tls_server(server):
     # Also set it in web_ui module
     try:
         import web_ui
-        web_ui.set_tls_server(server)
+        web_ui.tls_server_instance = server
         logger.info(f"TLS server instance shared with web_ui: {server is not None}")
     except Exception as e:
         logger.error(f"Error setting TLS server in web_ui: {e}")
