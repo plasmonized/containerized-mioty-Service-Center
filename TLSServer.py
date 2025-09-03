@@ -24,15 +24,23 @@ class TLSServer:
         self.opID = -1
         self.mqtt_out_queue = mqtt_out_queue
         self.mqtt_in_queue = mqtt_in_queue
-        self.connected_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
-        self.connecting_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
+        self.connected_base_stations: Dict[
+            asyncio.streams.StreamWriter, str
+        ] = {}
+        self.connecting_base_stations: Dict[
+            asyncio.streams.StreamWriter, str
+        ] = {}
         self.sensor_config_file = sensor_config_file
-        self.registered_sensors: Dict[str, Dict[str, Any]] = {}  # EUI -> {status, base_stations: [], timestamp}
-        self.pending_attach_requests: Dict[int, Dict[str, Any]] = {}  # opID -> {sensor_eui, timestamp, base_station}
-        self._status_task_running = False  # Track if status request task is running
+        # EUI -> {status, base_stations: [], timestamp}
+        self.registered_sensors: Dict[str, Dict[str, Any]] = {}
+        # opID -> {sensor_eui, timestamp, base_station}
+        self.pending_attach_requests: Dict[int, Dict[str, Any]] = {}
+        # Track if status request task is running
+        self._status_task_running = False
 
         # Deduplication variables
-        self.deduplication_buffer: Dict[str, Dict[str, Any]] = {}  # message_key -> {message, timestamp, snr, bs_eui}
+        # message_key -> {message, timestamp, snr, bs_eui}
+        self.deduplication_buffer: Dict[str, Dict[str, Any]] = {}
         self.deduplication_delay = bssci_config.DEDUPLICATION_DELAY
         self.deduplication_stats = {
             'total_messages': 0,
@@ -41,8 +49,10 @@ class TLSServer:
         }
 
         # Auto-detach variables
-        self.sensor_last_seen: Dict[str, float] = {}  # eui -> timestamp of last message
-        self.sensor_warning_sent: Dict[str, bool] = {}  # eui -> whether warning was sent
+        # eui -> timestamp of last message
+        self.sensor_last_seen: Dict[str, float] = {}
+        # eui -> whether warning was sent
+        self.sensor_warning_sent: Dict[str, bool] = {}
 
         # Start the deduplication task
         asyncio.create_task(self.process_deduplication_buffer())
@@ -51,7 +61,6 @@ class TLSServer:
         if getattr(bssci_config, 'AUTO_DETACH_ENABLED', True):
             asyncio.create_task(self.auto_detach_monitor())
 
-
         try:
             with open(sensor_config_file, "r") as f:
                 self.sensor_config = json.load(f)
@@ -59,7 +68,7 @@ class TLSServer:
             self.sensor_config = []
 
         # Add queue logging
-        logger.info(f"🔍 TLS Server Queue Assignment:")
+        logger.info("🔍 TLS Server Queue Assignment:")
         logger.info(f"   mqtt_out_queue ID: {id(self.mqtt_out_queue)}")
         logger.info(f"   mqtt_in_queue ID: {id(self.mqtt_in_queue)}")
 
@@ -97,7 +106,7 @@ class TLSServer:
             logger.error(f"❌ Unexpected error setting up SSL: {e}")
             raise
 
-        logger.info(f"🚀 Starting BSSCI TLS server...")
+        logger.info("🚀 Starting BSSCI TLS server...")
         logger.info(f"   Listen address: {bssci_config.LISTEN_HOST}:{bssci_config.LISTEN_PORT}")
         logger.info(f"   Sensor config file: {self.sensor_config_file}")
         logger.info(f"   Loaded sensors: {len(self.sensor_config)}")
@@ -121,8 +130,8 @@ class TLSServer:
     ) -> None:
         bs_eui = self.connected_base_stations.get(writer, "unknown")
         try:
-            logger.info(f"📤 BSSCI ATTACH REQUEST INITIATED")
-            logger.info(f"   =====================================")
+            logger.info("📤 BSSCI ATTACH REQUEST INITIATED")
+            logger.info("   =====================================")
             logger.info(f"   Sensor EUI: {sensor['eui']}")
             logger.info(f"   Target Base Station: {bs_eui}")
             logger.info(f"   Operation ID: {self.opID}")
@@ -232,7 +241,7 @@ class TLSServer:
                 logger.info(f"   Operation ID {self.opID} sent to base station {bs_eui}")
                 logger.info(f"   Tracking request for correlation with response")
                 logger.info(f"   Awaiting response from base station...")
-                logger.info(f"   =====================================")
+                logger.info("   =====================================")
 
                 self.opID -= 1
             else:
@@ -523,7 +532,6 @@ class TLSServer:
             logger.error(f"❌ Error in sync detach all: {e}")
             return 0
 
-
     async def send_status_requests(self) -> None:
         logger.info(f"📊 STATUS REQUEST TASK STARTED")
         logger.info(f"   Status request interval: {bssci_config.STATUS_INTERVAL} seconds")
@@ -641,7 +649,7 @@ class TLSServer:
                             connection_time = asyncio.get_event_loop().time() - connection_start_time
 
                             logger.info(f"✅ BSSCI CONNECTION ESTABLISHED with base station {bs_eui}")
-                            logger.info(f"   =====================================")
+                            logger.info("   =====================================")
                             logger.info(f"   Base Station EUI: {bs_eui}")
                             logger.info(f"   Connection established at: {self._get_local_time()}")
                             logger.info(f"   Connection setup duration: {connection_time:.2f} seconds")
@@ -657,7 +665,7 @@ class TLSServer:
                                     logger.info(f"     {i:2d}. EUI: {sensor['eui']}, Short Addr: {sensor['shortAddr']}")
                             else:
                                 logger.warning(f"   ⚠️  No sensors configured for attachment")
-                            logger.info(f"   =====================================")
+                            logger.info("   =====================================")
 
                             # Start attachment process
                             await self.attach_file(writer)
@@ -760,7 +768,7 @@ class TLSServer:
                         bs_eui = self.connected_base_stations.get(writer, "unknown")
 
                         logger.info(f"📨 BSSCI ATTACH RESPONSE received from base station {bs_eui}")
-                        logger.info(f"   =====================================")
+                        logger.info("   =====================================")
                         logger.info(f"   Operation ID: {op_id}")
                         logger.info(f"   Raw message: {message}")
                         logger.info(f"   Note: Per BSSCI spec, attach response contains only command and opId")
@@ -866,7 +874,7 @@ class TLSServer:
                                 del self.pending_attach_requests[fallback_op_id]
 
                         logger.info(f"   Response received at: {self._get_local_time()}")
-                        logger.info(f"   =====================================")
+                        logger.info("   =====================================")
 
                         msg_pack = encode_message(
                             messages.build_attach_complete(message.get("opId", ""))
@@ -1099,7 +1107,7 @@ class TLSServer:
                 payload_json = json.dumps(data_dict)
 
                 logger.info(f"📤 PUBLISHING DEDUPLICATED MESSAGE")
-                logger.info(f"   =====================================")
+                logger.info("   =====================================")
                 logger.info(f"   Full Topic: {bssci_config.BASE_TOPIC.rstrip('/')}/{mqtt_topic}")
                 logger.info(f"   Sensor EUI: {eui}")
                 logger.info(f"   Base Station: {bs_eui}")
@@ -1303,7 +1311,6 @@ class TLSServer:
                     "topic": f"ep/{eui}/error",
                     "payload": json.dumps(failure_payload)
                 })
-
 
     async def queue_watcher(self) -> None:
         logger.info("📨 MQTT queue watcher started - monitoring for configuration updates")
