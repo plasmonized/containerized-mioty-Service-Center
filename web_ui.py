@@ -406,6 +406,8 @@ def get_bssci_service_status():
                 'registered_sensors': len([s for s in sensor_status.values() if s['registered']]),
                 'pending_requests': len(tls_server.pending_attach_requests) if hasattr(tls_server, 'pending_attach_requests') else 0
             }
+                'pending_requests': len(tls_server.pending_attach_requests) if hasattr(tls_server, 'pending_attach_requests') else 0
+            }
         else:
             return {
                 'running': False, 
