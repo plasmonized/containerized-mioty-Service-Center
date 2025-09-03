@@ -545,36 +545,59 @@ def get_bssci_service_status():
         # Get base station status safely
         bs_status = {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []}
         try:
-            if hasattr(tls_server, 'connected_base_stations') and hasattr(tls_server, 'connecting_base_stations'):
-                # Build base station status directly from TLS server attributes
-                connected_stations = []
-                for writer, bs_eui in getattr(tls_server, 'connected_base_stations', {}).items():
-                    addr = writer.get_extra_info("peername") if writer else None
-                    connected_stations.append({
-                        "eui": bs_eui,
-                        "address": f"{addr[0]}:{addr[1]}" if addr else "unknown",
-                        "status": "connected"
-                    })
-                
-                connecting_stations = []
-                for writer, bs_eui in getattr(tls_server, 'connecting_base_stations', {}).items():
-                    addr = writer.get_extra_info("peername") if writer else None
-                    connecting_stations.append({
-                        "eui": bs_eui,
-                        "address": f"{addr[0]}:{addr[1]}" if addr else "unknown",
-                        "status": "connecting"
-                    })
-                
-                bs_status = {
-                    "connected": connected_stations,
-                    "connecting": connecting_stations,
-                    "total_connected": len(connected_stations),
-                    "total_connecting": len(connecting_stations)
-                }
-            elif hasattr(tls_server, 'get_base_station_status'):
-                bs_status = tls_server.get_base_station_status()
+            # Build base station status directly from TLS server attributes
+            connected_stations = []
+            connecting_stations = []
+            
+            if hasattr(tls_server, 'connected_base_stations'):
+                connected_bs = getattr(tls_server, 'connected_base_stations', {})
+                for writer, bs_eui in connected_bs.items():
+                    try:
+                        addr = writer.get_extra_info("peername") if writer else None
+                        connected_stations.append({
+                            "eui": bs_eui,
+                            "address": f"{addr[0]}:{addr[1]}" if addr else "unknown",
+                            "status": "connected"
+                        })
+                    except Exception as e:
+                        print(f"Error processing connected station {bs_eui}: {e}")
+                        # Add station even if address lookup fails
+                        connected_stations.append({
+                            "eui": bs_eui,
+                            "address": "unknown", 
+                            "status": "connected"
+                        })
+            
+            if hasattr(tls_server, 'connecting_base_stations'):
+                connecting_bs = getattr(tls_server, 'connecting_base_stations', {})
+                for writer, bs_eui in connecting_bs.items():
+                    try:
+                        addr = writer.get_extra_info("peername") if writer else None
+                        connecting_stations.append({
+                            "eui": bs_eui,
+                            "address": f"{addr[0]}:{addr[1]}" if addr else "unknown",
+                            "status": "connecting"
+                        })
+                    except Exception as e:
+                        print(f"Error processing connecting station {bs_eui}: {e}")
+                        # Add station even if address lookup fails
+                        connecting_stations.append({
+                            "eui": bs_eui,
+                            "address": "unknown",
+                            "status": "connecting"
+                        })
+            
+            bs_status = {
+                "connected": connected_stations,
+                "connecting": connecting_stations,
+                "total_connected": len(connected_stations),
+                "total_connecting": len(connecting_stations)
+            }
+            
         except Exception as e:
             print(f"Error getting base station status: {e}")
+            # Ensure we always have a valid structure
+            bs_status = {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []}
             
         # Get sensor status safely
         sensor_status = {}
@@ -666,11 +689,15 @@ def get_base_stations():
                 "error": "TLS server not initialized"
             }), 503
 
-        # Try to get status directly from TLS server attributes first
+        # Get base stations safely with proper error handling
+        connected_stations = []
+        connecting_stations = []
+        
         try:
-            if hasattr(tls_server, 'connected_base_stations') and hasattr(tls_server, 'connecting_base_stations'):
-                connected_stations = []
-                for writer, bs_eui in getattr(tls_server, 'connected_base_stations', {}).items():
+            # Access connected base stations directly from TLS server
+            if hasattr(tls_server, 'connected_base_stations'):
+                connected_bs = getattr(tls_server, 'connected_base_stations', {})
+                for writer, bs_eui in connected_bs.items():
                     try:
                         addr = writer.get_extra_info("peername") if writer else None
                         connected_stations.append({
@@ -680,9 +707,17 @@ def get_base_stations():
                         })
                     except Exception as e:
                         print(f"Error processing connected station {bs_eui}: {e}")
-                
-                connecting_stations = []
-                for writer, bs_eui in getattr(tls_server, 'connecting_base_stations', {}).items():
+                        # Add station even if address lookup fails
+                        connected_stations.append({
+                            "eui": bs_eui,
+                            "address": "unknown",
+                            "status": "connected"
+                        })
+            
+            # Access connecting base stations
+            if hasattr(tls_server, 'connecting_base_stations'):
+                connecting_bs = getattr(tls_server, 'connecting_base_stations', {})
+                for writer, bs_eui in connecting_bs.items():
                     try:
                         addr = writer.get_extra_info("peername") if writer else None
                         connecting_stations.append({
@@ -692,31 +727,22 @@ def get_base_stations():
                         })
                     except Exception as e:
                         print(f"Error processing connecting station {bs_eui}: {e}")
-                
-                return jsonify({
-                    "connected": connected_stations,
-                    "connecting": connecting_stations,
-                    "total_connected": len(connected_stations),
-                    "total_connecting": len(connecting_stations)
-                })
-        except Exception as e:
-            print(f"Error accessing TLS server attributes directly: {e}")
-
-        # Fallback to method if available
-        if hasattr(tls_server, 'get_base_station_status'):
-            try:
-                status = tls_server.get_base_station_status()
-                return jsonify(status)
-            except Exception as e:
-                print(f"Error calling get_base_station_status: {e}")
+                        # Add station even if address lookup fails
+                        connecting_stations.append({
+                            "eui": bs_eui,
+                            "address": "unknown",
+                            "status": "connecting"
+                        })
         
-        # Final fallback
+        except Exception as e:
+            print(f"Error accessing base station lists: {e}")
+
+        # Always return valid JSON structure
         return jsonify({
-            "connected": [],
-            "connecting": [],
-            "total_connected": 0,
-            "total_connecting": 0,
-            "error": "Unable to retrieve base station status"
+            "connected": connected_stations,
+            "connecting": connecting_stations,
+            "total_connected": len(connected_stations),
+            "total_connecting": len(connecting_stations)
         })
             
     except Exception as e:
