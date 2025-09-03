@@ -335,6 +335,168 @@ class TLSServer:
             self._status_task_running = False
             raise
 
+    async def send_detach_request(self, writer: asyncio.streams.StreamWriter, sensor_eui: str) -> bool:
+        """Send detach request for a specific sensor"""
+        bs_eui = self.connected_base_stations.get(writer, "unknown")
+        logger.info(f"🔌 DETACHING SENSOR from base station {bs_eui}")
+        logger.info(f"   Sensor EUI: {sensor_eui}")
+
+        try:
+            # Build and encode the detach message
+            detach_message = messages.build_detach_request(sensor_eui, self.opID)
+            logger.debug(f"   📝 Built detach message: {detach_message}")
+
+            msg_pack = encode_message(detach_message)
+            full_message = IDENTIFIER + len(msg_pack).to_bytes(4, byteorder="little") + msg_pack
+
+            logger.info(f"   📤 Transmitting detach request...")
+            logger.info(f"     Message size: {len(full_message)} bytes")
+
+            writer.write(full_message)
+            await writer.drain()
+            self.opID += 1
+
+            # Remove from registered sensors
+            eui_key = sensor_eui.lower()
+            if eui_key in self.registered_sensors:
+                # Remove this base station from the sensor's list
+                if 'base_stations' in self.registered_sensors[eui_key]:
+                    self.registered_sensors[eui_key]['base_stations'] = [
+                        bs for bs in self.registered_sensors[eui_key]['base_stations']
+                        if bs['base_station_eui'] != bs_eui
+                    ]
+
+                    # If no base stations left, mark as not registered
+                    if not self.registered_sensors[eui_key]['base_stations']:
+                        self.registered_sensors[eui_key]['registered'] = False
+                        logger.info(f"   ✅ Sensor {sensor_eui} fully detached from all base stations")
+                    else:
+                        logger.info(f"   ✅ Sensor {sensor_eui} detached from {bs_eui}, still connected to {len(self.registered_sensors[eui_key]['base_stations'])} other base stations")
+
+            # Notify via MQTT
+            if self.mqtt_out_queue:
+                detach_notification = {
+                    "topic": f"ep/{sensor_eui}/status",
+                    "payload": json.dumps({
+                        "action": "detached",
+                        "sensor_eui": sensor_eui,
+                        "base_station_eui": bs_eui,
+                        "timestamp": asyncio.get_event_loop().time()
+                    })
+                }
+                await self.mqtt_out_queue.put(detach_notification)
+
+            logger.info(f"✅ DETACH REQUEST sent for sensor {sensor_eui}")
+            return True
+
+        except Exception as e:
+            logger.error(f"❌ CRITICAL ERROR during detach request")
+            logger.error(f"   Sensor EUI: {sensor_eui}")
+            logger.error(f"   Base Station: {bs_eui}")
+            logger.error(f"   Exception: {e}")
+            return False
+
+    async def detach_sensor(self, sensor_eui: str) -> bool:
+        """Detach a sensor from all connected base stations"""
+        logger.info(f"🔌 DETACHING SENSOR {sensor_eui} from ALL base stations")
+
+        success_count = 0
+        total_count = len(self.connected_base_stations)
+
+        for writer in list(self.connected_base_stations.keys()):
+            try:
+                success = await self.send_detach_request(writer, sensor_eui)
+                if success:
+                    success_count += 1
+                await asyncio.sleep(0.1)  # Small delay between requests
+            except Exception as e:
+                logger.error(f"   ❌ Failed to detach sensor {sensor_eui} from base station: {e}")
+
+        logger.info(f"✅ SENSOR DETACH completed for {sensor_eui}")
+        logger.info(f"   Successful: {success_count}/{total_count} base stations")
+
+        return success_count > 0
+
+    async def detach_all_sensors(self) -> int:
+        """Detach all sensors from all base stations"""
+        logger.info(f"🔌 DETACHING ALL SENSORS from all base stations")
+
+        # Get list of all registered sensors
+        registered_euis = [eui for eui in self.registered_sensors.keys()
+                          if not eui.endswith('_failure') and self.registered_sensors[eui].get('registered', False)]
+
+        logger.info(f"   Total registered sensors to detach: {len(registered_euis)}")
+
+        detached_count = 0
+        for sensor_eui in registered_euis:
+            try:
+                success = await self.detach_sensor(sensor_eui)
+                if success:
+                    detached_count += 1
+                await asyncio.sleep(0.2)  # Small delay between sensors
+            except Exception as e:
+                logger.error(f"   ❌ Failed to detach sensor {sensor_eui}: {e}")
+
+        logger.info(f"✅ BULK DETACH completed")
+        logger.info(f"   Successfully detached: {detached_count}/{len(registered_euis)} sensors")
+
+        return detached_count
+
+    def clear_all_sensors(self) -> None:
+        """Clear all sensor configurations and registrations"""
+        logger.info(f"🗑️ CLEARING ALL SENSOR CONFIGURATIONS")
+
+        # Clear sensor config
+        old_count = len(self.sensor_config)
+        self.sensor_config = []
+
+        # Clear registered sensors
+        old_registered = len([k for k in self.registered_sensors.keys() if not k.endswith('_failure')])
+        self.registered_sensors.clear()
+
+        # Clear pending requests
+        self.pending_attach_requests.clear()
+
+        logger.info(f"✅ ALL SENSORS CLEARED")
+        logger.info(f"   Configurations removed: {old_count}")
+        logger.info(f"   Registrations removed: {old_registered}")
+
+    async def send_status_requests(self) -> None:
+        logger.info(f"📊 STATUS REQUEST TASK STARTED")
+        logger.info(f"   Status request interval: {bssci_config.STATUS_INTERVAL} seconds")
+
+        try:
+            while True:
+                await asyncio.sleep(bssci_config.STATUS_INTERVAL)
+                if self.connected_base_stations:
+                    logger.info(f"📊 PERIODIC STATUS REQUEST CYCLE STARTING")
+                    logger.info(f"   Connected base stations: {len(self.connected_base_stations)}")
+                    logger.info(f"   Base stations: {list(self.connected_base_stations.values())}")
+
+                    for writer in list(self.connected_base_stations.keys()):
+                        try:
+                            bs_eui = self.connected_base_stations.get(writer, "unknown")
+                            logger.info(f"   📊 Sending status request to {bs_eui}")
+
+                            status_message = messages.build_status_request(self.opID)
+                            msg_pack = encode_message(status_message)
+                            full_message = IDENTIFIER + len(msg_pack).to_bytes(4, byteorder="little") + msg_pack
+
+                            writer.write(full_message)
+                            await writer.drain()
+                            self.opID += 1
+
+                        except Exception as e:
+                            logger.error(f"   ❌ Failed to send status to {bs_eui}: {e}")
+
+                    logger.info(f"📊 STATUS REQUEST CYCLE COMPLETED")
+                else:
+                    logger.debug(f"📊 No base stations connected - skipping status requests")
+
+        except Exception as e:
+            logger.error(f"❌ STATUS REQUEST TASK FAILED: {e}")
+            raise
+
     async def handle_client(
         self, reader: asyncio.streams.StreamReader, writer: asyncio.streams.StreamWriter
     ) -> None:
@@ -677,10 +839,10 @@ class TLSServer:
                                 logger.info(f"   Previous SNR: {existing_message['snr']:.2f} dB (via {existing_message['bs_eui']})")
                                 logger.info(f"   New SNR: {snr:.2f} dB (via {bs_eui})")
                                 logger.info(f"   Updating preferred path: {existing_message['bs_eui']} → {bs_eui}")
-                                
+
                                 # Update preferred downlink path in sensor config
                                 self.update_preferred_downlink_path(eui, bs_eui, snr)
-                                
+
                                 self.deduplication_buffer[message_key] = {
                                     'message': message,
                                     'timestamp': asyncio.get_event_loop().time(),
@@ -690,7 +852,7 @@ class TLSServer:
                             else:
                                 logger.debug(f"   🔽 DEDUPLICATION: Filtered duplicate message for {eui} with lower SNR ({snr:.2f} dB <= {existing_message['snr']:.2f} dB)")
                                 self.deduplication_stats['duplicate_messages'] += 1
-                                
+
                                 # Send acknowledgment but don't queue for MQTT
                                 msg_pack = encode_message(
                                     messages.build_ul_response(message.get("opId", ""))
@@ -707,10 +869,10 @@ class TLSServer:
                             logger.debug(f"📨 DEDUPLICATION: New message received for {eui}")
                             logger.debug(f"   Message counter: {packet_cnt}")
                             logger.debug(f"   SNR: {snr:.2f} dB (via {bs_eui})")
-                            
+
                             # Update preferred downlink path for new messages too
                             self.update_preferred_downlink_path(eui, bs_eui, snr)
-                            
+
                             self.deduplication_buffer[message_key] = {
                                 'message': message,
                                 'timestamp': asyncio.get_event_loop().time(),
@@ -777,10 +939,23 @@ class TLSServer:
                         eui = message.get("eui", "unknown")
                         result = message.get("resultCode", -1)
                         status = "OK" if result == 0 else f"Fehler {result}"
-                        print(f"[DETACH] {eui} {status}")
+                        logger.info(f"[DETACH] Sensor {eui} status: {status}")
+
+                        # Notify via MQTT
+                        if self.mqtt_out_queue:
+                            detach_response_notification = {
+                                "topic": f"ep/{eui}/status",
+                                "payload": json.dumps({
+                                    "action": "detach_response",
+                                    "sensor_eui": eui,
+                                    "result": status,
+                                    "timestamp": asyncio.get_event_loop().time()
+                                })
+                            }
+                            await self.mqtt_out_queue.put(detach_response_notification)
 
                     else:
-                        print(f"[WARN] Unbekannte Nachricht: {message}")
+                        logger.warning(f"[WARN] Unknown message type: {msg_type} - Message: {message}")
 
                     # except Exception as e:
                     #    print(f"[ERROR] Fehler beim Dekodieren der Nachricht: {e}")
@@ -823,7 +998,7 @@ class TLSServer:
         while True:
             await asyncio.sleep(self.deduplication_delay)
             current_time = asyncio.get_event_loop().time()
-            
+
             # Find messages that have been in the buffer longer than the delay
             messages_to_publish = []
             for key, value in list(self.deduplication_buffer.items()): # Use list to allow modification during iteration
@@ -862,7 +1037,7 @@ class TLSServer:
                 logger.info(f"   Data Preview: SNR={data_dict['snr']:.1f}dB, RSSI={data_dict['rssi']:.1f}dBm, Count={data_dict['cnt']}")
                 logger.info(f"   Queue size before add: {self.mqtt_out_queue.qsize()}")
                 logger.debug(f"   Full Payload: {payload_json}")
-                
+
                 try:
                     await self.mqtt_out_queue.put(
                         {"topic": mqtt_topic, "payload": payload_json}
@@ -1016,12 +1191,12 @@ class TLSServer:
         for sensor in self.sensor_config:
             eui = sensor['eui'].lower()
             reg_info = self.registered_sensors.get(eui, {})
-            
+
             # Get preferred downlink path from sensor config or from instance attribute
             preferred_path = sensor.get('preferredDownlinkPath', None)
             if hasattr(self, 'preferred_downlink_paths') and eui in self.preferred_downlink_paths:
                 preferred_path = self.preferred_downlink_paths[eui]
-            
+
             status[eui] = {
                 'eui': sensor['eui'],
                 'nwKey': sensor['nwKey'],
@@ -1036,39 +1211,47 @@ class TLSServer:
         return status
 
     def clear_all_sensors(self) -> None:
-        """Clear all sensor configurations"""
+        """Clear all sensor configurations and registrations"""
+        logger.info(f"🗑️ CLEARING ALL SENSOR CONFIGURATIONS")
+
+        # Clear sensor config
+        old_count = len(self.sensor_config)
         self.sensor_config = []
-        self.registered_sensors = {}
-        try:
-            with open(self.sensor_config_file, "w") as f:
-                json.dump(self.sensor_config, f, indent=4)
-            logger.info(f"All sensor configurations and registration status cleared")
-        except Exception as e:
-            logger.error(f"Failed to clear sensor configurations: {e}")
+
+        # Clear registered sensors
+        old_registered = len([k for k in self.registered_sensors.keys() if not k.endswith('_failure')])
+        self.registered_sensors.clear()
+
+        # Clear pending requests
+        self.pending_attach_requests.clear()
+
+        logger.info(f"✅ ALL SENSORS CLEARED")
+        logger.info(f"   Configurations removed: {old_count}")
+        logger.info(f"   Registrations removed: {old_registered}")
 
     def update_preferred_downlink_path(self, eui: str, bs_eui: str, snr: float) -> None:
         """Update the preferred downlink path for a sensor based on signal quality"""
         eui_lower = eui.lower()
-        
+
         # Find the sensor in configuration
         for sensor in self.sensor_config:
             if sensor["eui"].lower() == eui_lower:
                 # Update preferred downlink path
                 if "preferredDownlinkPath" not in sensor:
                     sensor["preferredDownlinkPath"] = {}
-                
+
                 sensor["preferredDownlinkPath"] = {
                     "baseStation": bs_eui,
                     "snr": round(snr, 2),
                     "lastUpdated": self._get_local_time(),
                     "messageCount": sensor["preferredDownlinkPath"].get("messageCount", 0) + 1
                 }
-                
+
                 logger.info(f"📊 PREFERRED PATH UPDATED for sensor {eui}")
                 logger.info(f"   Base Station: {bs_eui}")
                 logger.info(f"   SNR: {snr:.2f} dB")
                 logger.info(f"   Total messages: {sensor['preferredDownlinkPath']['messageCount']}")
-                
+
                 # Save configuration
                 try:
                     with open(self.sensor_config_file, "w") as f:
@@ -1107,3 +1290,172 @@ class TLSServer:
             logger.info(f"Configuration saved to {self.sensor_config_file}")
         except Exception as e:
             logger.error(f"Failed to save configuration: {e}")
+
+    async def process_mqtt_messages(self) -> None:
+        """Process incoming MQTT messages for sensor configuration and commands"""
+        logger.info("🔄 MQTT MESSAGE PROCESSOR STARTING")
+        logger.info(f"   Monitoring queue ID: {id(self.mqtt_in_queue)}")
+
+        message_count = 0
+        try:
+            while True:
+                logger.debug(f"⏳ Waiting for MQTT message (queue size: {self.mqtt_in_queue.qsize()})")
+                message = await self.mqtt_in_queue.get()
+                message_count += 1
+
+                logger.info(f"🎉 MQTT MESSAGE #{message_count} RECEIVED!")
+                logger.info(f"   EUI: {message.get('eui', 'unknown')}")
+                logger.info(f"   Message Type: {message.get('message_type', 'config')}")
+                logger.info(f"   Message Keys: {list(message.keys())}")
+
+                try:
+                    message_type = message.get('message_type', 'config')
+
+                    if message_type == 'command':
+                        # Process command messages
+                        await self.process_mqtt_command(message)
+                    else:
+                        # Process configuration messages
+                        # Validate required fields
+                        required_fields = ['eui', 'nwKey', 'shortAddr']
+                        missing_fields = [field for field in required_fields if field not in message]
+
+                        if missing_fields:
+                            logger.error(f"❌ Invalid sensor configuration - missing fields: {missing_fields}")
+                            continue
+
+                        # Process the sensor configuration
+                        await self.process_sensor_config(message)
+
+                except Exception as e:
+                    logger.error(f"❌ Failed to process MQTT message: {e}")
+                    logger.error(f"   Message: {message}")
+
+        except Exception as e:
+            logger.error(f"❌ MQTT MESSAGE PROCESSOR FAILED: {e}")
+            raise
+
+    async def process_mqtt_command(self, command: dict) -> None:
+        """Process MQTT command messages"""
+        eui = command.get('eui')
+        action = command.get('action', '').lower()
+
+        logger.info(f"🎯 PROCESSING MQTT COMMAND for {eui}: {action}")
+
+        try:
+            if action == 'detach':
+                # Detach sensor from all base stations
+                success = await self.detach_sensor(eui)
+
+                # Send response
+                response_payload = {
+                    "action": "detach_response",
+                    "sensor_eui": eui,
+                    "success": success,
+                    "timestamp": asyncio.get_event_loop().time()
+                }
+
+                await self.mqtt_out_queue.put({
+                    "topic": f"ep/{eui}/response",
+                    "payload": json.dumps(response_payload)
+                })
+
+                logger.info(f"✅ DETACH command processed for {eui}, success: {success}")
+
+            elif action == 'attach':
+                # Find sensor in config and attach
+                sensor_config = None
+                for sensor in self.sensor_config:
+                    if sensor['eui'].lower() == eui.lower():
+                        sensor_config = sensor
+                        break
+
+                if sensor_config:
+                    # Attach to all connected base stations
+                    success_count = 0
+                    for writer in list(self.connected_base_stations.keys()):
+                        try:
+                            await self.send_attach_request(writer, sensor_config)
+                            success_count += 1
+                            await asyncio.sleep(0.1)
+                        except Exception as e:
+                            logger.error(f"Failed to attach {eui} to base station: {e}")
+
+                    success = success_count > 0
+                else:
+                    logger.error(f"Sensor {eui} not found in configuration")
+                    success = False
+
+                # Send response
+                response_payload = {
+                    "action": "attach_response",
+                    "sensor_eui": eui,
+                    "success": success,
+                    "attached_to": success_count if success else 0,
+                    "timestamp": asyncio.get_event_loop().time()
+                }
+
+                await self.mqtt_out_queue.put({
+                    "topic": f"ep/{eui}/response",
+                    "payload": json.dumps(response_payload)
+                })
+
+                logger.info(f"✅ ATTACH command processed for {eui}, success: {success}")
+
+            elif action == 'status':
+                # Get sensor status
+                eui_key = eui.lower()
+                if eui_key in self.registered_sensors:
+                    sensor_status = self.registered_sensors[eui_key]
+                else:
+                    sensor_status = {"registered": False, "base_stations": []}
+
+                # Send status response
+                response_payload = {
+                    "action": "status_response",
+                    "sensor_eui": eui,
+                    "status": sensor_status,
+                    "timestamp": asyncio.get_event_loop().time()
+                }
+
+                await self.mqtt_out_queue.put({
+                    "topic": f"ep/{eui}/response",
+                    "payload": json.dumps(response_payload)
+                })
+
+                logger.info(f"✅ STATUS command processed for {eui}")
+
+            else:
+                logger.warning(f"❓ Unknown command action: {action} for sensor {eui}")
+
+                # Send error response
+                response_payload = {
+                    "action": "error_response",
+                    "sensor_eui": eui,
+                    "error": f"Unknown command: {action}",
+                    "timestamp": asyncio.get_event_loop().time()
+                }
+
+                await self.mqtt_out_queue.put({
+                    "topic": f"ep/{eui}/response",
+                    "payload": json.dumps(response_payload)
+                })
+
+        except Exception as e:
+            logger.error(f"❌ Error processing command {action} for {eui}: {e}")
+
+            # Send error response
+            try:
+                response_payload = {
+                    "action": "error_response",
+                    "sensor_eui": eui,
+                    "error": str(e),
+                    "timestamp": asyncio.get_event_loop().time()
+                }
+
+                await self.mqtt_out_queue.put({
+                    "topic": f"ep/{eui}/response",
+                    "payload": json.dumps(response_payload)
+                })
+            except:
+                pass  # Don't let error response fail

@@ -170,10 +170,49 @@ def delete_sensor(eui):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
+@app.route('/api/sensors/<eui>/detach', methods=['POST'])
+def detach_sensor(eui):
+    """Detach a specific sensor from all base stations"""
+    try:
+        from web_main import get_tls_server
+        tls_server = get_tls_server()
+        if tls_server:
+            # Use asyncio to run the async detach method
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                success = loop.run_until_complete(tls_server.detach_sensor(eui))
+                return jsonify({'success': success, 'message': f'Sensor {eui} {"detached" if success else "detach failed"}'})
+            finally:
+                loop.close()
+        else:
+            return jsonify({'success': False, 'message': 'TLS server not available'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
 @app.route('/api/sensors/clear', methods=['POST'])
 def clear_all_sensors():
-    """Clear all sensor configurations"""
+    """Clear all sensor configurations and detach all sensors"""
     try:
+        detached_count = 0
+        
+        # First detach all sensors from base stations
+        try:
+            from web_main import get_tls_server
+            tls_server = get_tls_server()
+            if tls_server:
+                # Use asyncio to run the async detach method
+                import asyncio
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                try:
+                    detached_count = loop.run_until_complete(tls_server.detach_all_sensors())
+                finally:
+                    loop.close()
+        except Exception as e:
+            print(f"Error during bulk detach: {e}")
+        
         # Clear the file
         with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
             json.dump([], f, indent=4)
@@ -187,7 +226,8 @@ def clear_all_sensors():
         except:
             pass  # TLS server not available, that's okay
         
-        return jsonify({'success': True, 'message': 'All sensors cleared successfully'})
+        message = f'All sensors cleared successfully. Detached {detached_count} sensors from base stations.'
+        return jsonify({'success': True, 'message': message})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 

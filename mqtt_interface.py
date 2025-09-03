@@ -23,6 +23,7 @@ class MQTTClient:
         else:
             self.base_topic = BASE_TOPIC
         self.config_topic = self.base_topic + "/ep/+/config"
+        self.command_topic = self.base_topic + "/ep/+/cmd"
         self.mqtt_out_queue = mqtt_out_queue
         self.mqtt_in_queue = mqtt_in_queue
 
@@ -109,7 +110,10 @@ class MQTTClient:
         
         try:
             await client.subscribe(self.config_topic)
+            await client.subscribe(self.command_topic)
             logger.info("✅ MQTT SUBSCRIPTION SUCCESSFUL")
+            logger.info(f"👂 MQTT listening on config topic: {self.config_topic}")
+            logger.info(f"👂 MQTT listening on command topic: {self.command_topic}")
             logger.info("👂 MQTT incoming message handler is now ACTIVE and listening...")
         except Exception as sub_error:
             logger.error(f"❌ MQTT subscription failed: {sub_error}")
@@ -134,15 +138,31 @@ class MQTTClient:
                         payload_str = message.payload.decode('utf-8')
                         logger.info(f"📄 Payload: {payload_str}")
                         
-                        config = json.loads(payload_str)
-                        config["eui"] = eui
-                        
-                        logger.info(f"✅ Configuration received for EUI {eui}")
-                        logger.info(f"   Queue size before put: {self.mqtt_in_queue.qsize()}")
-                        await self.mqtt_in_queue.put(config)
-                        logger.info(f"✅ Configuration queued successfully")
-                        logger.info(f"   Queue size after put: {self.mqtt_in_queue.qsize()}")
-                        logger.info(f"📋 Config: {json.dumps(config, indent=2)}")
+                        # Check if this is a command or config message
+                        if topic_parts[-1] == "cmd":
+                            # This is a command message
+                            try:
+                                command_data = json.loads(payload_str)
+                                command_data["eui"] = eui
+                                command_data["message_type"] = "command"
+                                
+                                logger.info(f"🎯 Command received for EUI {eui}: {command_data.get('action', 'unknown')}")
+                                await self.mqtt_in_queue.put(command_data)
+                                logger.info(f"✅ Command queued successfully")
+                            except Exception as cmd_error:
+                                logger.error(f"❌ Command processing failed: {cmd_error}")
+                        else:
+                            # This is a config message
+                            config = json.loads(payload_str)
+                            config["eui"] = eui
+                            config["message_type"] = "config"
+                            
+                            logger.info(f"✅ Configuration received for EUI {eui}")
+                            logger.info(f"   Queue size before put: {self.mqtt_in_queue.qsize()}")
+                            await self.mqtt_in_queue.put(config)
+                            logger.info(f"✅ Configuration queued successfully")
+                            logger.info(f"   Queue size after put: {self.mqtt_in_queue.qsize()}")
+                            logger.info(f"📋 Config: {json.dumps(config, indent=2)}")
                     else:
                         logger.warning(f"⚠️  Invalid topic format: {message.topic}")
 

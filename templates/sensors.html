@@ -109,8 +109,15 @@ function loadSensors() {
                             <br><small><strong>Updated:</strong> ${new Date(sensor.preferredDownlinkPath.lastUpdated).toLocaleString()}</small>` : 
                             '<span class="text-muted">No data received</span>'}</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary" onclick="editSensor('${sensor.eui}')">Edit</button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteSensor('${sensor.eui}')">Delete</button>
+                        <button class="btn btn-sm btn-primary me-1" onclick="editSensor('${sensor.eui}')" style="background-color: #ff8c00; border-color: #ff8c00;">
+                            Edit
+                        </button>
+                        <button class="btn btn-sm btn-warning me-1" onclick="detachSensor('${sensor.eui}')" title="Detach from all base stations">
+                            Detach
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteSensor('${sensor.eui}')">
+                            Delete
+                        </button>
                     </td>
                 </tr>
             `).join('');
@@ -171,21 +178,45 @@ function saveSensor() {
     });
 }
 
-function deleteSensor(eui) {
-    if (confirm('Are you sure you want to delete this sensor?')) {
-        fetch(`/api/sensors/${eui}`, {
-            method: 'DELETE'
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                loadSensors();
-            } else {
-                alert('Error: ' + result.message);
-            }
-        });
+function detachSensor(eui) {
+        if (confirm(`Are you sure you want to detach sensor ${eui} from all base stations?`)) {
+            fetch(`/api/sensors/${eui}/detach`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', data.message);
+                    loadSensors();
+                } else {
+                    showAlert('danger', data.message);
+                }
+            })
+            .catch(error => {
+                showAlert('danger', 'Error detaching sensor: ' + error.message);
+            });
+        }
     }
-}
+
+    function deleteSensor(eui) {
+        if (confirm(`Are you sure you want to delete sensor ${eui}?`)) {
+            fetch(`/api/sensors/${eui}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', data.message);
+                    loadSensors();
+                } else {
+                    showAlert('danger', data.message);
+                }
+            })
+            .catch(error => {
+                showAlert('danger', 'Error deleting sensor: ' + error.message);
+            });
+        }
+    }
 
 function reloadSensors() {
     fetch('/api/sensors/reload', {
@@ -203,21 +234,24 @@ function reloadSensors() {
 }
 
 function clearAllSensors() {
-    if (confirm('Are you sure you want to delete ALL sensors? This cannot be undone.')) {
-        fetch('/api/sensors/clear', {
-            method: 'POST'
-        })
-        .then(response => response.json())
-        .then(result => {
-            if (result.success) {
-                loadSensors();
-                alert('All sensors cleared successfully');
-            } else {
-                alert('Error: ' + result.message);
-            }
-        });
+        if (confirm('Are you sure you want to clear ALL sensors? This will detach all sensors from base stations and remove all configurations. This action cannot be undone.')) {
+            fetch('/api/sensors/clear', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', data.message);
+                    loadSensors();
+                } else {
+                    showAlert('danger', data.message);
+                }
+            })
+            .catch(error => {
+                showAlert('danger', 'Error clearing sensors: ' + error.message);
+            });
+        }
     }
-}
 
 // Load sensors on page load
 loadSensors();
