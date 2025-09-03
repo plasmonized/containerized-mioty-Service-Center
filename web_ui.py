@@ -738,45 +738,95 @@ def restore_certificates():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
-@app.route('/api/service/restart', methods=['POST'])
-def restart_service():
-    """Restart the BSSCI service"""
+@app.route('/api/container/restart', methods=['POST'])
+def restart_container():
+    """Force restart the entire container"""
     import subprocess
     import threading
     import time
+    import os
+
+    def container_restart_in_background():
+        """Perform container restart in a separate thread"""
+        try:
+            time.sleep(1)  # Small delay to allow response to be sent
+            
+            logger.info("Forcing container restart")
+            try:
+                # Send SIGTERM to PID 1 (init process) to restart the container
+                subprocess.run(['kill', '-TERM', '1'], check=False, timeout=5)
+            except Exception as e:
+                logger.error(f"Container restart failed: {e}")
+                # Fallback: exit the main process which should cause container restart
+                os._exit(0)
+                
+        except Exception as e:
+            logger.error(f"Error during container restart: {e}")
+            os._exit(1)
+
+    try:
+        # Start restart in background thread
+        restart_thread = threading.Thread(target=container_restart_in_background)
+        restart_thread.daemon = True
+        restart_thread.start()
+        
+        return jsonify({'success': True, 'message': 'Container restart initiated. The container will restart completely to reload all environment variables.'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/service/restart', methods=['POST'])
+def restart_service():
+    """Restart the BSSCI service with full environment reload"""
+    import subprocess
+    import threading
+    import time
+    import os
 
     def restart_in_background():
         """Perform the restart operation in a separate thread"""
         try:
             time.sleep(1)  # Small delay to allow response to be sent
 
-            # Execute kill commands with completely static strings
-            try:
-                subprocess.run(['pkill', '-f', 'python.*web_main.py'], check=False, timeout=10)
-            except Exception:
-                pass
-
-            try:
-                subprocess.run(['pkill', '-f', 'python.*main.py'], check=False, timeout=10)
-            except Exception:
-                pass
-
-            try:
-                subprocess.run(['pkill', '-f', 'python.*sync_main.py'], check=False, timeout=10)
-            except Exception:
-                pass
-
-            time.sleep(2)  # Wait for processes to terminate
-
-            # Start the service again with completely static command
-            try:
-                subprocess.Popen(['python', 'web_main.py'],
-                               stdout=subprocess.DEVNULL,
-                               stderr=subprocess.DEVNULL)
-            except Exception:
-                pass
+            # Check if we're running in Docker
+            is_docker = os.path.exists('/.dockerenv') or os.getenv('CONTAINER') == '1'
+            
+            if is_docker:
+                # In Docker, we need to restart the entire container to reload .env
+                logger.info("Docker environment detected - triggering container restart")
+                try:
+                    # Send SIGTERM to PID 1 (init process) to restart the container gracefully
+                    subprocess.run(['kill', '-TERM', '1'], check=False, timeout=5)
+                except Exception as e:
+                    logger.error(f"Container restart failed: {e}")
+                    # Fallback to process restart
+                    _restart_processes()
+            else:
+                # In regular environment, restart processes and reload environment
+                logger.info("Regular environment detected - restarting processes")
+                _restart_processes()
+                
         except Exception as e:
-            print(f"Error during restart: {e}")
+            logger.error(f"Error during restart: {e}")
+            # Fallback to basic process restart
+            _restart_processes()
+
+    def _restart_processes():
+        """Restart Python processes"""
+        try:
+            # Kill existing processes
+            subprocess.run(['pkill', '-f', 'python.*web_main.py'], check=False, timeout=10)
+            subprocess.run(['pkill', '-f', 'python.*main.py'], check=False, timeout=10)
+            subprocess.run(['pkill', '-f', 'python.*sync_main.py'], check=False, timeout=10)
+
+            time.sleep(3)  # Wait for processes to terminate
+
+            # Reload environment and start the service again
+            subprocess.Popen(['python', 'web_main.py'],
+                           stdout=subprocess.DEVNULL,
+                           stderr=subprocess.DEVNULL,
+                           env=dict(os.environ))  # Pass current environment
+        except Exception as e:
+            logger.error(f"Error restarting processes: {e}")
 
     try:
         # Start restart in background thread
@@ -784,7 +834,7 @@ def restart_service():
         restart_thread.daemon = True
         restart_thread.start()
 
-        return jsonify({'success': True, 'message': 'Service restart initiated'})
+        return jsonify({'success': True, 'message': 'Service restart initiated. In Docker environments, the entire container will restart to reload environment variables.'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
