@@ -94,8 +94,8 @@ def get_sensors():
     try:
         # Try to get data from TLS server first (includes registration status)
         try:
-            from web_main import get_tls_server
-            tls_server = get_tls_server()
+            global tls_server_instance
+            tls_server = tls_server_instance
             if tls_server:
                 tls_server.reload_sensor_config()
                 # Get registration status which already includes preferred paths
@@ -174,8 +174,8 @@ def delete_sensor(eui):
 def detach_sensor(eui):
     """Detach a specific sensor from all base stations"""
     try:
-        from web_main import get_tls_server
-        tls_server = get_tls_server()
+        global tls_server_instance
+        tls_server = tls_server_instance
         if tls_server and hasattr(tls_server, 'detach_sensor'):
             try:
                 # Get the main event loop from the TLS server's thread
@@ -210,8 +210,8 @@ def clear_all_sensors():
         
         # First detach all sensors from base stations
         try:
-            from web_main import get_tls_server
-            tls_server = get_tls_server()
+            global tls_server_instance
+            tls_server = tls_server_instance
             if tls_server and hasattr(tls_server, 'detach_all_sensors'):
                 try:
                     # Get the main event loop from the TLS server's thread
@@ -242,8 +242,8 @@ def clear_all_sensors():
         
         # Also clear from TLS server if available
         try:
-            from web_main import get_tls_server
-            tls_server = get_tls_server()
+            global tls_server_instance
+            tls_server = tls_server_instance
             if tls_server:
                 tls_server.clear_all_sensors()
         except:
@@ -258,8 +258,8 @@ def clear_all_sensors():
 def reload_sensors():
     """Force reload sensor configuration in TLS server"""
     try:
-        from web_main import get_tls_server
-        tls_server = get_tls_server()
+        global tls_server_instance
+        tls_server = tls_server_instance
         if tls_server:
             tls_server.reload_sensor_config()
             return jsonify({'success': True, 'message': 'Sensor configuration reloaded successfully'})
@@ -359,11 +359,19 @@ def get_logs():
         'source': 'memory'
     })
 
+# Global variable to store TLS server instance
+tls_server_instance = None
+
+def set_tls_server(server):
+    """Set the TLS server instance"""
+    global tls_server_instance
+    tls_server_instance = server
+
 def get_bssci_service_status():
     """Get the status of the BSSCI service"""
     try:
-        from web_main import get_tls_server
-        tls_server = get_tls_server()
+        global tls_server_instance
+        tls_server = tls_server_instance
         if tls_server:
             bs_status = tls_server.get_base_station_status()
             sensor_status = tls_server.get_sensor_registration_status()
@@ -449,9 +457,9 @@ def bssci_status():
 def get_base_stations():
     """Get status of connected base stations"""
     try:
-        # Import here to avoid circular import
-        from web_main import get_tls_server
-        tls_server = get_tls_server()
+        # Use global TLS server instance
+        global tls_server_instance
+        tls_server = tls_server_instance
         
         if tls_server:
             status = tls_server.get_base_station_status()

@@ -1,4 +1,3 @@
-
 import asyncio
 import logging
 import threading
@@ -66,15 +65,15 @@ def set_tls_server(server):
 
 if __name__ == "__main__":
     logger.info("Starting BSSCI Service Center with Web UI")
-    
+
     # Start web UI in a separate thread
     web_thread = threading.Thread(target=run_web_ui, daemon=True)
     web_thread.start()
-    
+
     # Give web UI time to start
     time.sleep(2)
     logger.info("Web UI available at http://localhost:5000")
-    
+
     # Run BSSCI service in main thread
     try:
         run_bssci_service()
