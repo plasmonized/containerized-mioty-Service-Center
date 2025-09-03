@@ -36,10 +36,13 @@ class TimezoneFormatter(logging.Formatter):
         else:
             return local_time.strftime('%Y-%m-%d %H:%M:%S')
 
-# Configure logging
+# Configure logging - FORCE CONSOLE OUTPUT
+import sys
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.DEBUG,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    stream=sys.stdout,  # FORCE console output
+    force=True  # Override any existing handlers
 )
 
 # Apply timezone formatter to all handlers
@@ -97,6 +100,14 @@ def set_tls_server(server):
 
 
 if __name__ == "__main__":
+    # FORCE console output
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(timezone_formatter)
+    logging.getLogger().addHandler(console_handler)
+    logging.getLogger().setLevel(logging.DEBUG)
+    
+    print("🚀 BSSCI SERVICE CENTER STARTING...")
+    print("=" * 50)
     logger.info("Starting BSSCI Service Center with Web UI")
 
     # Start web UI in a separate thread
@@ -106,9 +117,12 @@ if __name__ == "__main__":
     # Give web UI time to start
     time.sleep(2)
     logger.info("Web UI available at http://localhost:5000")
+    print("✅ Web UI started on http://localhost:5000")
 
     # Run BSSCI service in main thread
     try:
+        print("🔌 Starting BSSCI TLS service...")
         run_bssci_service()
     except KeyboardInterrupt:
         logger.info("Shutting down...")
+        print("👋 BSSCI Service Center shutting down...")
