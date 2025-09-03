@@ -8,8 +8,11 @@
         <button class="btn me-2" onclick="reloadSensors()" title="Reload sensor configuration" style="background-color: #6c757d; color: white; border-color: #6c757d;">
             Reload Config
         </button>
-        <button class="btn btn-danger me-2" onclick="clearAllSensors()" title="Clear all sensors">
-            Clear All
+        <button class="btn btn-success me-2" onclick="attachAllSensors()" title="Attach all sensors to base stations">
+            Attach All
+        </button>
+        <button class="btn btn-warning me-2" onclick="detachAllSensors()" title="Detach all sensors from base stations">
+            Detach All
         </button>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sensorModal" onclick="openSensorModal()" style="background-color: #ff8c00; border-color: #ff8c00;">
             Add New Sensor
@@ -87,48 +90,43 @@
 let editingEui = null;
 
 function getActivityStatusHtml(sensor) {
-    if (!sensor.last_seen_timestamp || sensor.last_seen_timestamp === 0) {
-        return '<span class="badge bg-secondary">No Data</span>';
-    }
-    
     const lastSeenHours = sensor.hours_since_last_seen || 0;
     
-    if (sensor.activity_status === 'auto_detached') {
-        const autoDetachInfo = sensor.auto_detach_info || {};
-        return `<span class="badge bg-danger">Auto-Detached</span>
-                <br><small><strong>Reason:</strong> ${autoDetachInfo.reason || 'inactivity'}</small>
-                <br><small><strong>Inactive:</strong> ${autoDetachInfo.inactive_hours || 'N/A'}h</small>
-                <br><small><strong>Detached:</strong> ${autoDetachInfo.detach_time || 'N/A'}</small>`;
+    // Handle different activity statuses
+    switch(sensor.activity_status) {
+        case 'auto_detached':
+            const autoDetachInfo = sensor.auto_detach_info || {};
+            return `<span class="badge bg-danger">Auto-Detached</span>
+                    <br><small><strong>Reason:</strong> ${autoDetachInfo.reason || 'inactivity'}</small>
+                    <br><small><strong>Inactive:</strong> ${autoDetachInfo.inactive_hours || 'N/A'}h</small>
+                    <br><small><strong>Detached:</strong> ${autoDetachInfo.detach_time || 'N/A'}</small>`;
+        
+        case 'warning':
+            const warningInfo = sensor.warning_info || {};
+            return `<span class="badge bg-warning text-dark">⚠️ Warning</span>
+                    <br><small><strong>Inactive:</strong> ${warningInfo.hours_inactive?.toFixed(1) || lastSeenHours.toFixed(1)}h</small>
+                    <br><small><strong>Auto-detach in:</strong> ${warningInfo.hours_until_detach?.toFixed(1) || 'N/A'}h</small>
+                    <br><small><strong>Warning sent:</strong> ${warningInfo.warning_sent ? 'Yes' : 'No'}</small>`;
+        
+        case 'auto_detach_pending':
+            return `<span class="badge bg-danger">Detach Pending</span>
+                    <br><small><strong>Inactive:</strong> ${lastSeenHours.toFixed(1)}h</small>
+                    <br><small><strong>Status:</strong> Will be detached soon</small>`;
+        
+        case 'active':
+            return `<span class="badge bg-success">Active</span>
+                    <br><small><strong>Last seen:</strong> ${lastSeenHours.toFixed(1)}h ago</small>`;
+        
+        case 'no_data':
+        default:
+            // Check if sensor has data but status not set properly
+            if (sensor.preferredDownlinkPath || lastSeenHours > 0) {
+                // Sensor has data, should be active
+                return `<span class="badge bg-success">Active</span>
+                        <br><small><strong>Last seen:</strong> ${lastSeenHours > 0 ? lastSeenHours.toFixed(1) + 'h ago' : 'Recently'}</small>`;
+            }
+            return '<span class="badge bg-secondary">No Data</span>';
     }
-    
-    if (sensor.activity_status === 'warning') {
-        const warningInfo = sensor.warning_info || {};
-        return `<span class="badge bg-warning text-dark">⚠️ Warning</span>
-                <br><small><strong>Inactive:</strong> ${warningInfo.hours_inactive || lastSeenHours}h</small>
-                <br><small><strong>Auto-detach in:</strong> ${warningInfo.hours_until_detach || 'N/A'}h</small>
-                <br><small><strong>Warning sent:</strong> ${warningInfo.warning_sent ? 'Yes' : 'No'}</small>`;
-    }
-    
-    if (sensor.activity_status === 'auto_detach_pending') {
-        return `<span class="badge bg-danger">Detach Pending</span>
-                <br><small><strong>Inactive:</strong> ${lastSeenHours}h</small>
-                <br><small><strong>Status:</strong> Will be detached soon</small>`;
-    }
-    
-    // Active status
-    let statusClass = 'bg-success';
-    let statusText = 'Active';
-    
-    if (lastSeenHours > 24) {
-        statusClass = 'bg-info';
-        statusText = 'Idle';
-    } else if (lastSeenHours > 12) {
-        statusClass = 'bg-secondary';
-        statusText = 'Quiet';
-    }
-    
-    return `<span class="badge ${statusClass}">${statusText}</span>
-            <br><small><strong>Last seen:</strong> ${lastSeenHours}h ago</small>`;
 }
 
 function loadSensors() {
@@ -143,10 +141,11 @@ function loadSensors() {
                     <td><code>${sensor.shortAddr}</code></td>
                     <td>${sensor.bidi ? 'Yes' : 'No'}</td>
                     <td>
-                        ${sensor.registered ? 
+                        ${(sensor.registered || sensor.preferredDownlinkPath || sensor.last_seen_timestamp > 0) ? 
                             `<span class="badge bg-success">Registered</span>
-                            <br><small>Base Stations (${sensor.total_registrations || 0}):</small>
-                            <br><small>${sensor.base_stations ? sensor.base_stations.join(', ') : 'N/A'}</small>` : 
+                            <br><small>Base Stations (${sensor.total_registrations || (sensor.base_stations ? sensor.base_stations.length : 0)}):</small>
+                            <br><small>${sensor.base_stations && sensor.base_stations.length > 0 ? sensor.base_stations.join(', ') : 
+                                (sensor.preferredDownlinkPath ? sensor.preferredDownlinkPath.baseStation : 'Active')}</small>` : 
                             '<span class="badge bg-warning">Not Registered</span>'}</td>
                     <td>${getActivityStatusHtml(sensor)}</td>
                     <td>${sensor.preferredDownlinkPath ? 
@@ -278,6 +277,46 @@ function reloadSensors() {
             alert('Error: ' + result.message);
         }
     });
+}
+
+function attachAllSensors() {
+    if (confirm('Are you sure you want to attach ALL configured sensors to base stations?')) {
+        fetch('/api/sensors/attach-all', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.message);
+                loadSensors();
+            } else {
+                showAlert('danger', data.message);
+            }
+        })
+        .catch(error => {
+            showAlert('danger', 'Error attaching sensors: ' + error.message);
+        });
+    }
+}
+
+function detachAllSensors() {
+    if (confirm('Are you sure you want to detach ALL sensors from base stations? This will not delete the sensor configurations.')) {
+        fetch('/api/sensors/detach-all', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.message);
+                loadSensors();
+            } else {
+                showAlert('danger', data.message);
+            }
+        })
+        .catch(error => {
+            showAlert('danger', 'Error detaching sensors: ' + error.message);
+        });
+    }
 }
 
 function clearAllSensors() {

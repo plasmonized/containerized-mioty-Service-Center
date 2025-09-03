@@ -106,22 +106,57 @@ def sensors():
 @app.route('/api/sensors', methods=['GET'])
 def get_sensors():
     try:
-        # Try to get data from TLS server first (includes registration status)
-        try:
-            global tls_server_instance
-            tls_server = tls_server_instance
-            if tls_server:
-                tls_server.reload_sensor_config()
-                # Get registration status which already includes preferred paths
-                sensor_status = tls_server.get_sensor_registration_status()
-                return jsonify(sensor_status)
-        except Exception as e:
-            print(f"Error getting data from TLS server: {e}")
-
+        global tls_server_instance
+        tls_server = tls_server_instance
+        
+        if tls_server:
+            # Get sensor registration status from TLS server
+            sensor_status = tls_server.get_sensor_registration_status()
+            
+            # Fix registration status - if sensor has received data, it should be marked as registered
+            for eui, sensor_data in sensor_status.items():
+                # If sensor has preferred downlink path or has been seen recently, mark as registered
+                if (sensor_data.get('preferredDownlinkPath') or 
+                    sensor_data.get('last_seen_timestamp', 0) > 0):
+                    sensor_data['registered'] = True
+                    if not sensor_data.get('base_stations'):
+                        # If no base stations recorded but data received, add from preferred path
+                        if sensor_data.get('preferredDownlinkPath', {}).get('baseStation'):
+                            sensor_data['base_stations'] = [sensor_data['preferredDownlinkPath']['baseStation']]
+                            sensor_data['total_registrations'] = 1
+                
+                # Calculate proper activity status
+                current_time = time.time()
+                last_seen = sensor_data.get('last_seen_timestamp', 0)
+                
+                if last_seen > 0:
+                    hours_since_last_seen = (current_time - last_seen) / 3600
+                    sensor_data['hours_since_last_seen'] = hours_since_last_seen
+                    
+                    # Set activity status based on actual thresholds
+                    warning_threshold = getattr(bssci_config, 'AUTO_DETACH_WARNING_TIMEOUT', 129600) / 3600  # Convert to hours
+                    detach_threshold = getattr(bssci_config, 'AUTO_DETACH_TIMEOUT', 259200) / 3600  # Convert to hours
+                    
+                    if hours_since_last_seen >= detach_threshold:
+                        sensor_data['activity_status'] = 'auto_detach_pending'
+                    elif hours_since_last_seen >= warning_threshold:
+                        sensor_data['activity_status'] = 'warning'
+                        sensor_data['warning_info'] = {
+                            'hours_inactive': hours_since_last_seen,
+                            'hours_until_detach': max(0, detach_threshold - hours_since_last_seen),
+                            'warning_sent': sensor_data.get('warning_sent', False)
+                        }
+                    else:
+                        sensor_data['activity_status'] = 'active'
+                else:
+                    sensor_data['activity_status'] = 'no_data'
+                    sensor_data['hours_since_last_seen'] = 0
+            
+            return jsonify(sensor_status)
+        
         # Fallback to file only
         with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
             sensors = json.load(f)
-            # Convert to registration status format
             sensor_status = {}
             for sensor in sensors:
                 eui = sensor['eui'].lower()
@@ -134,7 +169,9 @@ def get_sensors():
                     'registration_info': {},
                     'base_stations': [],
                     'total_registrations': 0,
-                    'preferredDownlinkPath': sensor.get('preferredDownlinkPath', None)
+                    'preferredDownlinkPath': sensor.get('preferredDownlinkPath', None),
+                    'activity_status': 'no_data',
+                    'hours_since_last_seen': 0
                 }
             return jsonify(sensor_status)
     except Exception as e:
@@ -195,6 +232,54 @@ def detach_sensor(eui):
             return jsonify({'success': success, 'message': f'Sensor {eui} {"detached" if success else "detach failed"}'})
         else:
             return jsonify({'success': False, 'message': 'TLS server not available'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/sensors/attach-all', methods=['POST'])
+def attach_all_sensors():
+    """Attach all configured sensors to base stations"""
+    try:
+        global tls_server_instance
+        tls_server = tls_server_instance
+        
+        if not tls_server:
+            return jsonify({'success': False, 'message': 'TLS server not available'})
+        
+        # Get all sensors from config file
+        try:
+            with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
+                sensors = json.load(f)
+        except:
+            sensors = []
+        
+        if not sensors:
+            return jsonify({'success': False, 'message': 'No sensors configured to attach'})
+        
+        # Force reload sensor config to ensure all sensors are loaded
+        tls_server.reload_sensor_config()
+        
+        attached_count = len(sensors)
+        message = f'All sensors ready for attachment. {attached_count} sensors loaded and will be attached when base stations register them.'
+        return jsonify({'success': True, 'message': message})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/sensors/detach-all', methods=['POST'])
+def detach_all_sensors():
+    """Detach all sensors from base stations"""
+    try:
+        global tls_server_instance
+        tls_server = tls_server_instance
+        
+        if not tls_server:
+            return jsonify({'success': False, 'message': 'TLS server not available'})
+        
+        if hasattr(tls_server, 'detach_all_sensors_sync'):
+            detached_count = tls_server.detach_all_sensors_sync()
+            message = f'Successfully detached {detached_count} sensors from all base stations.'
+            return jsonify({'success': True, 'message': message})
+        else:
+            return jsonify({'success': False, 'message': 'Detach all function not available'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
