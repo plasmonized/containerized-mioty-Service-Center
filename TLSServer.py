@@ -782,7 +782,29 @@ class TLSServer:
             result = message.get('result', 'success')  # Default to success if not specified
             logger.info(f"✅ Attach propagate response received (opId: {op_id}): {result}")
             logger.debug(f"Full attach propagate response: {message}")
-            # Base station has confirmed the sensor attach request
+            
+            # Record successful sensor registration with base station
+            if op_id in self.pending_attach_requests:
+                attach_info = self.pending_attach_requests[op_id]
+                sensor_eui = attach_info.get('sensor_eui', '').lower()
+                base_station_eui = attach_info.get('base_station')
+                
+                if sensor_eui and base_station_eui:
+                    # Initialize sensor registration if not exists
+                    if sensor_eui not in self.registered_sensors:
+                        self.registered_sensors[sensor_eui] = {
+                            'base_stations': [],
+                            'timestamp': asyncio.get_event_loop().time()
+                        }
+                    
+                    # Add base station if not already registered
+                    if base_station_eui not in self.registered_sensors[sensor_eui]['base_stations']:
+                        self.registered_sensors[sensor_eui]['base_stations'].append(base_station_eui)
+                        logger.info(f"📋 Sensor {sensor_eui.upper()} now registered with {len(self.registered_sensors[sensor_eui]['base_stations'])} base stations")
+                        logger.info(f"   Base stations: {', '.join(self.registered_sensors[sensor_eui]['base_stations'])}")
+                
+                # Remove from pending requests
+                del self.pending_attach_requests[op_id]
             
         elif command == 'statusCmp':
             # Status complete message
