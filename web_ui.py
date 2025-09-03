@@ -406,8 +406,6 @@ def get_bssci_service_status():
                 'registered_sensors': len([s for s in sensor_status.values() if s['registered']]),
                 'pending_requests': len(tls_server.pending_attach_requests) if hasattr(tls_server, 'pending_attach_requests') else 0
             }
-                'pending_requests': len(tls_server.pending_attach_requests) if hasattr(tls_server, 'pending_attach_requests') else 0
-            }
         else:
             return {
                 'running': False, 
@@ -415,7 +413,10 @@ def get_bssci_service_status():
                 'service_type': 'web_ui',
                 'tls_server': {'active': False},
                 'mqtt_broker': {'active': False},
-                'base_stations': {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []}
+                'base_stations': {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []},
+                'total_sensors': 0,
+                'registered_sensors': 0,
+                'pending_requests': 0
             }
     except Exception as e:
         import traceback
