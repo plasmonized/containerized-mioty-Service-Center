@@ -2,11 +2,24 @@ import asyncio
 import logging
 import threading
 import time
+import os
 from web_ui import app
 from main import main as bssci_main
 
 # Configure logging with timezone
 from datetime import datetime, timezone, timedelta
+
+# Check for Synology Docker mode
+if os.getenv('SYNOLOGY_DOCKER') == '1':
+    print("=" * 50)
+    print("SYNOLOGY DOCKER MODE DETECTED")
+    print("=" * 50)
+    print("Configuration files have been copied to writable container locations.")
+    print("Changes made via web UI will be container-local only.")
+    print("To persist changes, backup config files after making changes:")
+    print("  docker cp bssci-service-center:/app/bssci_config.py ./bssci_config.py")
+    print("  docker cp bssci-service-center:/app/endpoints.json ./endpoints.json")
+    print("=" * 50)
 
 class TimezoneFormatter(logging.Formatter):
     def __init__(self, fmt, datefmt=None):

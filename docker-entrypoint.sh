@@ -9,9 +9,31 @@ chmod 755 /app/logs
 # Ensure certificates directory exists
 mkdir -p /app/certs
 
-# Fix permissions for configuration files at runtime
-chmod 644 /app/bssci_config.py /app/endpoints.json 2>/dev/null || true
-chown $(id -u):$(id -g) /app/bssci_config.py /app/endpoints.json 2>/dev/null || true
+# Handle Synology Docker setup
+if [ "$SYNOLOGY_DOCKER" = "1" ]; then
+    echo "Synology Docker mode detected - copying config files to writable locations"
+    
+    # Copy config files from host mounts to writable container locations
+    if [ -f "/tmp/host_bssci_config.py" ]; then
+        cp /tmp/host_bssci_config.py /app/bssci_config.py
+        echo "Copied bssci_config.py to writable location"
+    fi
+    
+    if [ -f "/tmp/host_endpoints.json" ]; then
+        cp /tmp/host_endpoints.json /app/endpoints.json
+        echo "Copied endpoints.json to writable location"
+    fi
+    
+    # Set proper permissions on copied files
+    chmod 644 /app/bssci_config.py /app/endpoints.json 2>/dev/null || true
+    chown $(id -u):$(id -g) /app/bssci_config.py /app/endpoints.json 2>/dev/null || true
+    
+    echo "Synology setup complete - config files are now writable"
+else
+    # Standard Docker setup - fix permissions for configuration files at runtime
+    chmod 644 /app/bssci_config.py /app/endpoints.json 2>/dev/null || true
+    chown $(id -u):$(id -g) /app/bssci_config.py /app/endpoints.json 2>/dev/null || true
+fi
 
 # Generate self-signed certificates if they don't exist
 if [ ! -f "/app/certs/ca_cert.pem" ] || [ ! -f "/app/certs/service_center_cert.pem" ] || [ ! -f "/app/certs/service_center_key.pem" ]; then

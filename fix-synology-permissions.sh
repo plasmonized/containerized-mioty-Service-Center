@@ -59,6 +59,11 @@ echo "3. To persist config changes, manually backup:"
 echo "   docker cp bssci-service-center:/app/bssci_config.py ./bssci_config.py"
 echo "   docker cp bssci-service-center:/app/endpoints.json ./endpoints.json"
 echo ""
+echo "4. If you get permission errors:"
+echo "   sudo chown -R 1000:1000 ."
+echo "   chmod 755 logs certs"
+echo "   chmod 644 *.py *.json"
+echo ""
 echo "=== Starting container with Synology configuration ==="
 docker-compose -f docker-compose.synology.yml up --build -d
 
