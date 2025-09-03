@@ -1,4 +1,3 @@
-
 import json
 import logging
 import os
@@ -6,11 +5,25 @@ import threading
 import time
 from datetime import datetime, timezone, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for
-from typing import List, Dict, Any
 import bssci_config
 
+# Global TLS server instance reference
+tls_server_instance = None
+
 app = Flask(__name__)
-app.secret_key = 'bssci-ui-secret-key'
+app.secret_key = 'your-secret-key-here'
+
+@app.errorhandler(500)
+def internal_error(error):
+    """Handle internal server errors and return JSON"""
+    return jsonify({
+        'error': 'Internal server error',
+        'running': False,
+        'service_type': 'web_ui',
+        'tls_server': {'active': False},
+        'mqtt_broker': {'active': False},
+        'base_stations': {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []}
+    }), 500
 
 # Global variables for log storage and configuration
 log_entries: List[Dict[str, Any]] = []
@@ -25,34 +38,34 @@ class WebUILogHandler(logging.Handler):
 
     def emit(self, record):
         global log_entries
-        
+
         # Filter out noisy web request logs to reduce clutter
         if record.name == 'werkzeug' and any(x in record.getMessage() for x in [
             'GET /api/', 'GET /logs', 'GET /sensors', 'GET /config', 'GET /', 'GET /static/'
         ]):
             return  # Skip web request logs
-            
+
         # Convert UTC timestamp to local timezone
         utc_time = datetime.fromtimestamp(record.created, tz=timezone.utc)
         local_time = utc_time.astimezone(self.timezone)
         current_time = local_time.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
-        
+
         message = record.getMessage()
-        
+
         # Check if this exact message was logged in the last second (duplicate detection)
         if log_entries:
             last_entry = log_entries[-1]
             try:
                 last_time = datetime.strptime(last_entry['timestamp'], '%Y-%m-%d %H:%M:%S.%f')
                 time_diff = abs((local_time.replace(tzinfo=None) - last_time).total_seconds())
-                
+
                 if (time_diff < 1.0 and  # Within 1 second
-                    last_entry['message'] == message and 
+                    last_entry['message'] == message and
                     last_entry['logger'] == record.name):
                     return  # Skip duplicate message
             except:
                 pass  # If timestamp parsing fails, continue with logging
-            
+
         log_entry = {
             'timestamp': current_time,
             'level': record.levelname,
@@ -61,7 +74,7 @@ class WebUILogHandler(logging.Handler):
             'source': 'memory'
         }
         log_entries.append(log_entry)
-        
+
         # Keep only the last max_log_entries
         if len(log_entries) > max_log_entries:
             log_entries = log_entries[-max_log_entries:]
@@ -71,7 +84,7 @@ if not any(isinstance(h, WebUILogHandler) for h in logging.getLogger().handlers)
     web_handler = WebUILogHandler()
     logging.getLogger().addHandler(web_handler)
     logging.getLogger().setLevel(logging.DEBUG)
-    
+
     # Specifically capture important logs
     logging.getLogger('TLSServer').setLevel(logging.DEBUG)
     logging.getLogger('mqtt_interface').setLevel(logging.DEBUG)
@@ -103,7 +116,7 @@ def get_sensors():
                 return jsonify(sensor_status)
         except Exception as e:
             print(f"Error getting data from TLS server: {e}")
-        
+
         # Fallback to file only
         with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
             sensors = json.load(f)
@@ -135,7 +148,7 @@ def add_sensor():
             sensors = json.load(f)
     except:
         sensors = []
-    
+
     # Check if sensor already exists
     for sensor in sensors:
         if sensor['eui'].lower() == data['eui'].lower():
@@ -145,7 +158,7 @@ def add_sensor():
     else:
         # Add new sensor
         sensors.append(data)
-    
+
     try:
         with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
             json.dump(sensors, f, indent=4)
@@ -160,9 +173,9 @@ def delete_sensor(eui):
             sensors = json.load(f)
     except:
         sensors = []
-    
+
     sensors = [s for s in sensors if s['eui'].lower() != eui.lower()]
-    
+
     try:
         with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
             json.dump(sensors, f, indent=4)
@@ -192,7 +205,7 @@ def clear_all_sensors():
     """Clear all sensor configurations and detach all sensors"""
     try:
         detached_count = 0
-        
+
         # First detach all sensors from base stations
         try:
             global tls_server_instance
@@ -205,11 +218,11 @@ def clear_all_sensors():
                     detached_count = 0
         except Exception as e:
             print(f"Error during bulk detach: {e}")
-        
+
         # Clear the file
         with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
             json.dump([], f, indent=4)
-        
+
         # Also clear from TLS server if available
         try:
             global tls_server_instance
@@ -218,7 +231,7 @@ def clear_all_sensors():
                 tls_server.clear_all_sensors()
         except:
             pass  # TLS server not available, that's okay
-        
+
         message = f'All sensors cleared successfully. Detached {detached_count} sensors from base stations.'
         return jsonify({'success': True, 'message': message})
     except Exception as e:
@@ -285,7 +298,7 @@ AUTO_DETACH_TIMEOUT = {data.get('AUTO_DETACH_TIMEOUT', 259200)}  # {data.get('AU
 AUTO_DETACH_WARNING_TIMEOUT = {data.get('AUTO_DETACH_WARNING_TIMEOUT', 129600)}  # {data.get('AUTO_DETACH_WARNING_TIMEOUT', 129600) / 3600:.1f} hours in seconds
 AUTO_DETACH_CHECK_INTERVAL = {data.get('AUTO_DETACH_CHECK_INTERVAL', 3600)}  # Check every hour
 '''
-    
+
     try:
         with open('bssci_config.py', 'w') as f:
             f.write(config_content)
@@ -304,24 +317,24 @@ def logs():
 @app.route('/api/logs')
 def get_logs():
     global log_entries
-    
+
     # Get query parameters for filtering
     level_filter = request.args.get('level', 'all').upper()
     logger_filter = request.args.get('logger', 'all')
     limit = int(request.args.get('limit', 100))
-    
+
     # Filter logs based on parameters
     filtered_logs = log_entries
-    
+
     if level_filter != 'ALL':
         filtered_logs = [log for log in filtered_logs if log['level'] == level_filter]
-    
+
     if logger_filter != 'all':
         filtered_logs = [log for log in filtered_logs if logger_filter.lower() in log['logger'].lower()]
-    
+
     # Return the most recent logs (up to limit)
     recent_logs = filtered_logs[-limit:] if len(filtered_logs) > limit else filtered_logs
-    
+
     return jsonify({
         'logs': recent_logs,
         'total_logs': len(log_entries),
@@ -330,7 +343,7 @@ def get_logs():
     })
 
 # Global variable to store TLS server instance
-tls_server_instance = None
+# tls_server_instance = None # Already defined at the top
 
 def set_tls_server(server):
     """Set the TLS server instance"""
@@ -345,14 +358,14 @@ def get_bssci_service_status():
         if tls_server:
             bs_status = tls_server.get_base_station_status()
             sensor_status = tls_server.get_sensor_registration_status()
-            
+
             # Get MQTT status - assume active if TLS server is running
             mqtt_status = {
                 'active': True,
                 'broker_host': getattr(bssci_config, 'MQTT_BROKER', 'localhost'),
                 'broker_port': getattr(bssci_config, 'MQTT_PORT', 1883)
             }
-            
+
             # Get TLS server status
             tls_status = {
                 'active': True,
@@ -361,7 +374,7 @@ def get_bssci_service_status():
                 'total_sensors': len(sensor_status),
                 'registered_sensors': len([s for s in sensor_status.values() if s['registered']])
             }
-            
+
             return {
                 'running': True,
                 'service_type': 'web_ui',
@@ -374,7 +387,7 @@ def get_bssci_service_status():
             }
         else:
             return {
-                'running': False, 
+                'running': False,
                 'error': 'TLS server not available',
                 'service_type': 'web_ui',
                 'tls_server': {'active': False},
@@ -388,7 +401,7 @@ def get_bssci_service_status():
         # Log the error but don't include full traceback in response
         print(f"Error in get_bssci_service_status: {e}")
         return {
-            'running': False, 
+            'running': False,
             'error': f'{type(e).__name__}: {str(e)}',
             'service_type': 'web_ui',
             'tls_server': {'active': False},
@@ -430,7 +443,7 @@ def get_base_stations():
         # Use global TLS server instance
         global tls_server_instance
         tls_server = tls_server_instance
-        
+
         if tls_server:
             status = tls_server.get_base_station_status()
             return jsonify(status)
@@ -463,9 +476,9 @@ def get_certificate_status():
             'service': 'certs/service_center_cert.pem',
             'key': 'certs/service_center_key.pem'
         }
-        
+
         status = {'certificates': {}}
-        
+
         for cert_type, file_path in cert_files.items():
             if os.path.exists(file_path):
                 status['certificates'][cert_type] = True
@@ -476,7 +489,7 @@ def get_certificate_status():
                         import socket
                         from cryptography import x509
                         from cryptography.hazmat.backends import default_backend
-                        
+
                         with open(file_path, 'rb') as f:
                             cert_data = f.read()
                             cert = x509.load_pem_x509_certificate(cert_data, default_backend())
@@ -486,7 +499,7 @@ def get_certificate_status():
                     pass  # If we can't read the certificate, just mark as present
             else:
                 status['certificates'][cert_type] = False
-        
+
         return jsonify({'success': True, 'certificates': status['certificates']})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
@@ -496,16 +509,16 @@ def download_certificate(filename):
     """Download a certificate file"""
     import os
     from flask import send_file, abort
-    
+
     # Security: only allow specific certificate files
     allowed_files = ['ca_cert.pem', 'service_center_cert.pem', 'service_center_key.pem']
     if filename not in allowed_files:
         abort(404)
-    
+
     file_path = os.path.join('certs', filename)
     if not os.path.exists(file_path):
         abort(404)
-    
+
     return send_file(file_path, as_attachment=True, download_name=filename)
 
 @app.route('/api/certificates/upload/<cert_type>', methods=['POST'])
@@ -513,37 +526,37 @@ def upload_certificate(cert_type):
     """Upload a new certificate"""
     import os
     from werkzeug.utils import secure_filename
-    
+
     if 'certificate' not in request.files:
         return jsonify({'success': False, 'message': 'No file provided'})
-    
+
     file = request.files['certificate']
     if file.filename == '':
         return jsonify({'success': False, 'message': 'No file selected'})
-    
+
     # Map cert types to filenames
     cert_mapping = {
         'ca': 'ca_cert.pem',
         'service': 'service_center_cert.pem',
         'key': 'service_center_key.pem'
     }
-    
+
     if cert_type not in cert_mapping:
         return jsonify({'success': False, 'message': 'Invalid certificate type'})
-    
+
     try:
         # Ensure certs directory exists
         os.makedirs('certs', exist_ok=True)
-        
+
         # Backup existing file
         target_file = os.path.join('certs', cert_mapping[cert_type])
         if os.path.exists(target_file):
             backup_file = target_file + '.backup'
             os.rename(target_file, backup_file)
-        
+
         # Save new file
         file.save(target_file)
-        
+
         return jsonify({'success': True, 'message': f'{cert_type.upper()} certificate uploaded successfully'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
@@ -553,52 +566,52 @@ def generate_certificates():
     """Generate new SSL certificates"""
     import os
     import subprocess
-    
+
     try:
         # Ensure certs directory exists
         os.makedirs('certs', exist_ok=True)
-        
+
         # Generate new certificates using OpenSSL with static, validated commands
         import shlex
-        
+
         # Execute certificate generation commands with completely static strings
-        
+
         # Generate CA private key
-        result = subprocess.run(['openssl', 'genrsa', '-out', 'certs/ca_key.pem', '2048'], 
+        result = subprocess.run(['openssl', 'genrsa', '-out', 'certs/ca_key.pem', '2048'],
                                capture_output=True, text=True, timeout=30)
         if result.returncode != 0:
             return jsonify({'success': False, 'message': f'CA key generation failed: {result.stderr}'})
-        
+
         # Generate CA certificate
-        result = subprocess.run(['openssl', 'req', '-new', '-x509', '-key', 'certs/ca_key.pem', '-out', 'certs/ca_cert.pem', '-days', '365', '-subj', '/C=US/ST=State/L=City/O=BSSCI/CN=BSSCI-CA'], 
+        result = subprocess.run(['openssl', 'req', '-new', '-x509', '-key', 'certs/ca_key.pem', '-out', 'certs/ca_cert.pem', '-days', '365', '-subj', '/C=US/ST=State/L=City/O=BSSCI/CN=BSSCI-CA'],
                                capture_output=True, text=True, timeout=30)
         if result.returncode != 0:
             return jsonify({'success': False, 'message': f'CA certificate generation failed: {result.stderr}'})
-        
+
         # Generate service private key
-        result = subprocess.run(['openssl', 'genrsa', '-out', 'certs/service_center_key.pem', '2048'], 
+        result = subprocess.run(['openssl', 'genrsa', '-out', 'certs/service_center_key.pem', '2048'],
                                capture_output=True, text=True, timeout=30)
         if result.returncode != 0:
             return jsonify({'success': False, 'message': f'Service key generation failed: {result.stderr}'})
-        
+
         # Generate service certificate request
-        result = subprocess.run(['openssl', 'req', '-new', '-key', 'certs/service_center_key.pem', '-out', 'certs/service_center.csr', '-subj', '/C=US/ST=State/L=City/O=BSSCI/CN=bssci-service'], 
+        result = subprocess.run(['openssl', 'req', '-new', '-key', 'certs/service_center_key.pem', '-out', 'certs/service_center.csr', '-subj', '/C=US/ST=State/L=City/O=BSSCI/CN=bssci-service'],
                                capture_output=True, text=True, timeout=30)
         if result.returncode != 0:
             return jsonify({'success': False, 'message': f'Service certificate request generation failed: {result.stderr}'})
-        
+
         # Sign service certificate with CA
-        result = subprocess.run(['openssl', 'x509', '-req', '-in', 'certs/service_center.csr', '-CA', 'certs/ca_cert.pem', '-CAkey', 'certs/ca_key.pem', '-CAcreateserial', '-out', 'certs/service_center_cert.pem', '-days', '365'], 
+        result = subprocess.run(['openssl', 'x509', '-req', '-in', 'certs/service_center.csr', '-CA', 'certs/ca_cert.pem', '-CAkey', 'certs/ca_key.pem', '-CAcreateserial', '-out', 'certs/service_center_cert.pem', '-days', '365'],
                                capture_output=True, text=True, timeout=30)
         if result.returncode != 0:
             return jsonify({'success': False, 'message': f'Service certificate signing failed: {result.stderr}'})
-        
+
         # Clean up temporary files
         temp_files = ['certs/service_center.csr', 'certs/ca_cert.srl']
         for temp_file in temp_files:
             if os.path.exists(temp_file):
                 os.remove(temp_file)
-        
+
         return jsonify({'success': True, 'message': 'New certificates generated successfully'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
@@ -610,18 +623,18 @@ def backup_certificates():
     import tempfile
     import zipfile
     from flask import send_file
-    
+
     try:
         # Create temporary ZIP file
         temp_zip = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
-        
+
         with zipfile.ZipFile(temp_zip.name, 'w') as zipf:
             cert_files = ['ca_cert.pem', 'service_center_cert.pem', 'service_center_key.pem']
             for cert_file in cert_files:
                 file_path = os.path.join('certs', cert_file)
                 if os.path.exists(file_path):
                     zipf.write(file_path, cert_file)
-        
+
         return send_file(temp_zip.name, as_attachment=True, download_name='bssci_certificates_backup.zip')
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
@@ -632,24 +645,24 @@ def restore_certificates():
     import os
     import tempfile
     import zipfile
-    
+
     if 'backup' not in request.files:
         return jsonify({'success': False, 'message': 'No backup file provided'})
-    
+
     file = request.files['backup']
     if file.filename == '':
         return jsonify({'success': False, 'message': 'No file selected'})
-    
+
     try:
         # Save uploaded ZIP to temporary location
         temp_zip = tempfile.NamedTemporaryFile(delete=False, suffix='.zip')
         file.save(temp_zip.name)
-        
+
         # Extract certificates
         with zipfile.ZipFile(temp_zip.name, 'r') as zipf:
             # Ensure certs directory exists
             os.makedirs('certs', exist_ok=True)
-            
+
             # Extract only certificate files
             cert_files = ['ca_cert.pem', 'service_center_cert.pem', 'service_center_key.pem']
             for cert_file in cert_files:
@@ -660,10 +673,10 @@ def restore_certificates():
                         os.rename(target_path, target_path + '.backup')
                     # Extract new file
                     zipf.extract(cert_file, 'certs')
-        
+
         # Clean up temporary file
         os.unlink(temp_zip.name)
-        
+
         return jsonify({'success': True, 'message': 'Certificates restored successfully from backup'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
@@ -674,46 +687,46 @@ def restart_service():
     import subprocess
     import threading
     import time
-    
+
     def restart_in_background():
         """Perform the restart operation in a separate thread"""
         try:
             time.sleep(1)  # Small delay to allow response to be sent
-            
+
             # Execute kill commands with completely static strings
             try:
                 subprocess.run(['pkill', '-f', 'python.*web_main.py'], check=False, timeout=10)
             except Exception:
                 pass
-            
+
             try:
                 subprocess.run(['pkill', '-f', 'python.*main.py'], check=False, timeout=10)
             except Exception:
                 pass
-                
+
             try:
                 subprocess.run(['pkill', '-f', 'python.*sync_main.py'], check=False, timeout=10)
             except Exception:
                 pass
-            
+
             time.sleep(2)  # Wait for processes to terminate
-            
+
             # Start the service again with completely static command
             try:
-                subprocess.Popen(['python', 'web_main.py'], 
-                               stdout=subprocess.DEVNULL, 
+                subprocess.Popen(['python', 'web_main.py'],
+                               stdout=subprocess.DEVNULL,
                                stderr=subprocess.DEVNULL)
             except Exception:
                 pass
         except Exception as e:
             print(f"Error during restart: {e}")
-    
+
     try:
         # Start restart in background thread
         restart_thread = threading.Thread(target=restart_in_background)
         restart_thread.daemon = True
         restart_thread.start()
-        
+
         return jsonify({'success': True, 'message': 'Service restart initiated'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
