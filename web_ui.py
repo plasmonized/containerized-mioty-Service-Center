@@ -17,6 +17,7 @@ app.secret_key = 'your-secret-key-here'
 @app.errorhandler(500)
 def internal_error(error):
     """Handle internal server errors and return JSON"""
+    app.logger.error(f"Internal server error: {error}")
     return jsonify({
         'error': 'Internal server error',
         'running': False,
@@ -25,6 +26,13 @@ def internal_error(error):
         'mqtt_broker': {'active': False},
         'base_stations': {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []}
     }), 500
+
+@app.errorhandler(404)
+def not_found_error(error):
+    """Handle 404 errors for API endpoints"""
+    if request.path.startswith('/api/'):
+        return jsonify({'error': 'API endpoint not found'}), 404
+    return error
 
 # Global variables for log storage and configuration
 log_entries: List[Dict[str, Any]] = []
