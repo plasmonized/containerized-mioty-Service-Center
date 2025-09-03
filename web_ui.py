@@ -294,46 +294,8 @@ def update_config():
         auto_detach_warning_timeout = int(data.get('AUTO_DETACH_WARNING_TIMEOUT', 36)) * 3600
         auto_detach_check_interval = int(data.get('AUTO_DETACH_CHECK_INTERVAL', 1)) * 3600
         
-        config_content = f'''LISTEN_HOST = "{data['LISTEN_HOST']}"
-LISTEN_PORT = {data['LISTEN_PORT']}  # Internal container port
-
-CERT_FILE = "certs/service_center_cert.pem"
-KEY_FILE = "certs/service_center_key.pem"
-CA_FILE = "certs/ca_cert.pem"
-
-import os
-
-MQTT_BROKER = os.getenv("MQTT_BROKER", "{data['MQTT_BROKER']}")
-MQTT_PORT = int(os.getenv("MQTT_PORT", "{data['MQTT_PORT']}"))
-MQTT_USERNAME = os.getenv("MQTT_USERNAME", "{data['MQTT_USERNAME']}")
-MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "{data['MQTT_PASSWORD']}")
-BASE_TOPIC = os.getenv("BASE_TOPIC", "{data['BASE_TOPIC']}")
-
-SENSOR_CONFIG_FILE = "endpoints.json"
-STATUS_INTERVAL = {data['STATUS_INTERVAL']}  # seconds
-DEDUPLICATION_DELAY = {data['DEDUPLICATION_DELAY']}  # seconds to wait for duplicate messages before forwarding
-
-# Auto-detach Configuration
-AUTO_DETACH_ENABLED = {str(data.get('AUTO_DETACH_ENABLED', True))}
-AUTO_DETACH_TIMEOUT = {auto_detach_timeout}  # {auto_detach_timeout // 3600} hours in seconds ({auto_detach_timeout // 3600} days)
-AUTO_DETACH_WARNING_TIMEOUT = {auto_detach_warning_timeout}  # {auto_detach_warning_timeout // 3600} hours in seconds ({auto_detach_warning_timeout // 86400:.1f} days)
-AUTO_DETACH_CHECK_INTERVAL = {auto_detach_check_interval}  # Check every {auto_detach_check_interval // 3600} hour(s)
-'''
-
-        # Write to file
-        with open('bssci_config.py', 'w') as f:
-            f.write(config_content)
-            
-        # Force reload of the bssci_config module
-        import importlib
-        import sys
-        if 'bssci_config' in sys.modules:
-            importlib.reload(sys.modules['bssci_config'])
-        
-        # Update the .env file as well for Docker environments
-        try:
-            env_content = f"""
-# TLS Server Configuration
+        # Update the .env file - this is the primary configuration source
+        env_content = f"""# TLS Server Configuration
 LISTEN_HOST={data['LISTEN_HOST']}
 LISTEN_PORT={data['LISTEN_PORT']}
 
@@ -372,16 +334,23 @@ LOG_LEVEL=INFO
 LOG_FILE=logs/bssci_service.log
 
 # Security
-SECRET_KEY=your-secret-key-here
-"""
+SECRET_KEY=your-secret-key-here"""
+        
+        # Write to .env file
+        with open('.env', 'w') as f:
+            f.write(env_content)
+        
+        # Reload environment variables
+        from dotenv import load_dotenv
+        load_dotenv(override=True)
             
-            with open('.env', 'w') as f:
-                f.write(env_content.strip())
-                
-        except Exception as e:
-            logger.warning(f"Could not update .env file: {e}")
+        # Force reload of the bssci_config module to pick up new .env values
+        import importlib
+        import sys
+        if 'bssci_config' in sys.modules:
+            importlib.reload(sys.modules['bssci_config'])
             
-        return jsonify({'success': True, 'message': 'Configuration updated successfully. Changes applied immediately.'})
+        return jsonify({'success': True, 'message': 'Configuration updated in .env file and reloaded successfully.'})
     except Exception as e:
         logger.error(f"Error updating config: {e}")
         return jsonify({'success': False, 'message': f'Configuration update failed: {str(e)}'})
