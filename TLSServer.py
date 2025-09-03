@@ -1259,7 +1259,14 @@ class TLSServer:
     def get_sensor_registration_status(self) -> Dict[str, Dict[str, Any]]:
         """Get registration status of all sensors"""
         status = {}
-        current_time = asyncio.get_event_loop().time()
+        # Use time.time() instead of asyncio event loop time for Flask thread compatibility
+        try:
+            # Try to get asyncio event loop time if available
+            current_time = asyncio.get_event_loop().time()
+        except RuntimeError:
+            # Fall back to standard time if no event loop is running (Flask threads)
+            import time
+            current_time = time.time()
 
         for sensor in self.sensor_config:
             eui = sensor['eui'].lower()
