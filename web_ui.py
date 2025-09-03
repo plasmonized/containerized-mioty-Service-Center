@@ -129,20 +129,16 @@ def get_sensors():
         global tls_server_instance
         tls_server = tls_server_instance
         
-        # Use fallback method only - avoid asyncio operations that cause thread issues
-        try:
-            print("Using thread-safe sensor status from file fallback")
-        except Exception as e:
-            print(f"Note: TLS server status access skipped to avoid thread issues: {e}")
-        
-        # Fallback to file only
+        # Load sensors from config file first
+        sensor_status = {}
         try:
             sensor_file = getattr(bssci_config, 'SENSOR_CONFIG_FILE', 'endpoints.json')
             print(f"Loading sensors from file: {sensor_file}")
             with open(sensor_file, 'r') as f:
                 sensors = json.load(f)
                 print(f"Loaded {len(sensors)} sensors from file")
-                sensor_status = {}
+                
+                # Initialize sensor status from config file
                 for sensor in sensors:
                     eui = sensor['eui'].lower()
                     sensor_status[eui] = {
@@ -158,7 +154,41 @@ def get_sensors():
                         'activity_status': 'no_data',
                         'hours_since_last_seen': 0
                     }
-                print(f"Processed sensor status for {len(sensor_status)} sensors")
+                    
+                # Now safely get real registration data from TLS server
+                if tls_server and hasattr(tls_server, 'registered_sensors'):
+                    try:
+                        # Thread-safe access to registered sensors data
+                        registered_dict = getattr(tls_server, 'registered_sensors', {})
+                        print(f"Accessing registration data for {len(registered_dict)} registered sensors")
+                        
+                        for sensor_eui, reg_data in list(registered_dict.items()):
+                            if sensor_eui in sensor_status:
+                                try:
+                                    # Get base stations list safely
+                                    base_stations_list = reg_data.get('base_stations', [])
+                                    registrations_list = reg_data.get('registrations', [])
+                                    
+                                    sensor_status[sensor_eui].update({
+                                        'registered': reg_data.get('status') == 'registered',
+                                        'base_stations': base_stations_list,
+                                        'total_registrations': len(base_stations_list),
+                                        'registration_info': {
+                                            'status': reg_data.get('status', 'unknown'),
+                                            'last_update': reg_data.get('registration_time', 'Unknown'),
+                                            'registrations': registrations_list
+                                        }
+                                    })
+                                    
+                                    print(f"Sensor {sensor_eui}: {len(base_stations_list)} base stations - {base_stations_list}")
+                                    
+                                except Exception as e:
+                                    print(f"Error processing registration data for sensor {sensor_eui}: {e}")
+                                    
+                    except Exception as e:
+                        print(f"Error accessing TLS server registration data: {e}")
+                        
+                print(f"Processed sensor status for {len(sensor_status)} sensors with registration data")
                 return jsonify(sensor_status)
         except FileNotFoundError:
             sensor_file = getattr(bssci_config, 'SENSOR_CONFIG_FILE', 'endpoints.json')
