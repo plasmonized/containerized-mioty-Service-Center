@@ -5,6 +5,7 @@ import threading
 import time
 from datetime import datetime, timezone, timedelta
 from flask import Flask, render_template, request, jsonify, redirect, url_for
+from typing import List, Dict, Any
 import bssci_config
 
 # Global TLS server instance reference
@@ -355,54 +356,71 @@ def get_bssci_service_status():
     try:
         global tls_server_instance
         tls_server = tls_server_instance
-        if tls_server:
-            bs_status = tls_server.get_base_station_status()
-            sensor_status = tls_server.get_sensor_registration_status()
+        
+        # Default response structure
+        default_response = {
+            'running': False,
+            'service_type': 'web_ui',
+            'tls_server': {'active': False},
+            'mqtt_broker': {'active': False},
+            'base_stations': {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []},
+            'total_sensors': 0,
+            'registered_sensors': 0,
+            'pending_requests': 0
+        }
+        
+        if not tls_server:
+            default_response['error'] = 'TLS server not available'
+            return default_response
+            
+        # Try to get status from TLS server
+        try:
+            bs_status = {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []}
+            if hasattr(tls_server, 'get_base_station_status'):
+                bs_status = tls_server.get_base_station_status()
+        except Exception as e:
+            print(f"Error getting base station status: {e}")
+            bs_status = {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []}
+            
+        try:
+            sensor_status = {}
+            if hasattr(tls_server, 'get_sensor_registration_status'):
+                sensor_status = tls_server.get_sensor_registration_status()
+        except Exception as e:
+            print(f"Error getting sensor status: {e}")
+            sensor_status = {}
 
-            # Get MQTT status - assume active if TLS server is running
-            mqtt_status = {
+        # Build response
+        response = {
+            'running': True,
+            'service_type': 'web_ui',
+            'base_stations': bs_status,
+            'tls_server': {
+                'active': True,
+                'listening_port': getattr(bssci_config, 'LISTEN_PORT', 16018),
+                'connected_base_stations': bs_status.get('total_connected', 0),
+                'total_sensors': len(sensor_status),
+                'registered_sensors': len([s for s in sensor_status.values() if s.get('registered', False)])
+            },
+            'mqtt_broker': {
                 'active': True,
                 'broker_host': getattr(bssci_config, 'MQTT_BROKER', 'localhost'),
                 'broker_port': getattr(bssci_config, 'MQTT_PORT', 1883)
-            }
-
-            # Get TLS server status
-            tls_status = {
-                'active': True,
-                'listening_port': getattr(bssci_config, 'LISTEN_PORT', 8883),
-                'connected_base_stations': bs_status['total_connected'],
-                'total_sensors': len(sensor_status),
-                'registered_sensors': len([s for s in sensor_status.values() if s['registered']])
-            }
-
-            return {
-                'running': True,
-                'service_type': 'web_ui',
-                'base_stations': bs_status,
-                'tls_server': tls_status,
-                'mqtt_broker': mqtt_status,
-                'total_sensors': len(sensor_status),
-                'registered_sensors': len([s for s in sensor_status.values() if s['registered']]),
-                'pending_requests': len(tls_server.pending_attach_requests) if hasattr(tls_server, 'pending_attach_requests') else 0
-            }
-        else:
-            return {
-                'running': False,
-                'error': 'TLS server not available',
-                'service_type': 'web_ui',
-                'tls_server': {'active': False},
-                'mqtt_broker': {'active': False},
-                'base_stations': {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []},
-                'total_sensors': 0,
-                'registered_sensors': 0,
-                'pending_requests': 0
-            }
+            },
+            'total_sensors': len(sensor_status),
+            'registered_sensors': len([s for s in sensor_status.values() if s.get('registered', False)]),
+            'pending_requests': len(getattr(tls_server, 'pending_attach_requests', {}))
+        }
+        
+        return response
+        
     except Exception as e:
-        # Log the error but don't include full traceback in response
         print(f"Error in get_bssci_service_status: {e}")
+        import traceback
+        traceback.print_exc()
         return {
             'running': False,
-            'error': f'{type(e).__name__}: {str(e)}',
+            'error': f'Status error: {str(e)}',
             'service_type': 'web_ui',
             'tls_server': {'active': False},
             'mqtt_broker': {'active': False},
@@ -440,29 +458,42 @@ def bssci_status():
 def get_base_stations():
     """Get status of connected base stations"""
     try:
-        # Use global TLS server instance
         global tls_server_instance
         tls_server = tls_server_instance
 
-        if tls_server:
-            status = tls_server.get_base_station_status()
-            return jsonify(status)
-        else:
-            return jsonify({
-                "connected": [],
-                "connecting": [],
-                "total_connected": 0,
-                "total_connecting": 0,
-                "error": "TLS server not initialized"
-            })
+        default_response = {
+            "connected": [],
+            "connecting": [],
+            "total_connected": 0,
+            "total_connecting": 0
+        }
+
+        if not tls_server:
+            default_response["error"] = "TLS server not initialized"
+            return jsonify(default_response)
+
+        try:
+            if hasattr(tls_server, 'get_base_station_status'):
+                status = tls_server.get_base_station_status()
+                return jsonify(status)
+            else:
+                default_response["error"] = "Base station status method not available"
+                return jsonify(default_response)
+        except Exception as e:
+            print(f"Error calling get_base_station_status: {e}")
+            default_response["error"] = f"Base stations error: {str(e)}"
+            return jsonify(default_response)
+            
     except Exception as e:
         print(f"Error in get_base_stations endpoint: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({
             "connected": [],
             "connecting": [],
             "total_connected": 0,
             "total_connecting": 0,
-            "error": f"Base stations error: {str(e)}"
+            "error": f"Endpoint error: {str(e)}"
         })
 
 @app.route('/api/certificates/status')
