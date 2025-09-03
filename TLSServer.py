@@ -143,11 +143,17 @@ class TLSServer:
         self, writer: asyncio.streams.StreamWriter, sensor: dict[str, Any]
     ) -> None:
         bs_eui = self.connected_base_stations.get(writer, "unknown")
+        # Convert EUI to hex format if it's a number
+        if bs_eui != "unknown" and isinstance(bs_eui, (int, str)) and str(bs_eui).isdigit():
+            bs_eui_display = f"{int(bs_eui):016X}"
+        else:
+            bs_eui_display = bs_eui
+        
         try:
             logger.info(f"📤 BSSCI ATTACH REQUEST INITIATED")
             logger.info(f"   =====================================")
             logger.info(f"   Sensor EUI: {sensor['eui']}")
-            logger.info(f"   Target Base Station: {bs_eui}")
+            logger.info(f"   Target Base Station: {bs_eui_display}")
             logger.info(f"   Operation ID: {self.opID}")
             logger.info(f"   Timestamp: {self._get_local_time()}")
 
@@ -252,7 +258,7 @@ class TLSServer:
                 }
 
                 logger.info(f"✅ BSSCI ATTACH REQUEST TRANSMITTED")
-                logger.info(f"   Operation ID {self.opID} sent to base station {bs_eui}")
+                logger.info(f"   Operation ID {self.opID} sent to base station {bs_eui_display}")
                 logger.info(f"   Tracking request for correlation with response")
                 logger.info(f"   Awaiting response from base station...")
                 logger.info(f"   =====================================")
@@ -261,7 +267,7 @@ class TLSServer:
             else:
                 logger.error(f"❌ ATTACH REQUEST VALIDATION FAILED")
                 logger.error(f"   Sensor EUI: {sensor.get('eui', 'unknown')}")
-                logger.error(f"   Base Station: {bs_eui}")
+                logger.error(f"   Base Station: {bs_eui_display}")
                 logger.error(f"   Validation errors found:")
                 for i, error in enumerate(validation_errors, 1):
                     logger.error(f"     {i}. {error}")
@@ -271,7 +277,7 @@ class TLSServer:
         except Exception as e:
             logger.error(f"❌ CRITICAL ERROR during attach request preparation")
             logger.error(f"   Sensor EUI: {sensor.get('eui', 'unknown')}")
-            logger.error(f"   Base Station: {bs_eui}")
+            logger.error(f"   Base Station: {bs_eui_display}")
             logger.error(f"   Exception type: {type(e).__name__}")
             logger.error(f"   Exception message: {str(e)}")
             import traceback
@@ -729,8 +735,9 @@ class TLSServer:
             # Connection establishment message from base station
             bs_eui = message.get('bsEui')
             if bs_eui:
-                bs_eui_str = str(bs_eui)
-                logger.info(f"🏢 Base station connecting with EUI: {bs_eui_str}")
+                # Convert EUI to proper hex format for display
+                bs_eui_hex = f"{bs_eui:016X}"
+                logger.info(f"🏢 Base station connecting with EUI: {bs_eui_hex}")
                 logger.info(f"   Model: {message.get('model', 'unknown')}")
                 logger.info(f"   Vendor: {message.get('vendor', 'unknown')}")
                 logger.info(f"   SW Version: {message.get('swVersion', 'unknown')}")
@@ -738,15 +745,11 @@ class TLSServer:
                 # Send connection response
                 await self.send_connection_response(writer, message)
                 
-                # Send attach requests for all configured sensors
-                for sensor in self.sensor_config:
-                    try:
-                        await self.send_attach_request(writer, sensor)
-                        await asyncio.sleep(0.1)
-                    except Exception as e:
-                        logger.error(f"Failed to send attach request for {sensor.get('eui')}: {e}")
+                # Schedule attach requests after connection stabilizes
+                logger.info(f"✅ Base station {bs_eui_hex} connection established, scheduling attach requests")
+                asyncio.create_task(self.schedule_attach_requests(writer, bs_eui_hex))
                 
-                return bs_eui_str
+                return bs_eui_hex
             else:
                 logger.warning("Connection message missing base station EUI")
                 
@@ -820,6 +823,33 @@ class TLSServer:
             
         except Exception as e:
             logger.error(f"Error handling sensor data: {e}")
+
+    async def schedule_attach_requests(self, writer: asyncio.StreamWriter, bs_eui: str) -> None:
+        """Schedule attach requests to be sent after connection stabilizes"""
+        try:
+            # Wait for connection to stabilize
+            await asyncio.sleep(2.0)
+            
+            # Check if connection is still active
+            if writer in self.connected_base_stations:
+                logger.info(f"📤 Sending delayed attach requests to base station {bs_eui}")
+                
+                successful_attachments = 0
+                for sensor in self.sensor_config:
+                    try:
+                        await self.send_attach_request(writer, sensor)
+                        successful_attachments += 1
+                        await asyncio.sleep(0.2)  # Small delay between requests
+                    except Exception as e:
+                        logger.error(f"Failed to send delayed attach request for {sensor.get('eui')}: {e}")
+                        break  # Stop if connection fails
+                
+                logger.info(f"✅ Sent {successful_attachments}/{len(self.sensor_config)} attach requests to {bs_eui}")
+            else:
+                logger.warning(f"⚠️  Base station {bs_eui} disconnected before attach requests could be sent")
+                
+        except Exception as e:
+            logger.error(f"Error in scheduled attach requests for {bs_eui}: {e}")
 
     async def process_deduplication_buffer(self) -> None:
         """Processes the deduplication buffer, forwards best messages, and cleans up old entries."""
