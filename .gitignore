@@ -1,8 +1,2 @@
 certs/*
-attached_assets/*
-Doc/*
-# Environment variables
-.env
-__pycache__
-*.py[cod]
-*$py.class
+_pycache_
