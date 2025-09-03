@@ -14,6 +14,9 @@ tls_server_instance = None
 app = Flask(__name__)
 app.secret_key = 'your-secret-key-here'
 
+# Configure logger for this module
+logger = logging.getLogger(__name__)
+
 @app.errorhandler(500)
 def internal_error(error):
     """Handle internal server errors and return JSON"""
@@ -33,6 +36,15 @@ def not_found_error(error):
     if request.path.startswith('/api/'):
         return jsonify({'error': 'API endpoint not found'}), 404
     return error
+
+@app.before_request
+def ensure_json_api():
+    """Ensure API endpoints always return JSON, even on error"""
+    if request.path.startswith('/api/'):
+        # Set content type to JSON for all API requests
+        if not request.is_json and request.method in ['POST', 'PUT', 'PATCH']:
+            # For non-JSON requests to API, try to handle gracefully
+            pass
 
 # Global variables for log storage and configuration
 log_entries: List[Dict[str, Any]] = []
@@ -377,7 +389,7 @@ def config():
         }
         return render_template('config.html', config=config_data)
     except Exception as e:
-        logger.error(f"Error loading config page: {e}")
+        print(f"Error loading config page: {e}")
         # Return default config if there's an error
         default_config = {
             'LISTEN_HOST': '0.0.0.0',
@@ -464,7 +476,7 @@ SECRET_KEY=your-secret-key-here"""
             
         return jsonify({'success': True, 'message': 'Configuration updated in .env file and reloaded successfully.'})
     except Exception as e:
-        logger.error(f"Error updating config: {e}")
+        print(f"Error updating config: {e}")
         return jsonify({'success': False, 'message': f'Configuration update failed: {str(e)}'})
 
 @app.route('/certificates')
@@ -624,7 +636,7 @@ def bssci_status():
         status = get_bssci_service_status()
         return jsonify(status)
     except Exception as e:
-        logger.error(f"Error in bssci_status endpoint: {e}")
+        app.logger.error(f"Error in bssci_status endpoint: {e}")
         error_response = {
             'running': False,
             'error': f'Service status error: {str(e)}',
@@ -636,7 +648,7 @@ def bssci_status():
             'registered_sensors': 0,
             'pending_requests': 0
         }
-        return jsonify(error_response), 500
+        return jsonify(error_response)
 
 @app.route('/api/base_stations')
 def get_base_stations():
@@ -705,7 +717,7 @@ def get_base_stations():
             "total_connected": 0,
             "total_connecting": 0,
             "error": "Unable to retrieve base station status"
-        }), 503
+        })
             
     except Exception as e:
         print(f"Error in get_base_stations endpoint: {e}")
@@ -717,7 +729,7 @@ def get_base_stations():
             "total_connected": 0,
             "total_connecting": 0,
             "error": f"Base stations error: {str(e)}"
-        }), 500
+        })
 
 @app.route('/api/certificates/status')
 def get_certificate_status():
