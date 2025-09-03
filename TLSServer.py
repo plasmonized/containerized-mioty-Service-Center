@@ -818,6 +818,8 @@ class TLSServer:
             
         elif command == 'ulDataInd':
             # Uplink data indication - sensor data received
+            logger.info(f"🎉 SENSOR DATA INCOMING! ulDataInd received")
+            logger.debug(f"Raw ulDataInd message: {message}")
             await self.handle_sensor_data(message, writer)
             
         else:
@@ -962,6 +964,16 @@ class TLSServer:
 
             # Find messages that have been in the buffer longer than the delay
             messages_to_publish = []
+            
+            # Debug log every 60 seconds to show deduplication buffer status
+            if not hasattr(self, '_last_debug_log') or (current_time - self._last_debug_log) > 60:
+                buffer_size = len(self.deduplication_buffer)
+                if buffer_size > 0:
+                    logger.info(f"🧠 DEDUPLICATION BUFFER STATUS: {buffer_size} messages pending")
+                else:
+                    logger.debug(f"🧠 DEDUPLICATION BUFFER EMPTY - no sensor data received")
+                self._last_debug_log = current_time
+            
             for key, value in list(self.deduplication_buffer.items()): # Use list to allow modification during iteration
                 if current_time - value['timestamp'] >= self.deduplication_delay:
                     messages_to_publish.append((key, value))
