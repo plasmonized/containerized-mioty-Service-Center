@@ -239,28 +239,63 @@ def reload_sensors():
 
 @app.route('/config')
 def config():
-    config_data = {
-        'LISTEN_HOST': bssci_config.LISTEN_HOST,
-        'LISTEN_PORT': bssci_config.LISTEN_PORT,
-        'MQTT_BROKER': bssci_config.MQTT_BROKER,
-        'MQTT_PORT': bssci_config.MQTT_PORT,
-        'MQTT_USERNAME': bssci_config.MQTT_USERNAME,
-        'MQTT_PASSWORD': bssci_config.MQTT_PASSWORD,
-        'BASE_TOPIC': bssci_config.BASE_TOPIC,
-        'STATUS_INTERVAL': bssci_config.STATUS_INTERVAL,
-        'DEDUPLICATION_DELAY': bssci_config.DEDUPLICATION_DELAY,
-        'AUTO_DETACH_ENABLED': getattr(bssci_config, 'AUTO_DETACH_ENABLED', True),
-        'AUTO_DETACH_TIMEOUT': getattr(bssci_config, 'AUTO_DETACH_TIMEOUT', 259200),
-        'AUTO_DETACH_WARNING_TIMEOUT': getattr(bssci_config, 'AUTO_DETACH_WARNING_TIMEOUT', 129600),
-        'AUTO_DETACH_CHECK_INTERVAL': getattr(bssci_config, 'AUTO_DETACH_CHECK_INTERVAL', 3600)
-    }
-    return render_template('config.html', config=config_data)
+    try:
+        # Force reload the config module to get latest values
+        import importlib
+        import sys
+        if 'bssci_config' in sys.modules:
+            importlib.reload(sys.modules['bssci_config'])
+        
+        import bssci_config
+        
+        config_data = {
+            'LISTEN_HOST': getattr(bssci_config, 'LISTEN_HOST', '0.0.0.0'),
+            'LISTEN_PORT': getattr(bssci_config, 'LISTEN_PORT', 16018),
+            'MQTT_BROKER': getattr(bssci_config, 'MQTT_BROKER', 'localhost'),
+            'MQTT_PORT': getattr(bssci_config, 'MQTT_PORT', 1883),
+            'MQTT_USERNAME': getattr(bssci_config, 'MQTT_USERNAME', ''),
+            'MQTT_PASSWORD': getattr(bssci_config, 'MQTT_PASSWORD', ''),
+            'BASE_TOPIC': getattr(bssci_config, 'BASE_TOPIC', 'bssci/'),
+            'STATUS_INTERVAL': getattr(bssci_config, 'STATUS_INTERVAL', 30),
+            'DEDUPLICATION_DELAY': getattr(bssci_config, 'DEDUPLICATION_DELAY', 2.0),
+            'AUTO_DETACH_ENABLED': getattr(bssci_config, 'AUTO_DETACH_ENABLED', True),
+            'AUTO_DETACH_TIMEOUT': getattr(bssci_config, 'AUTO_DETACH_TIMEOUT', 259200),
+            'AUTO_DETACH_WARNING_TIMEOUT': getattr(bssci_config, 'AUTO_DETACH_WARNING_TIMEOUT', 129600),
+            'AUTO_DETACH_CHECK_INTERVAL': getattr(bssci_config, 'AUTO_DETACH_CHECK_INTERVAL', 3600)
+        }
+        return render_template('config.html', config=config_data)
+    except Exception as e:
+        logger.error(f"Error loading config page: {e}")
+        # Return default config if there's an error
+        default_config = {
+            'LISTEN_HOST': '0.0.0.0',
+            'LISTEN_PORT': 16018,
+            'MQTT_BROKER': 'localhost',
+            'MQTT_PORT': 1883,
+            'MQTT_USERNAME': '',
+            'MQTT_PASSWORD': '',
+            'BASE_TOPIC': 'bssci/',
+            'STATUS_INTERVAL': 30,
+            'DEDUPLICATION_DELAY': 2.0,
+            'AUTO_DETACH_ENABLED': True,
+            'AUTO_DETACH_TIMEOUT': 259200,
+            'AUTO_DETACH_WARNING_TIMEOUT': 129600,
+            'AUTO_DETACH_CHECK_INTERVAL': 3600
+        }
+        return render_template('config.html', config=default_config)
 
 @app.route('/api/config', methods=['POST'])
 def update_config():
-    data = request.json
-    config_content = f'''LISTEN_HOST = "{data['LISTEN_HOST']}"
-LISTEN_PORT = {data['LISTEN_PORT']}
+    try:
+        data = request.json
+        
+        # Convert hours to seconds for timeout values
+        auto_detach_timeout = int(data.get('AUTO_DETACH_TIMEOUT', 72)) * 3600
+        auto_detach_warning_timeout = int(data.get('AUTO_DETACH_WARNING_TIMEOUT', 36)) * 3600
+        auto_detach_check_interval = int(data.get('AUTO_DETACH_CHECK_INTERVAL', 1)) * 3600
+        
+        config_content = f'''LISTEN_HOST = "{data['LISTEN_HOST']}"
+LISTEN_PORT = {data['LISTEN_PORT']}  # Internal container port
 
 CERT_FILE = "certs/service_center_cert.pem"
 KEY_FILE = "certs/service_center_key.pem"
@@ -280,17 +315,76 @@ DEDUPLICATION_DELAY = {data['DEDUPLICATION_DELAY']}  # seconds to wait for dupli
 
 # Auto-detach Configuration
 AUTO_DETACH_ENABLED = {str(data.get('AUTO_DETACH_ENABLED', True))}
-AUTO_DETACH_TIMEOUT = {data.get('AUTO_DETACH_TIMEOUT', 259200)}  # {data.get('AUTO_DETACH_TIMEOUT', 259200) / 3600:.1f} hours in seconds
-AUTO_DETACH_WARNING_TIMEOUT = {data.get('AUTO_DETACH_WARNING_TIMEOUT', 129600)}  # {data.get('AUTO_DETACH_WARNING_TIMEOUT', 129600) / 3600:.1f} hours in seconds
-AUTO_DETACH_CHECK_INTERVAL = {data.get('AUTO_DETACH_CHECK_INTERVAL', 3600)}  # Check every hour
+AUTO_DETACH_TIMEOUT = {auto_detach_timeout}  # {auto_detach_timeout // 3600} hours in seconds ({auto_detach_timeout // 3600} days)
+AUTO_DETACH_WARNING_TIMEOUT = {auto_detach_warning_timeout}  # {auto_detach_warning_timeout // 3600} hours in seconds ({auto_detach_warning_timeout // 86400:.1f} days)
+AUTO_DETACH_CHECK_INTERVAL = {auto_detach_check_interval}  # Check every {auto_detach_check_interval // 3600} hour(s)
 '''
 
-    try:
+        # Write to file
         with open('bssci_config.py', 'w') as f:
             f.write(config_content)
-        return jsonify({'success': True, 'message': 'Configuration updated successfully. Restart required.'})
+            
+        # Force reload of the bssci_config module
+        import importlib
+        import sys
+        if 'bssci_config' in sys.modules:
+            importlib.reload(sys.modules['bssci_config'])
+        
+        # Update the .env file as well for Docker environments
+        try:
+            env_content = f"""
+# TLS Server Configuration
+LISTEN_HOST={data['LISTEN_HOST']}
+LISTEN_PORT={data['LISTEN_PORT']}
+
+# SSL/TLS Certificate Configuration
+CERT_FILE=certs/service_center_cert.pem
+KEY_FILE=certs/service_center_key.pem
+CA_FILE=certs/ca_cert.pem
+
+# MQTT Configuration
+MQTT_BROKER={data['MQTT_BROKER']}
+MQTT_PORT={data['MQTT_PORT']}
+MQTT_USERNAME={data['MQTT_USERNAME']}
+MQTT_PASSWORD={data['MQTT_PASSWORD']}
+BASE_TOPIC={data['BASE_TOPIC']}
+
+# Application Configuration
+SENSOR_CONFIG_FILE=endpoints.json
+STATUS_INTERVAL={data['STATUS_INTERVAL']}
+DEDUPLICATION_DELAY={data['DEDUPLICATION_DELAY']}
+
+# Web Interface Configuration
+WEB_HOST=0.0.0.0
+WEB_PORT=5000
+WEB_DEBUG=false
+
+# Auto-detach Configuration
+AUTO_DETACH_ENABLED={str(data.get('AUTO_DETACH_ENABLED', True)).lower()}
+AUTO_DETACH_TIMEOUT={auto_detach_timeout}
+AUTO_DETACH_HOURS={auto_detach_timeout // 3600}
+AUTO_DETACH_WARNING_TIMEOUT={auto_detach_warning_timeout}
+AUTO_DETACH_WARNING_HOURS={auto_detach_warning_timeout // 3600}
+AUTO_DETACH_CHECK_INTERVAL={auto_detach_check_interval}
+
+# Logging Configuration
+LOG_LEVEL=INFO
+LOG_FILE=logs/bssci_service.log
+
+# Security
+SECRET_KEY=your-secret-key-here
+"""
+            
+            with open('.env', 'w') as f:
+                f.write(env_content.strip())
+                
+        except Exception as e:
+            logger.warning(f"Could not update .env file: {e}")
+            
+        return jsonify({'success': True, 'message': 'Configuration updated successfully. Changes applied immediately.'})
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+        logger.error(f"Error updating config: {e}")
+        return jsonify({'success': False, 'message': f'Configuration update failed: {str(e)}'})
 
 @app.route('/certificates')
 def certificates():
@@ -412,10 +506,11 @@ def clear_logs():
 @app.route('/api/bssci/status')
 def bssci_status():
     try:
-        return jsonify(get_bssci_service_status())
+        status = get_bssci_service_status()
+        return jsonify(status)
     except Exception as e:
-        print(f"Error in bssci_status endpoint: {e}")
-        return jsonify({
+        logger.error(f"Error in bssci_status endpoint: {e}")
+        error_response = {
             'running': False,
             'error': f'Service status error: {str(e)}',
             'service_type': 'web_ui',
@@ -425,7 +520,8 @@ def bssci_status():
             'total_sensors': 0,
             'registered_sensors': 0,
             'pending_requests': 0
-        })
+        }
+        return jsonify(error_response), 500
 
 @app.route('/api/base_stations')
 def get_base_stations():
@@ -443,19 +539,19 @@ def get_base_stations():
 
         if not tls_server:
             default_response["error"] = "TLS server not initialized"
-            return jsonify(default_response)
+            return jsonify(default_response), 503
 
         if hasattr(tls_server, 'get_base_station_status'):
             status = tls_server.get_base_station_status()
             return jsonify(status)
         else:
             default_response["error"] = "Base station status method not available"
-            return jsonify(default_response)
+            return jsonify(default_response), 503
             
     except Exception as e:
-        print(f"Error in get_base_stations endpoint: {e}")
+        logger.error(f"Error in get_base_stations endpoint: {e}")
         default_response["error"] = f"Base stations error: {str(e)}"
-        return jsonify(default_response)
+        return jsonify(default_response), 500
 
 @app.route('/api/certificates/status')
 def get_certificate_status():
