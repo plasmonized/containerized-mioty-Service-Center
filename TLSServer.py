@@ -811,7 +811,9 @@ class TLSServer:
                 "model": "Python Implementation",  # Optional: Model name
                 "name": "BSSCI-SC",  # Optional: Service Center name
                 "swVersion": "1.0.0",  # Optional: Software version
-                "snResume": False  # Optional: Not resuming previous session
+                "snResume": False,  # Optional: Not resuming previous session
+                "snScUuid": [0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 
+                            0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88]  # Required: SC session UUID (16 bytes)
             }
             
             # Encode response
