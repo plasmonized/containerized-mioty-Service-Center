@@ -721,6 +721,106 @@ class TLSServer:
             # Save sensor configuration after connection closes
             self.save_sensor_config()
 
+    async def handle_message(self, message: dict, writer: asyncio.StreamWriter) -> str:
+        """Handle incoming BSSCI protocol messages from base stations"""
+        command = message.get('command', 'unknown')
+        
+        if command == 'con':
+            # Connection establishment message from base station
+            bs_eui = message.get('bsEui')
+            if bs_eui:
+                bs_eui_str = str(bs_eui)
+                logger.info(f"🏢 Base station connecting with EUI: {bs_eui_str}")
+                logger.info(f"   Model: {message.get('model', 'unknown')}")
+                logger.info(f"   Vendor: {message.get('vendor', 'unknown')}")
+                logger.info(f"   SW Version: {message.get('swVersion', 'unknown')}")
+                
+                # Send connection response
+                await self.send_connection_response(writer, message)
+                
+                # Send attach requests for all configured sensors
+                for sensor in self.sensor_config:
+                    try:
+                        await self.send_attach_request(writer, sensor)
+                        await asyncio.sleep(0.1)
+                    except Exception as e:
+                        logger.error(f"Failed to send attach request for {sensor.get('eui')}: {e}")
+                
+                return bs_eui_str
+            else:
+                logger.warning("Connection message missing base station EUI")
+                
+        elif command == 'conRsp':
+            # Connection response from base station
+            logger.debug(f"Connection response received: {message}")
+            
+        elif command == 'attPrp':
+            # Attach prepare response
+            eui = message.get('eui')
+            result = message.get('result', 'unknown')
+            logger.info(f"📡 Attach prepare response for {eui}: {result}")
+            
+        elif command == 'statusCmp':
+            # Status complete message
+            eui = message.get('eui')
+            logger.debug(f"Status complete for {eui}: {message}")
+            
+        elif command == 'ulDataRsp':
+            # Uplink data response
+            eui = message.get('eui')
+            logger.debug(f"Uplink data response for {eui}: {message}")
+            
+        elif command == 'ulDataInd':
+            # Uplink data indication - sensor data received
+            await self.handle_sensor_data(message, writer)
+            
+        else:
+            logger.warning(f"Unknown BSSCI command: {command}")
+            logger.debug(f"Full message: {message}")
+            
+        return None
+
+    async def send_connection_response(self, writer: asyncio.StreamWriter, con_message: dict) -> None:
+        """Send connection response to base station"""
+        try:
+            import msgpack
+            
+            # Build connection response
+            response = {
+                "command": "conRsp",
+                "result": "success",
+                "snScOpId": con_message.get('snBsOpId', 0),  # Match operation ID
+                "timestamp": int(asyncio.get_event_loop().time())
+            }
+            
+            # Encode response
+            response_data = msgpack.packb(response)
+            
+            # Send with BSSCI protocol format
+            message_length = len(response_data)
+            full_message = IDENTIFIER + message_length.to_bytes(4, 'little') + response_data
+            
+            writer.write(full_message)
+            await writer.drain()
+            
+            logger.debug(f"Sent connection response: {response}")
+            
+        except Exception as e:
+            logger.error(f"Failed to send connection response: {e}")
+
+    async def handle_sensor_data(self, message: dict, writer: asyncio.StreamWriter) -> None:
+        """Handle incoming sensor data from base stations"""
+        try:
+            eui = message.get('eui')
+            if not eui:
+                return
+                
+            # Add message to deduplication buffer
+            await self.add_to_deduplication_buffer(message, writer)
+            
+        except Exception as e:
+            logger.error(f"Error handling sensor data: {e}")
+
     async def process_deduplication_buffer(self) -> None:
         """Processes the deduplication buffer, forwards best messages, and cleans up old entries."""
         logger.info(f"🧠 Starting deduplication buffer processing task with delay: {self.deduplication_delay}s")
