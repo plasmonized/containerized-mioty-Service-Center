@@ -1,4 +1,6 @@
 
+# BSSCI Service Center - Complete Documentation
+
 ## Overview
 
 The BSSCI Service Center is a comprehensive IoT device management system that provides secure communication between mioty sensors, base stations, and MQTT brokers. It implements the BSSCI (Base Station Service Center Interface) protocol with advanced features for sensor lifecycle management, automatic detachment, and real-time monitoring.
