@@ -176,29 +176,14 @@ def detach_sensor(eui):
     try:
         global tls_server_instance
         tls_server = tls_server_instance
-        if tls_server and hasattr(tls_server, 'detach_sensor'):
+        if tls_server and hasattr(tls_server, 'detach_sensor_sync'):
             try:
-                # Get the main event loop from the TLS server's thread
-                import asyncio
-                import concurrent.futures
-                
-                # Find the running event loop (should be the main thread's loop)
-                try:
-                    # Try to get the current running loop
-                    loop = asyncio.get_running_loop()
-                except RuntimeError:
-                    # No running loop in this thread, try to get the default loop
-                    loop = asyncio.get_event_loop()
-                
-                # Use asyncio.run_coroutine_threadsafe to run the async function
-                future = asyncio.run_coroutine_threadsafe(tls_server.detach_sensor(eui), loop)
-                success = future.result(timeout=30)  # 30 second timeout
-                
+                success = tls_server.detach_sensor_sync(eui)
                 return jsonify({'success': success, 'message': f'Sensor {eui} {"detached" if success else "detach failed"}'})
             except Exception as e:
                 return jsonify({'success': False, 'message': f'Detach operation failed: {str(e)}'})
         else:
-            return jsonify({'success': False, 'message': 'TLS server not available or detach_sensor method not found'})
+            return jsonify({'success': False, 'message': 'TLS server not available or detach function not found'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
@@ -212,24 +197,9 @@ def clear_all_sensors():
         try:
             global tls_server_instance
             tls_server = tls_server_instance
-            if tls_server and hasattr(tls_server, 'detach_all_sensors'):
+            if tls_server and hasattr(tls_server, 'detach_all_sensors_sync'):
                 try:
-                    # Get the main event loop from the TLS server's thread
-                    import asyncio
-                    import concurrent.futures
-                    
-                    # Find the running event loop (should be the main thread's loop)
-                    try:
-                        # Try to get the current running loop
-                        loop = asyncio.get_running_loop()
-                    except RuntimeError:
-                        # No running loop in this thread, try to get the default loop
-                        loop = asyncio.get_event_loop()
-                    
-                    # Use asyncio.run_coroutine_threadsafe to run the async function
-                    future = asyncio.run_coroutine_threadsafe(tls_server.detach_all_sensors(), loop)
-                    detached_count = future.result(timeout=60)  # 60 second timeout for bulk operation
-                    
+                    detached_count = tls_server.detach_all_sensors_sync()
                 except Exception as e:
                     print(f"Error during bulk detach: {e}")
                     detached_count = 0
@@ -244,7 +214,7 @@ def clear_all_sensors():
         try:
             global tls_server_instance
             tls_server = tls_server_instance
-            if tls_server:
+            if tls_server and hasattr(tls_server, 'clear_all_sensors'):
                 tls_server.clear_all_sensors()
         except:
             pass  # TLS server not available, that's okay
