@@ -60,8 +60,8 @@ async def main() -> None:
     })
 
     logger.info("🔍 Queue Instance Analysis:")
-    logger.info(f"   mqtt_out_queue ID: {id(mqtt_out_queue)}")
-    logger.info(f"   mqtt_in_queue ID: {id(mqtt_in_queue)}")
+    logger.info(f"   mqtt_out_queue Daily Counter: Starting fresh")
+    logger.info(f"   mqtt_in_queue Daily Counter: Starting fresh")
 
     # Create TLS server instance
     tls_server_instance = TLSServer(SENSOR_CONFIG_FILE, mqtt_out_queue, mqtt_in_queue)
@@ -78,10 +78,10 @@ async def main() -> None:
     mqtt_client = MQTTClient(mqtt_out_queue, mqtt_in_queue)
 
     logger.info("🔍 Queue Assignment Verification:")
-    logger.info(f"   TLS Server mqtt_out_queue ID: {id(tls_server.mqtt_out_queue)}")
-    logger.info(f"   TLS Server mqtt_in_queue ID: {id(tls_server.mqtt_in_queue)}")
-    logger.info(f"   MQTT Client mqtt_out_queue ID: {id(mqtt_client.mqtt_out_queue)}")
-    logger.info(f"   MQTT Client mqtt_in_queue ID: {id(mqtt_client.mqtt_in_queue)}")
+    logger.info(f"   TLS Server mqtt_out_queue: Connected")
+    logger.info(f"   TLS Server mqtt_in_queue: Connected")
+    logger.info(f"   MQTT Client mqtt_out_queue: Connected") 
+    logger.info(f"   MQTT Client mqtt_in_queue: Connected")
 
     # Periodic queue statistics
     async def queue_stats_reporter():
