@@ -109,74 +109,93 @@ def get_sensors():
         global tls_server_instance
         tls_server = tls_server_instance
         
-        if tls_server:
-            # Get sensor registration status from TLS server
-            sensor_status = tls_server.get_sensor_registration_status()
-            
-            # Fix registration status - if sensor has received data, it should be marked as registered
-            for eui, sensor_data in sensor_status.items():
-                # If sensor has preferred downlink path or has been seen recently, mark as registered
-                if (sensor_data.get('preferredDownlinkPath') or 
-                    sensor_data.get('last_seen_timestamp', 0) > 0):
-                    sensor_data['registered'] = True
-                    if not sensor_data.get('base_stations'):
-                        # If no base stations recorded but data received, add from preferred path
-                        if sensor_data.get('preferredDownlinkPath', {}).get('baseStation'):
-                            sensor_data['base_stations'] = [sensor_data['preferredDownlinkPath']['baseStation']]
-                            sensor_data['total_registrations'] = 1
+        if tls_server and hasattr(tls_server, 'get_sensor_registration_status'):
+            try:
+                # Get sensor registration status from TLS server
+                sensor_status = tls_server.get_sensor_registration_status()
                 
-                # Calculate proper activity status
-                current_time = time.time()
-                last_seen = sensor_data.get('last_seen_timestamp', 0)
-                
-                if last_seen > 0:
-                    hours_since_last_seen = (current_time - last_seen) / 3600
-                    sensor_data['hours_since_last_seen'] = hours_since_last_seen
+                # Fix registration status - if sensor has received data, it should be marked as registered
+                for eui, sensor_data in sensor_status.items():
+                    # If sensor has preferred downlink path or has been seen recently, mark as registered
+                    if (sensor_data.get('preferredDownlinkPath') or 
+                        sensor_data.get('last_seen_timestamp', 0) > 0):
+                        sensor_data['registered'] = True
+                        if not sensor_data.get('base_stations'):
+                            # If no base stations recorded but data received, add from preferred path
+                            if sensor_data.get('preferredDownlinkPath', {}).get('baseStation'):
+                                sensor_data['base_stations'] = [sensor_data['preferredDownlinkPath']['baseStation']]
+                                sensor_data['total_registrations'] = 1
                     
-                    # Set activity status based on actual thresholds
-                    warning_threshold = getattr(bssci_config, 'AUTO_DETACH_WARNING_TIMEOUT', 129600) / 3600  # Convert to hours
-                    detach_threshold = getattr(bssci_config, 'AUTO_DETACH_TIMEOUT', 259200) / 3600  # Convert to hours
+                    # Calculate proper activity status
+                    current_time = time.time()
+                    last_seen = sensor_data.get('last_seen_timestamp', 0)
                     
-                    if hours_since_last_seen >= detach_threshold:
-                        sensor_data['activity_status'] = 'auto_detach_pending'
-                    elif hours_since_last_seen >= warning_threshold:
-                        sensor_data['activity_status'] = 'warning'
-                        sensor_data['warning_info'] = {
-                            'hours_inactive': hours_since_last_seen,
-                            'hours_until_detach': max(0, detach_threshold - hours_since_last_seen),
-                            'warning_sent': sensor_data.get('warning_sent', False)
-                        }
+                    if last_seen > 0:
+                        hours_since_last_seen = (current_time - last_seen) / 3600
+                        sensor_data['hours_since_last_seen'] = hours_since_last_seen
+                        
+                        # Set activity status based on actual thresholds
+                        warning_threshold = getattr(bssci_config, 'AUTO_DETACH_WARNING_TIMEOUT', 129600) / 3600  # Convert to hours
+                        detach_threshold = getattr(bssci_config, 'AUTO_DETACH_TIMEOUT', 259200) / 3600  # Convert to hours
+                        
+                        if hours_since_last_seen >= detach_threshold:
+                            sensor_data['activity_status'] = 'auto_detach_pending'
+                        elif hours_since_last_seen >= warning_threshold:
+                            sensor_data['activity_status'] = 'warning'
+                            sensor_data['warning_info'] = {
+                                'hours_inactive': hours_since_last_seen,
+                                'hours_until_detach': max(0, detach_threshold - hours_since_last_seen),
+                                'warning_sent': sensor_data.get('warning_sent', False)
+                            }
+                        else:
+                            sensor_data['activity_status'] = 'active'
                     else:
-                        sensor_data['activity_status'] = 'active'
-                else:
-                    sensor_data['activity_status'] = 'no_data'
-                    sensor_data['hours_since_last_seen'] = 0
-            
-            return jsonify(sensor_status)
+                        sensor_data['activity_status'] = 'no_data'
+                        sensor_data['hours_since_last_seen'] = 0
+                
+                return jsonify(sensor_status)
+            except Exception as e:
+                print(f"Error getting sensor status from TLS server: {e}")
         
         # Fallback to file only
-        with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
-            sensors = json.load(f)
-            sensor_status = {}
-            for sensor in sensors:
-                eui = sensor['eui'].lower()
-                sensor_status[eui] = {
-                    'eui': sensor['eui'],
-                    'nwKey': sensor['nwKey'],
-                    'shortAddr': sensor['shortAddr'],
-                    'bidi': sensor['bidi'],
-                    'registered': False,
-                    'registration_info': {},
-                    'base_stations': [],
-                    'total_registrations': 0,
-                    'preferredDownlinkPath': sensor.get('preferredDownlinkPath', None),
-                    'activity_status': 'no_data',
-                    'hours_since_last_seen': 0
-                }
-            return jsonify(sensor_status)
+        try:
+            sensor_file = getattr(bssci_config, 'SENSOR_CONFIG_FILE', 'endpoints.json')
+            print(f"Loading sensors from file: {sensor_file}")
+            with open(sensor_file, 'r') as f:
+                sensors = json.load(f)
+                print(f"Loaded {len(sensors)} sensors from file")
+                sensor_status = {}
+                for sensor in sensors:
+                    eui = sensor['eui'].lower()
+                    sensor_status[eui] = {
+                        'eui': sensor['eui'],
+                        'nwKey': sensor['nwKey'],
+                        'shortAddr': sensor['shortAddr'],
+                        'bidi': sensor['bidi'],
+                        'registered': False,
+                        'registration_info': {},
+                        'base_stations': [],
+                        'total_registrations': 0,
+                        'preferredDownlinkPath': sensor.get('preferredDownlinkPath', None),
+                        'activity_status': 'no_data',
+                        'hours_since_last_seen': 0
+                    }
+                print(f"Processed sensor status for {len(sensor_status)} sensors")
+                return jsonify(sensor_status)
+        except FileNotFoundError:
+            sensor_file = getattr(bssci_config, 'SENSOR_CONFIG_FILE', 'endpoints.json')
+            print(f"Sensor config file not found: {sensor_file}")
+            return jsonify({})
+        except json.JSONDecodeError as e:
+            sensor_file = getattr(bssci_config, 'SENSOR_CONFIG_FILE', 'endpoints.json')
+            print(f"Invalid JSON in sensor config file {sensor_file}: {e}")
+            return jsonify({})
+            
     except Exception as e:
         print(f"Error in get_sensors: {e}")
-        return jsonify({})
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/sensors', methods=['POST'])
 def add_sensor():
@@ -486,41 +505,64 @@ def set_tls_server(server):
 
 def get_bssci_service_status():
     """Get the status of the BSSCI service"""
-    # Default response structure
-    default_response = {
-        'running': False,
-        'service_type': 'web_ui',
-        'tls_server': {'active': False},
-        'mqtt_broker': {'active': False},
-        'base_stations': {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []},
-        'total_sensors': 0,
-        'registered_sensors': 0,
-        'pending_requests': 0
-    }
-    
     try:
         global tls_server_instance
         tls_server = tls_server_instance
         
         if not tls_server:
-            default_response['error'] = 'TLS server not available'
-            return default_response
+            return {
+                'running': False,
+                'service_type': 'web_ui',
+                'tls_server': {'active': False},
+                'mqtt_broker': {'active': False},
+                'base_stations': {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []},
+                'total_sensors': 0,
+                'registered_sensors': 0,
+                'pending_requests': 0,
+                'error': 'TLS server not available'
+            }
             
         # Get base station status safely
         bs_status = {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []}
         try:
-            if hasattr(tls_server, 'get_base_station_status'):
+            if hasattr(tls_server, 'connected_base_stations') and hasattr(tls_server, 'connecting_base_stations'):
+                # Build base station status directly from TLS server attributes
+                connected_stations = []
+                for writer, bs_eui in getattr(tls_server, 'connected_base_stations', {}).items():
+                    addr = writer.get_extra_info("peername") if writer else None
+                    connected_stations.append({
+                        "eui": bs_eui,
+                        "address": f"{addr[0]}:{addr[1]}" if addr else "unknown",
+                        "status": "connected"
+                    })
+                
+                connecting_stations = []
+                for writer, bs_eui in getattr(tls_server, 'connecting_base_stations', {}).items():
+                    addr = writer.get_extra_info("peername") if writer else None
+                    connecting_stations.append({
+                        "eui": bs_eui,
+                        "address": f"{addr[0]}:{addr[1]}" if addr else "unknown",
+                        "status": "connecting"
+                    })
+                
+                bs_status = {
+                    "connected": connected_stations,
+                    "connecting": connecting_stations,
+                    "total_connected": len(connected_stations),
+                    "total_connecting": len(connecting_stations)
+                }
+            elif hasattr(tls_server, 'get_base_station_status'):
                 bs_status = tls_server.get_base_station_status()
-        except:
-            pass  # Use default
+        except Exception as e:
+            print(f"Error getting base station status: {e}")
             
         # Get sensor status safely
         sensor_status = {}
         try:
             if hasattr(tls_server, 'get_sensor_registration_status'):
                 sensor_status = tls_server.get_sensor_registration_status()
-        except:
-            pass  # Use default
+        except Exception as e:
+            print(f"Error getting sensor status: {e}")
 
         # Build response safely
         response = {
@@ -548,8 +590,19 @@ def get_bssci_service_status():
         
     except Exception as e:
         print(f"Error in get_bssci_service_status: {e}")
-        default_response['error'] = f'Status error: {str(e)}'
-        return default_response
+        import traceback
+        traceback.print_exc()
+        return {
+            'running': False,
+            'service_type': 'web_ui',
+            'tls_server': {'active': False},
+            'mqtt_broker': {'active': False},
+            'base_stations': {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []},
+            'total_sensors': 0,
+            'registered_sensors': 0,
+            'pending_requests': 0,
+            'error': f'Status error: {str(e)}'
+        }
 
 @app.route('/api/logs/clear', methods=['POST'])
 def clear_logs():
@@ -580,32 +633,83 @@ def bssci_status():
 @app.route('/api/base_stations')
 def get_base_stations():
     """Get status of connected base stations"""
-    default_response = {
-        "connected": [],
-        "connecting": [],
-        "total_connected": 0,
-        "total_connecting": 0
-    }
-    
     try:
         global tls_server_instance
         tls_server = tls_server_instance
 
         if not tls_server:
-            default_response["error"] = "TLS server not initialized"
-            return jsonify(default_response), 503
+            return jsonify({
+                "connected": [],
+                "connecting": [],
+                "total_connected": 0,
+                "total_connecting": 0,
+                "error": "TLS server not initialized"
+            }), 503
 
+        # Try to get status directly from TLS server attributes first
+        try:
+            if hasattr(tls_server, 'connected_base_stations') and hasattr(tls_server, 'connecting_base_stations'):
+                connected_stations = []
+                for writer, bs_eui in getattr(tls_server, 'connected_base_stations', {}).items():
+                    try:
+                        addr = writer.get_extra_info("peername") if writer else None
+                        connected_stations.append({
+                            "eui": bs_eui,
+                            "address": f"{addr[0]}:{addr[1]}" if addr else "unknown",
+                            "status": "connected"
+                        })
+                    except Exception as e:
+                        print(f"Error processing connected station {bs_eui}: {e}")
+                
+                connecting_stations = []
+                for writer, bs_eui in getattr(tls_server, 'connecting_base_stations', {}).items():
+                    try:
+                        addr = writer.get_extra_info("peername") if writer else None
+                        connecting_stations.append({
+                            "eui": bs_eui,
+                            "address": f"{addr[0]}:{addr[1]}" if addr else "unknown",
+                            "status": "connecting"
+                        })
+                    except Exception as e:
+                        print(f"Error processing connecting station {bs_eui}: {e}")
+                
+                return jsonify({
+                    "connected": connected_stations,
+                    "connecting": connecting_stations,
+                    "total_connected": len(connected_stations),
+                    "total_connecting": len(connecting_stations)
+                })
+        except Exception as e:
+            print(f"Error accessing TLS server attributes directly: {e}")
+
+        # Fallback to method if available
         if hasattr(tls_server, 'get_base_station_status'):
-            status = tls_server.get_base_station_status()
-            return jsonify(status)
-        else:
-            default_response["error"] = "Base station status method not available"
-            return jsonify(default_response), 503
+            try:
+                status = tls_server.get_base_station_status()
+                return jsonify(status)
+            except Exception as e:
+                print(f"Error calling get_base_station_status: {e}")
+        
+        # Final fallback
+        return jsonify({
+            "connected": [],
+            "connecting": [],
+            "total_connected": 0,
+            "total_connecting": 0,
+            "error": "Unable to retrieve base station status"
+        }), 503
             
     except Exception as e:
-        logger.error(f"Error in get_base_stations endpoint: {e}")
-        default_response["error"] = f"Base stations error: {str(e)}"
-        return jsonify(default_response), 500
+        print(f"Error in get_base_stations endpoint: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            "connected": [],
+            "connecting": [],
+            "total_connected": 0,
+            "total_connecting": 0,
+            "error": f"Base stations error: {str(e)}"
+        }), 500
 
 @app.route('/api/certificates/status')
 def get_certificate_status():

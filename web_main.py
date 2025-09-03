@@ -75,14 +75,20 @@ def set_tls_server(server):
     """Set the TLS server instance"""
     global tls_server_instance
     tls_server_instance = server
-    
-    # Also set it in web_ui module
+
+    # Make it available to web_ui - this is critical for web interface functionality
     try:
         import web_ui
-        web_ui.tls_server_instance = server
-        logger.info(f"TLS server instance shared with web_ui: {server is not None}")
+        web_ui.set_tls_server(tls_server_instance)
+        logger.info(f"✅ TLS server instance passed to web UI successfully")
+        logger.info(f"   TLS server ID: {id(tls_server_instance)}")
+        if hasattr(tls_server_instance, 'connected_base_stations'):
+            logger.info(f"   Connected base stations count: {len(tls_server_instance.connected_base_stations)}")
+    except ImportError as e:
+        logger.error(f"❌ Failed to import web_ui: {e}")
     except Exception as e:
-        logger.error(f"Error setting TLS server in web_ui: {e}")
+        logger.error(f"❌ Failed to set TLS server in web_ui: {e}")
+
 
 if __name__ == "__main__":
     logger.info("Starting BSSCI Service Center with Web UI")
