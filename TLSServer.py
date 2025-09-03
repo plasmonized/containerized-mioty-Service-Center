@@ -757,6 +757,12 @@ class TLSServer:
             # Connection response from base station
             logger.debug(f"Connection response received: {message}")
             
+        elif command == 'conCmp':
+            # Connection complete from base station
+            logger.info(f"✅ Connection complete received from base station")
+            logger.debug(f"Connection complete message: {message}")
+            # Connection is now fully established according to BSSCI spec
+            
         elif command == 'attPrp':
             # Attach prepare response
             eui = message.get('eui')
@@ -788,9 +794,10 @@ class TLSServer:
         try:
             import msgpack
             
-            # Build connection response
+            # Build connection response according to BSSCI spec
             response = {
                 "command": "conRsp",
+                "opId": con_message.get('opId', 0),  # Required: Match the opId from request
                 "result": "success",
                 "snScOpId": con_message.get('snBsOpId', 0),  # Match operation ID
                 "timestamp": int(asyncio.get_event_loop().time())
