@@ -866,6 +866,7 @@ class TLSServer:
         try:
             eui = message.get('eui')
             if not eui:
+                logger.warning("Received sensor data without EUI")
                 return
                 
             # Add message to deduplication buffer
@@ -873,6 +874,57 @@ class TLSServer:
             
         except Exception as e:
             logger.error(f"Error handling sensor data: {e}")
+    
+    async def add_to_deduplication_buffer(self, message: dict, writer: asyncio.StreamWriter) -> None:
+        """Add sensor data message to deduplication buffer"""
+        try:
+            # Get base station EUI from connected_base_stations
+            bs_eui = self.connected_base_stations.get(writer, 'unknown')
+            
+            # Extract sensor EUI
+            ep_eui = message.get('epEui')
+            if ep_eui is None:
+                logger.warning("Received sensor data without epEui")
+                return
+                
+            # Convert EUI to hex string for logging
+            eui_hex = f"{ep_eui:016X}" if isinstance(ep_eui, int) else str(ep_eui)
+            
+            # Create buffer key (sensor EUI + packet count for uniqueness)
+            packet_cnt = message.get('packetCnt', 0)
+            buffer_key = f"{eui_hex}_{packet_cnt}"
+            
+            # Extract SNR for deduplication logic
+            snr = message.get('snr', -999.0)
+            
+            logger.info(f"📨 SENSOR DATA RECEIVED")
+            logger.info(f"   ========================")
+            logger.info(f"   Sensor EUI: {eui_hex}")
+            logger.info(f"   Base Station: {bs_eui}")
+            logger.info(f"   Packet Count: {packet_cnt}")
+            logger.info(f"   SNR: {snr:.1f} dB")
+            logger.info(f"   RSSI: {message.get('rssi', 'unknown')} dBm")
+            logger.debug(f"   Full message: {message}")
+            
+            # Add to deduplication buffer
+            current_time = asyncio.get_event_loop().time()
+            self.deduplication_buffer[buffer_key] = {
+                'message': message,
+                'bs_eui': bs_eui,
+                'timestamp': current_time,
+                'snr': snr
+            }
+            
+            # Update sensor last seen timestamp
+            eui_lower = eui_hex.lower()
+            self.sensor_last_seen[eui_lower] = current_time
+            
+            logger.info(f"   Added to deduplication buffer (size: {len(self.deduplication_buffer)})")
+            logger.info(f"   Buffer key: {buffer_key}")
+            
+        except Exception as e:
+            logger.error(f"Error adding message to deduplication buffer: {e}")
+            logger.error(f"Message: {message}")
 
     async def schedule_attach_requests(self, writer: asyncio.StreamWriter, bs_eui: str) -> None:
         """Schedule attach requests to be sent after connection stabilizes"""
