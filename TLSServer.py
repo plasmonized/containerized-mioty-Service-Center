@@ -614,13 +614,28 @@ class TLSServer:
 
             while True:
                 try:
-                    # Read message length (4 bytes, big-endian)
-                    length_data = await asyncio.wait_for(reader.read(4), timeout=60.0)
-                    if not length_data:
+                    # Read BSSCI protocol identifier (8 bytes)
+                    identifier_data = await asyncio.wait_for(reader.read(8), timeout=60.0)
+                    if not identifier_data:
                         logger.info(f"🔌 Connection from {addr} closed by client")
                         break
+                    
+                    if len(identifier_data) != 8:
+                        logger.error(f"❌ Incomplete identifier from {addr}: expected 8 bytes, got {len(identifier_data)}")
+                        break
+                    
+                    # Verify BSSCI identifier
+                    if identifier_data != IDENTIFIER:
+                        logger.error(f"❌ Invalid protocol identifier from {addr}: {identifier_data}")
+                        break
 
-                    message_length = int.from_bytes(length_data, byteorder='big')
+                    # Read message length (4 bytes, little-endian)
+                    length_data = await asyncio.wait_for(reader.read(4), timeout=60.0)
+                    if not length_data or len(length_data) != 4:
+                        logger.error(f"❌ Incomplete length data from {addr}")
+                        break
+
+                    message_length = int.from_bytes(length_data, byteorder='little')
                     if message_length > 10000:  # Reasonable limit
                         logger.warning(f"⚠️  Unusually large message ({message_length} bytes) from {addr}")
 
@@ -630,9 +645,20 @@ class TLSServer:
                         logger.error(f"❌ Incomplete message from {addr}: expected {message_length}, got {len(message_data)}")
                         break
 
-                    # Parse and handle the message
+                    # Parse and handle the message using msgpack
                     try:
-                        message = cbor2.loads(message_data)
+                        import msgpack
+                        unpacker = msgpack.Unpacker(raw=False, strict_map_key=False)
+                        unpacker.feed(message_data)
+                        message = None
+                        for msg in unpacker:
+                            message = msg
+                            break
+                        
+                        if message is None:
+                            logger.error(f"❌ Failed to decode message from {addr}")
+                            continue
+                            
                         message_count += 1
 
                         logger.info(f"📨 BSSCI message #{message_count} received from {addr}")
