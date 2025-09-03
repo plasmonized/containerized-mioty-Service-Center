@@ -19,17 +19,9 @@
                 <h5>Quick Actions</h5>
             </div>
             <div class="card-body">
-                <div class="d-grid gap-2">
-                    <a href="{{ url_for('sensors') }}" class="btn btn-primary btn-lg">
-                        <i class="fas fa-microchip me-2"></i>Manage Sensors
-                    </a>
-                    <a href="{{ url_for('config') }}" class="btn btn-secondary btn-lg">
-                        <i class="fas fa-cog me-2"></i>Configuration
-                    </a>
-                    <a href="{{ url_for('logs') }}" class="btn btn-info btn-lg">
-                        <i class="fas fa-file-alt me-2"></i>View Logs
-                    </a>
-                </div>
+                <a href="{{ url_for('sensors') }}" class="btn btn-primary btn-block mb-2">Manage Sensors</a>
+                <a href="{{ url_for('config') }}" class="btn btn-secondary btn-block mb-2">Configuration</a>
+                <a href="{{ url_for('logs') }}" class="btn btn-info btn-block">View Logs</a>
             </div>
         </div>
     </div>

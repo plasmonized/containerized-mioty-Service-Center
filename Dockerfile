@@ -12,28 +12,18 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Create app user for better security
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# Copy application files
+COPY . .
 
 # Create necessary directories
 RUN mkdir -p certs logs
 
-# Copy application files with proper ownership
-COPY --chown=appuser:appuser . .
-
-# Switch to app user
-USER appuser
-
-# Make entrypoint executable
-USER root
-RUN chmod +x docker-entrypoint.sh
-USER appuser
+# Set proper permissions for configuration files
+RUN chmod 644 bssci_config.py endpoints.json && \
+    chown root:root bssci_config.py endpoints.json
 
 # Expose ports
 EXPOSE 16018 5000
-
-# Use custom entrypoint
-ENTRYPOINT ["./docker-entrypoint.sh"]
 
 # Default command
 CMD ["python", "web_main.py"]

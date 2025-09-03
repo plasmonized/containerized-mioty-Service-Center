@@ -1,15 +1,1 @@
-
-[
-    {
-        "eui": "0123456789ABCDEF",
-        "nwKey": "01234567890ABCDEF01234567890ABCDEF",
-        "shortAddr": "1234",
-        "bidi": false
-    },
-    {
-        "eui": "FEDCBA9876543210", 
-        "nwKey": "FEDCBA9876543210FEDCBA9876543210",
-        "shortAddr": "5678",
-        "bidi": true
-    }
-]
+[]

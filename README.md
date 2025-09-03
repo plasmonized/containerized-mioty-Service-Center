@@ -1,91 +1,78 @@
+
 # mioty BSSCI Service Center
 
-Eine umfassende Implementierung des mioty Base Station Service Center Interface (BSSCI) Protokolls v1.0.0.0 mit webbasierter Verwaltungsoberfläche und MQTT-Integration.
+A comprehensive implementation of the mioty Base Station Service Center Interface (BSSCI) protocol v1.0.0.0 with web-based management interface and MQTT integration.
 
-## Danksagung
+## Table of Contents
 
-Dieses Projekt basiert auf der ursprünglichen Codebasis von [IronMate/mioty_BSSCI](https://github.com/IronMate/mioty_BSSCI). Vielen Dank an **Ironmate** für die Bereitstellung der grundlegenden BSSCI-Implementierung, die als Fundament für diese erweiterte Version dient.
-
-## Inhaltsverzeichnis
-
-- [Überblick](#überblick)
-- [BSSCI Protokoll Verständnis](#bssci-protokoll-verständnis)
-- [Architektur & Datenfluss](#architektur--datenfluss)
+- [Overview](#overview)
+- [BSSCI Protocol Understanding](#bssci-protocol-understanding)
+- [Architecture & Data Flow](#architecture--data-flow)
 - [Installation & Setup](#installation--setup)
-- [Konfiguration](#konfiguration)
-- [Verwendung](#verwendung)
+- [Configuration](#configuration)
+- [Usage](#usage)
 - [Web Interface](#web-interface)
 - [MQTT Integration](#mqtt-integration)
-- [Sensoren-Management](#sensoren-management)
-- [Auto-Detach Funktionalität](#auto-detach-funktionalität)
-- [MQTT Kommando-Interface](#mqtt-kommando-interface)
-- [Docker Deployment](#docker-deployment)
-- [API Dokumentation](#api-dokumentation)
-- [Fehlerbehebung](#fehlerbehebung)
-- [Erweiterte Features](#erweiterte-features)
-- [Lizenz](#lizenz)
-- [Beitragen](#beitragen)
-- [Projekt unterstützen](#projekt-unterstützen)
+- [Programming Guide](#programming-guide)
+- [API Documentation](#api-documentation)
+- [Troubleshooting](#troubleshooting)
+- [Advanced Features](#advanced-features)
 
-## Überblick
+## Overview
 
-Dieses Service Center fungiert als Brücke zwischen mioty Basisstationen und MQTT-Brokern und bietet:
+This service center acts as a bridge between mioty base stations and MQTT brokers, providing:
 
-- **TLS-gesicherte Kommunikation** mit Basisstationen nach BSSCI v1.0.0.0
-- **Echtzeit-Sensordatenverarbeitung** mit Deduplizierung
-- **MQTT-Veröffentlichung** von Sensordaten und Basisstationsstatus  
-- **Webbasierte Verwaltungsoberfläche** für Monitoring und Konfiguration
-- **Dynamische Sensorregistrierung** über MQTT
-- **Multi-Basisstations-Unterstützung** mit intelligentem Routing
-- **Automatisches Sensor-Detachment** nach Inaktivität
-- **MQTT-Kommandoschnittstelle** für Sensor-Management
-- **Docker-Container Support** mit Synology NAS Kompatibilität
+- **TLS-secured communication** with base stations following BSSCI v1.0.0.0
+- **Real-time sensor data processing** with deduplication
+- **MQTT publishing** of sensor data and base station status  
+- **Web-based management interface** for monitoring and configuration
+- **Dynamic sensor registration** via MQTT
+- **Multi-base station support** with intelligent routing
 
-## BSSCI Protokoll Verständnis
+## BSSCI Protocol Understanding
 
-### Was ist BSSCI?
+### What is BSSCI?
 
-Das Base Station Service Center Interface (BSSCI) ist ein standardisiertes Protokoll für die Kommunikation zwischen mioty Basisstationen und Service Centern. Es definiert:
+The Base Station Service Center Interface (BSSCI) is a standardized protocol for communication between mioty base stations and service centers. It defines:
 
-1. **Verbindungsmanagement**: Sichere TLS-Handshake und Authentifizierung
-2. **Sensorregistrierung**: Dynamisches Anhängen/Abhängen von Sensoren
-3. **Datenaustausch**: Uplink-Datenweiterleitung und Downlink-Nachrichtenrouting
-4. **Statusüberwachung**: Basisstationsgesundheit und Leistungsmetriken
-5. **Nachrichtenbestätigung**: Zuverlässige Zustellungsbestätigung
+1. **Connection Management**: Secure TLS handshake and authentication
+2. **Sensor Registration**: Dynamic attachment/detachment of sensors
+3. **Data Exchange**: Uplink data forwarding and downlink message routing
+4. **Status Monitoring**: Base station health and performance metrics
+5. **Message Acknowledgment**: Reliable delivery confirmation
 
-### Protokollfluss
+### Protocol Flow
 
 ```
-[Sensor] --mioty--> [Basisstation] --BSSCI/TLS--> [Service Center] --MQTT--> [Ihre Anwendung]
+[Sensor] --mioty--> [Base Station] --BSSCI/TLS--> [Service Center] --MQTT--> [Your Application]
 ```
 
-#### Wichtige BSSCI Nachrichtentypen
+#### Key BSSCI Message Types
 
-- **con/conCmp**: Verbindungsaufbau
-- **attPrpReq/attPrpRsp**: Sensor-Anhängungsanfragen/-antworten
-- **ulData/ulDataCmp**: Uplink-Datennachrichten
-- **statusReq/statusRsp**: Basisstationsstatus-Abfragen
-- **ping/pingCmp**: Keep-Alive-Nachrichten
-- **detachReq/detachRsp**: Sensor-Abkopplungsanfragen/-antworten
+- **con/conCmp**: Connection establishment
+- **attPrpReq/attPrpRsp**: Sensor attachment requests/responses
+- **ulData/ulDataCmp**: Uplink data messages
+- **statusReq/statusRsp**: Base station status queries
+- **ping/pingCmp**: Keep-alive messages
 
-### Nachrichtenstruktur
+### Message Structure
 
-Alle BSSCI-Nachrichten verwenden MessagePack-Kodierung mit dieser Struktur:
+All BSSCI messages use MessagePack encoding with this structure:
 ```
-[8-Byte Identifikator "MIOTYB01"] + [4-Byte Länge] + [MessagePack Nutzlast]
+[8-byte identifier "MIOTYB01"] + [4-byte length] + [MessagePack payload]
 ```
 
-## Architektur & Datenfluss
+## Architecture & Data Flow
 
-### Systemkomponenten
+### System Components
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Basisstation  │◄──►│  Service Center  │◄──►│  MQTT Broker    │
+│   Base Station  │◄──►│  Service Center  │◄──►│  MQTT Broker    │
 │                 │TLS │                  │    │                 │
 │  - Sensor Mgmt  │    │ - TLS Server     │    │ - Data Topics   │
 │  - Data Collect │    │ - MQTT Client    │    │ - Config Topics │
-│  - Status Rep.  │    │ - Web Interface  │    │ - Command Topics│
+│  - Status Rep.  │    │ - Web Interface  │    │ - Status Topics │
 └─────────────────┘    └──────────────────┘    └─────────────────┘
                                 │
                          ┌──────▼──────┐
@@ -94,31 +81,68 @@ Alle BSSCI-Nachrichten verwenden MessagePack-Kodierung mit dieser Struktur:
                          └─────────────┘
 ```
 
+### Data Flow Details
+
+#### 1. Sensor Data Flow
+```
+Sensor → Base Station → Service Center → MQTT → Your Application
+```
+
+1. **Sensor Transmission**: Sensor sends data via mioty radio
+2. **Base Station Reception**: Base station receives and forwards via BSSCI
+3. **Service Center Processing**: 
+   - Validates message
+   - Performs deduplication (multiple base stations)
+   - Selects best signal quality path
+   - Formats for MQTT
+4. **MQTT Publishing**: Data published to `bssci/ep/{sensor_eui}/ul`
+5. **Application Consumption**: Your application subscribes and processes
+
+#### 2. Configuration Flow
+```
+Your Application → MQTT → Service Center → Base Station → Sensor
+```
+
+1. **Configuration Request**: Publish to `bssci/ep/{sensor_eui}/config`
+2. **Service Center Processing**: Validates and stores configuration
+3. **Base Station Update**: Sends attachment request to base station
+4. **Sensor Registration**: Base station registers sensor with network key
+
+#### 3. Status Monitoring Flow
+```
+Base Station → Service Center → MQTT → Your Application
+```
+
+1. **Status Request**: Service center queries base station every 30 seconds
+2. **Status Response**: Base station reports CPU, memory, uptime
+3. **MQTT Publishing**: Status published to `bssci/bs/{basestation_eui}`
+4. **Application Monitoring**: Subscribe for base station health monitoring
+
 ## Installation & Setup
 
-### Voraussetzungen
+### Prerequisites
 
 - Python 3.8+
-- TLS-Zertifikate für Basisstations-Authentifizierung
-- MQTT-Broker-Zugang
-- mioty Basisstationen konfiguriert für BSSCI
+- TLS certificates for base station authentication
+- MQTT broker access
+- mioty base stations configured for BSSCI
 
-### Schnellstart
+### Quick Start
 
-1. **Klonen und Setup**:
+1. **Clone and Setup**:
    ```bash
    git clone <repository>
    cd mioty_BSSCI
    pip install -r requirements.txt
    ```
 
-2. **Zertifikate generieren**:
+2. **Generate Certificates**:
    ```bash
-   # CA-Zertifikat erstellen
+   # Create CA certificate
    openssl genrsa -out certs/ca_key.pem 4096
    openssl req -x509 -new -key certs/ca_key.pem -sha256 -days 3650 -out certs/ca_cert.pem
-
-   # Service Center Zertifikat erstellen
+   
+   # Create service center certificate
    openssl genrsa -out certs/service_center_key.pem 2048
    openssl req -new -key certs/service_center_key.pem -out certs/service_center.csr
    openssl x509 -req -in certs/service_center.csr \
@@ -126,45 +150,44 @@ Alle BSSCI-Nachrichten verwenden MessagePack-Kodierung mit dieser Struktur:
      -out certs/service_center_cert.pem -days 825 -sha256
    ```
 
-3. **Einstellungen konfigurieren**:
-   Bearbeiten Sie `bssci_config.py` mit Ihren MQTT-Broker-Details und Zertifikatspfaden.
+3. **Configure Settings**:
+   Edit `bssci_config.py` with your MQTT broker details and certificate paths.
 
-4. **Service starten**:
+4. **Start Service**:
    ```bash
    python web_main.py
    ```
 
-5. **Web Interface aufrufen**:
-   Öffnen Sie `http://localhost:5000` für die Verwaltungsoberfläche.
+5. **Access Web Interface**:
+   Open `http://localhost:5000` for management interface.
 
-## Konfiguration
+## Configuration
 
-### Hauptkonfiguration (`bssci_config.py`)
+### Main Configuration (`bssci_config.py`)
 
 ```python
-# TLS Server Einstellungen
+# TLS Server Settings
 LISTEN_HOST = "0.0.0.0"
 LISTEN_PORT = 16018
 
-# Zertifikatspfade
+# Certificate Paths
 CERT_FILE = "certs/service_center_cert.pem"
 KEY_FILE = "certs/service_center_key.pem" 
 CA_FILE = "certs/ca_cert.pem"
 
-# MQTT Broker Einstellungen
+# MQTT Broker Settings
 MQTT_BROKER = "your-broker.com"
 MQTT_PORT = 1883
-MQTT_USERNAME = "your-username"
-MQTT_PASSWORD = "your-password"
+MQTT_USERNAME = "username"
+MQTT_PASSWORD = "password"
 BASE_TOPIC = "bssci/"
 
-# Betriebseinstellungen
-STATUS_INTERVAL = 30  # Basisstationsstatus-Abfrageintervall (Sekunden)
-DEDUPLICATION_DELAY = 2  # Nachrichten-Deduplizierungsfenster (Sekunden)
-AUTO_DETACH_HOURS = 48  # Auto-Detach nach Stunden ohne Aktivität
+# Operational Settings
+STATUS_INTERVAL = 30  # Base station status query interval (seconds)
+DEDUPLICATION_DELAY = 2  # Message deduplication window (seconds)
 ```
 
-### Sensorkonfiguration (`endpoints.json`)
+### Sensor Configuration (`endpoints.json`)
 
 ```json
 [
@@ -177,111 +200,61 @@ AUTO_DETACH_HOURS = 48  # Auto-Detach nach Stunden ohne Aktivität
 ]
 ```
 
-## Verwendung
+## Usage
 
-### Service starten
+### Starting the Service
 
-#### Mit Web Interface (Empfohlen)
+#### With Web Interface (Recommended)
 ```bash
 python web_main.py
 ```
-- Startet sowohl BSSCI-Service als auch Web-Verwaltungsoberfläche
-- Web UI verfügbar unter `http://localhost:5000`
-- Integrierte Protokollierung und Überwachung
+- Starts both BSSCI service and web management interface
+- Web UI available at `http://localhost:5000`
+- Integrated logging and monitoring
 
-#### Nur Service
+#### Service Only
 ```bash
 python main.py  
 ```
-- Startet nur BSSCI-Service ohne Web-Interface
-- Nur Konsolen-Protokollierung
+- Starts only BSSCI service without web interface
+- Console logging only
 
-### Basisstations-Konfiguration
+### Base Station Configuration
 
-Konfigurieren Sie Ihre mioty Basisstationen mit:
-- **Service Center IP**: Ihre Server-IP-Adresse
-- **Port**: 16018 (oder konfigurierter Port)
-- **TLS-Zertifikat**: Installieren Sie generiertes CA-Zertifikat
-- **Client-Zertifikat**: Konfigurieren Sie Basisstations-Client-Zertifikat
+Configure your mioty base stations with:
+- **Service Center IP**: Your server IP address
+- **Port**: 16018 (or configured port)
+- **TLS Certificate**: Install generated CA certificate
+- **Client Certificate**: Configure base station client certificate
 
 ## Web Interface
 
-### Dashboard-Features
+### Dashboard Features
 
-- **Service-Status**: Echtzeit-Service-Gesundheitsüberwachung
-- **Basisstationen**: Status und Statistiken verbundener Basisstationen
-- **Sensoren**: Sensorregistrierungsstatus und Konfiguration
-- **Protokolle**: Echtzeit-Systemprotokolle mit Filterung
-- **Konfiguration**: Sensorverwaltung und Massenoperationen
+- **Service Status**: Real-time service health monitoring
+- **Base Stations**: Connected base station status and statistics
+- **Sensors**: Sensor registration status and configuration
+- **Logs**: Real-time system logs with filtering
+- **Configuration**: Sensor management and bulk operations
 
-### Sensoren-Management im Web Interface
+### Key Monitoring Metrics
 
-#### Einzelne Sensoren verwalten
-
-1. **Sensor hinzufügen**:
-   - Navigieren Sie zum "Sensoren" Tab
-   - Klicken Sie "Sensor hinzufügen"
-   - Geben Sie EUI, Netzwerkschlüssel und Short Address ein
-   - Klicken Sie "Speichern"
-
-2. **Sensor löschen (mit automatischem Detach)**:
-   - Finden Sie den Sensor in der Liste
-   - Klicken Sie den "Löschen" Button
-   - **AUTOMATISCH**: Detach-Request wird an alle verbundenen Basisstationen gesendet
-   - Sensor wird aus der Konfiguration entfernt
-
-3. **Alle Sensoren löschen (Bulk Detach)**:
-   - Klicken Sie "Alle löschen" in der Sensorliste
-   - **AUTOMATISCH**: Bulk-Detach-Requests werden an alle Basisstationen gesendet
-   - Alle Sensoren werden aus der Konfiguration entfernt
-
-#### Manuelle Detach-Buttons
-
-Das Web Interface bietet dedizierte Detach-Buttons für präzise Kontrolle:
-
-- **Einzelner Sensor Detach**: Button neben jedem Sensor für manuelles Detachment
-- **Bulk Detach**: Button zum Detachen aller registrierten Sensoren
-- **Status-Anzeige**: Zeigt Registrierungsstatus und letzten Detach-Zeitpunkt
-
-## Auto-Detach Funktionalität
-
-### Automatisches Sensor-Detachment
-
-Das System implementiert intelligentes Auto-Detach für inaktive Sensoren:
-
-#### Konfiguration
-```python
-# In bssci_config.py
-AUTO_DETACH_HOURS = 48  # Sensoren nach 48h Inaktivität detachen
-```
-
-#### Funktionsweise
-
-1. **Überwachung**: System prüft alle 30 Minuten die Sensoraktivität
-2. **Inaktivitätserkennung**: Sensoren ohne Daten für 48+ Stunden werden identifiziert
-3. **Automatisches Detachment**: Detach-Requests werden automatisch gesendet
-4. **Protokollierung**: Alle Auto-Detach-Aktionen werden protokolliert
-5. **Status-Update**: Sensoren werden als "auto_detached" markiert
-
-#### Protokoll-Beispiel
-```
-🕐 AUTO-DETACH: Found 2 inactive sensors
-   Auto-detaching inactive sensor: FCA84A0300001234
-   Auto-detaching inactive sensor: FCA84A0300005678
-✅ AUTO-DETACH: Detach request sent for FCA84A0300001234
-✅ AUTO-DETACH: Detach request sent for FCA84A0300005678
-```
+- Connected base stations count
+- Registered sensors count  
+- Message throughput statistics
+- Deduplication effectiveness
+- MQTT broker connectivity status
 
 ## MQTT Integration
 
-### Topic-Struktur
+### Topic Structure
 
-#### Sensordaten-Topics
+#### Sensor Data Topics
 ```
 bssci/ep/{sensor_eui}/ul
 ```
 
-**Nutzlast-Struktur:**
+**Payload Structure:**
 ```json
 {
   "bs_eui": "70b3d59cd0000022",
@@ -293,12 +266,12 @@ bssci/ep/{sensor_eui}/ul
 }
 ```
 
-#### Basisstationsstatus-Topics
+#### Base Station Status Topics
 ```
 bssci/bs/{basestation_eui}
 ```
 
-**Nutzlast-Struktur:**
+**Payload Structure:**
 ```json
 {
   "code": 0,
@@ -310,12 +283,12 @@ bssci/bs/{basestation_eui}
 }
 ```
 
-#### Konfigurations-Topics
+#### Configuration Topics
 ```
 bssci/ep/{sensor_eui}/config
 ```
 
-**Nutzlast-Struktur:**
+**Payload Structure:**
 ```json
 {
   "nwKey": "0011223344556677889AABBCCDDEEFF00",
@@ -324,345 +297,300 @@ bssci/ep/{sensor_eui}/config
 }
 ```
 
-## MQTT Kommando-Interface
+### Message Deduplication
 
-### Kommando-Topics
+The service center implements intelligent deduplication:
 
-Das System bietet ein vollständiges MQTT-Kommando-Interface für Sensor-Management:
+1. **Multi-Path Reception**: Same sensor message received via multiple base stations
+2. **Signal Quality Analysis**: Compares SNR values to select best path
+3. **Delayed Publishing**: 2-second window to collect all copies
+4. **Best Signal Selection**: Publishes message from base station with highest SNR
+5. **Statistics Tracking**: Monitors duplication rates and effectiveness
 
-#### Kommando-Topic
-```
-bssci/ep/{sensor_eui}/cmd
-```
+## Programming Guide
 
-#### Verfügbare Kommandos
+### For Application Developers
 
-##### 1. Sensor Detach
-```json
-{
-  "command": "detach"
-}
-```
+#### Consuming Sensor Data
 
-##### 2. Sensor Status
-```json
-{
-  "command": "status"
-}
-```
-
-##### 3. Sensor Re-attach
-```json
-{
-  "command": "attach"
-}
-```
-
-#### Kommando-Antwort-Topic
-```
-bssci/ep/{sensor_eui}/cmd/response
-```
-
-**Antwort-Nutzlast:**
-```json
-{
-  "command": "detach",
-  "status": "success",
-  "sensor_eui": "0123456789ABCDEF",
-  "timestamp": "2024-01-20 14:30:25.123",
-  "message": "Detach request sent to 2 base stations"
-}
-```
-
-### Praktische MQTT-Kommando-Beispiele
-
-#### Sensor über MQTT detachen
-```bash
-# Mit mosquitto_pub
-mosquitto_pub -h your-broker.com -t "bssci/ep/fca84a0300001234/cmd" \
-  -m '{"command": "detach"}'
-
-# Antwort abonnieren
-mosquitto_sub -h your-broker.com -t "bssci/ep/fca84a0300001234/cmd/response"
-```
-
-#### Python-Beispiel für MQTT-Kommandos
 ```python
 import paho.mqtt.client as mqtt
 import json
 
-def send_detach_command(client, sensor_eui):
-    command = {"command": "detach"}
-    topic = f"bssci/ep/{sensor_eui}/cmd"
-    client.publish(topic, json.dumps(command))
+def on_connect(client, userdata, flags, rc):
+    print(f"Connected with result code {rc}")
+    # Subscribe to all sensor uplink data
+    client.subscribe("bssci/ep/+/ul")
 
-def on_command_response(client, userdata, msg):
-    response = json.loads(msg.payload.decode())
-    print(f"Command response: {response}")
+def on_message(client, userdata, msg):
+    topic_parts = msg.topic.split('/')
+    sensor_eui = topic_parts[2]
+    
+    data = json.loads(msg.payload.decode())
+    
+    print(f"Sensor {sensor_eui}:")
+    print(f"  Base Station: {data['bs_eui']}")
+    print(f"  Signal: SNR={data['snr']:.1f}dB, RSSI={data['rssi']:.1f}dBm")
+    print(f"  Data: {data['data']}")
+    print(f"  Timestamp: {data['rxTime']}")
 
-# Setup
 client = mqtt.Client()
-client.on_message = on_command_response
-client.connect("your-broker.com", 1883, 60)
-client.subscribe("bssci/ep/+/cmd/response")
-
-# Sensor detachen
-send_detach_command(client, "fca84a0300001234")
+client.on_connect = on_connect
+client.on_message = on_message
+client.connect("your-mqtt-broker.com", 1883, 60)
+client.loop_forever()
 ```
 
-## Docker Deployment
+#### Dynamic Sensor Configuration
 
-### Schnellstart mit Docker
+```python
+def configure_sensor(client, sensor_eui, network_key, short_addr, bidirectional=False):
+    config = {
+        "nwKey": network_key,
+        "shortAddr": short_addr,
+        "bidi": bidirectional
+    }
+    
+    topic = f"bssci/ep/{sensor_eui}/config"
+    payload = json.dumps(config)
+    
+    client.publish(topic, payload)
+    print(f"Configuration sent for sensor {sensor_eui}")
 
-#### Entwicklungsumgebung
-```bash
-# Service bauen und starten
-docker-compose up --build
-
-# Im Hintergrund ausführen
-docker-compose up -d --build
+# Example usage
+configure_sensor(client, "fca84a0300001234", "0011223344556677889AABBCCDDEEFF00", "1234")
 ```
 
-#### Produktionsumgebung
-```bash
-# Produktionskonfiguration verwenden
-docker-compose -f docker-compose.prod.yml up -d --build
+#### Monitoring Base Station Health
+
+```python
+def on_base_station_status(client, userdata, msg):
+    topic_parts = msg.topic.split('/')
+    bs_eui = topic_parts[2]
+    
+    status = json.loads(msg.payload.decode())
+    
+    # Check for high resource usage
+    if status['cpuLoad'] > 0.8:
+        print(f"WARNING: Base station {bs_eui} high CPU usage: {status['cpuLoad']:.1%}")
+    
+    if status['memLoad'] > 0.9:
+        print(f"WARNING: Base station {bs_eui} high memory usage: {status['memLoad']:.1%}")
+    
+    # Monitor uptime
+    uptime_hours = status['uptime'] / 3600
+    print(f"Base station {bs_eui} uptime: {uptime_hours:.1f} hours")
+
+# Subscribe to base station status
+client.subscribe("bssci/bs/+")
 ```
 
-### Synology NAS Deployment
+### Data Processing Considerations
 
-Spezieller Support für Synology NAS-Systeme:
+#### Timestamp Handling
 
-```bash
-# Synology-spezifische Konfiguration
-docker-compose -f docker-compose.synology.yml up -d --build
+```python
+from datetime import datetime
+
+def parse_mioty_timestamp(timestamp_ns):
+    """Convert mioty nanosecond timestamp to datetime"""
+    timestamp_seconds = timestamp_ns / 1_000_000_000
+    return datetime.fromtimestamp(timestamp_seconds)
+
+# Usage
+rx_datetime = parse_mioty_timestamp(data['rxTime'])
+print(f"Message received at: {rx_datetime}")
 ```
 
-#### Synology-spezifische Features
-- **Berechtigungsmanagement**: Automatische Korrektur von Docker-Volume-Berechtigungen
-- **SELinux-Kompatibilität**: Volume-Mounts mit `:z` Flag für SELinux-Systeme
-- **Startup-Skripte**: Spezielle Skripte für Synology Docker-Umgebung
+#### Data Payload Interpretation
 
-### Docker-Volumes
+Sensor data arrives as byte arrays. Interpretation depends on your sensor:
 
-Die folgenden Verzeichnisse sind als Volumes gemountet:
-
-- `./certs` - SSL-Zertifikate (nur-lesen)
-- `./endpoints.json` - Sensorkonfiguration (lesen/schreiben)
-- `./bssci_config.py` - Service-Konfiguration (lesen/schreiben)
-- `./logs` - Anwendungsprotokolle (schreiben)
-
-### Container-Management
-
-```bash
-# Protokolle anzeigen
-docker-compose logs -f
-
-# Service stoppen
-docker-compose down
-
-# Service neu starten
-docker-compose restart
-
-# Aktualisieren und neu starten
-docker-compose pull && docker-compose up -d
-
-# Alles entfernen (einschließlich Volumes)
-docker-compose down -v
+```python
+def parse_sensor_data(raw_data, sensor_type="temperature_humidity"):
+    """Parse sensor-specific data format"""
+    if sensor_type == "temperature_humidity":
+        if len(raw_data) >= 4:
+            temp = int.from_bytes(raw_data[0:2], byteorder='little', signed=True) / 100
+            humidity = int.from_bytes(raw_data[2:4], byteorder='little') / 100
+            return {"temperature": temp, "humidity": humidity}
+    
+    elif sensor_type == "gps_tracker":
+        if len(raw_data) >= 8:
+            lat = int.from_bytes(raw_data[0:4], byteorder='little', signed=True) / 1000000
+            lon = int.from_bytes(raw_data[4:8], byteorder='little', signed=True) / 1000000
+            return {"latitude": lat, "longitude": lon}
+    
+    return {"raw_data": raw_data}
 ```
 
-## API Dokumentation
+### Quality Metrics
 
-### Web API Endpunkte
+#### Signal Quality Assessment
 
-#### Service-Status
+```python
+def assess_signal_quality(snr, rssi):
+    """Assess signal quality from SNR and RSSI values"""
+    if snr > 10 and rssi > -80:
+        return "excellent"
+    elif snr > 5 and rssi > -90:
+        return "good"
+    elif snr > 0 and rssi > -100:
+        return "fair"
+    else:
+        return "poor"
+
+quality = assess_signal_quality(data['snr'], data['rssi'])
+print(f"Signal quality: {quality}")
+```
+
+## API Documentation
+
+### Web API Endpoints
+
+#### Service Status
 ```
 GET /api/bssci/status
 ```
-Gibt Service-Gesundheit und Verbindungsstatus zurück.
+Returns service health and connection status.
 
-#### Basisstationen
+#### Base Stations
 ```
 GET /api/base-stations
 ```
-Gibt Liste verbundener Basisstationen mit Status zurück.
+Returns list of connected base stations with status.
 
-#### Sensoren
+#### Sensors
 ```
 GET /api/sensors
 GET /api/sensors/{eui}
-POST /api/sensors (Massenkonfiguration)
-DELETE /api/sensors/clear (Alle löschen mit Bulk-Detach)
-DELETE /api/sensors/unregister/{sensor_eui} (Einzelnen Sensor detachen)
-POST /api/sensors/unregister-all (Alle Sensoren detachen)
+POST /api/sensors (bulk configuration)
+DELETE /api/sensors/clear
 ```
 
-#### Neue Sensor-Management Endpunkte
-
-##### Sensor unregistrieren (detachen)
-```bash
-# Einzelnen Sensor detachen
-curl -X DELETE http://localhost:5000/api/sensors/unregister/fca84a0300001234
-
-# Alle Sensoren detachen
-curl -X POST http://localhost:5000/api/sensors/unregister-all
-```
-
-#### Protokolle
+#### Logs
 ```
 GET /api/logs?level=INFO&lines=100
 ```
-Gibt aktuelle Protokolleinträge mit Filterung zurück.
+Returns recent log entries with filtering.
 
-## Fehlerbehebung
+## Troubleshooting
 
-### Häufige Probleme
+### Common Issues
 
-#### Basisstation verbindet sich nicht
+#### Base Station Not Connecting
 
-1. **Zertifikatsprobleme**:
-   - CA-Zertifikat auf Basisstation installiert überprüfen
-   - Zertifikatsgültigkeitsdaten prüfen
-   - Sicherstellen, dass Zertifikat-CN mit Konfiguration übereinstimmt
+1. **Certificate Issues**:
+   - Verify CA certificate installed on base station
+   - Check certificate validity dates
+   - Ensure certificate CN matches configuration
 
-2. **Netzwerkprobleme**:
-   - Firewall-Regeln für Port 16018 prüfen
-   - Überprüfen, ob Basisstation Service Center IP erreichen kann
-   - TLS-Verbindung mit openssl testen
+2. **Network Issues**:
+   - Check firewall rules for port 16018
+   - Verify base station can reach service center IP
+   - Test TLS connectivity with openssl
 
-#### Sensoren registrieren sich nicht
+3. **Configuration Issues**:
+   - Verify base station BSSCI configuration
+   - Check service center listening address
+   - Review certificate paths in config
 
-1. **Konfigurationsprobleme**:
-   - EUI-Format überprüfen (16 Hex-Zeichen)
-   - Netzwerkschlüssellänge prüfen (32 Hex-Zeichen)
-   - Short Address Format validieren (4 Hex-Zeichen)
+#### Sensors Not Registering
 
-2. **Auto-Detach Probleme**:
-   - Prüfen Sie die AUTO_DETACH_HOURS Konfiguration
-   - Überwachen Sie die Auto-Detach-Protokolle
-   - Verifizieren Sie Sensor-Aktivitätszeitstempel
+1. **Configuration Issues**:
+   - Verify EUI format (16 hex characters)
+   - Check network key length (32 hex characters)
+   - Validate short address format (4 hex characters)
 
-#### MQTT-Probleme
+2. **Base Station Issues**:
+   - Ensure base station is connected
+   - Check base station sensor capacity
+   - Verify base station firmware supports BSSCI
 
-1. **Verbindungsprobleme**:
-   - Broker-Anmeldedaten überprüfen
-   - Netzwerkverbindung zum Broker prüfen
-   - Broker-Authentifizierungseinstellungen überprüfen
+#### MQTT Issues
 
-2. **Kommando-Interface Probleme**:
-   - Topic-Berechtigungen prüfen
-   - Nachrichtenformat verifizieren
-   - Broker-Nachrichtenlimits überprüfen
+1. **Connection Problems**:
+   - Verify broker credentials
+   - Check network connectivity to broker
+   - Review broker authentication settings
 
-### Debugging-Tools
+2. **Message Issues**:
+   - Check topic permissions
+   - Verify message format
+   - Review broker message limits
 
-#### Protokollanalyse
+### Debugging Tools
+
+#### Log Analysis
 ```bash
-# Protokolle nach Level filtern
+# Filter logs by level
 grep "ERROR" logs/bssci.log
 
-# Echtzeit-Protokolle überwachen
+# Monitor real-time logs  
 tail -f logs/bssci.log
 
-# Nach spezifischem Sensor suchen
+# Search for specific sensor
 grep "fca84a0300001234" logs/bssci.log
-
-# Auto-Detach-Ereignisse
-grep "AUTO-DETACH" logs/bssci.log
 ```
 
-#### MQTT-Tests
+#### MQTT Testing
 ```bash
-# Alle Topics abonnieren
+# Subscribe to all topics
 mosquitto_sub -h broker-host -t "bssci/#" -v
 
-# Kommando-Antworten überwachen
-mosquitto_sub -h broker-host -t "bssci/ep/+/cmd/response"
-
-# Detach-Kommando senden
-mosquitto_pub -h broker-host -t "bssci/ep/fca84a0300001234/cmd" \
-  -m '{"command":"detach"}'
+# Test configuration publishing
+mosquitto_pub -h broker-host -t "bssci/ep/fca84a0300001234/config" \
+  -m '{"nwKey":"0011223344556677889AABBCCDDEEFF00","shortAddr":"1234","bidi":false}'
 ```
 
-## Erweiterte Features
+## Advanced Features
 
-### Nachrichten-Deduplizierung
+### Message Deduplication
 
-Das Service Center implementiert ausgeklügelte Deduplizierung:
+The service center implements sophisticated deduplication:
 
-- **Multi-Basisstations-Unterstützung**: Behandelt dieselbe Nachricht von mehreren Basisstationen
-- **Signalqualitätsoptimierung**: Wählt besten Signalpfad bas
-on SNR
-- **Konfigurierbare Verzögerung**: Einstellbares Deduplizierungsfenster
-- **Statistik-Verfolgung**: Überwacht Duplikatraten und Effizienz
+- **Multi-base station support**: Handles same message from multiple base stations
+- **Signal quality optimization**: Selects best signal path based on SNR
+- **Configurable delay**: Adjustable deduplication window
+- **Statistics tracking**: Monitors duplicate rates and efficiency
 
-### Bevorzugter Downlink-Pfad
+### Preferred Downlink Path
 
-Verfolgt automatisch beste Basisstation für jeden Sensor:
+Automatically tracks best base station for each sensor:
 
-- **Signalqualitäts-Verfolgung**: Überwacht SNR für jedes Sensor-Basisstations-Paar
-- **Dynamische Pfadauswahl**: Aktualisiert bevorzugten Pfad basierend auf Signalqualität
-- **Persistente Speicherung**: Speichert bevorzugte Pfade in Konfiguration
+- **Signal quality tracking**: Monitors SNR for each sensor-base station pair
+- **Dynamic path selection**: Updates preferred path based on signal quality
+- **Persistent storage**: Saves preferred paths to configuration
 
-### Hochverfügbarkeits-Features
+### High Availability Features
 
-- **Automatische Wiederverbindung**: Behandelt Basisstations-Verbindungsabbrüche elegant  
-- **Warteschlangen-Persistenz**: Behält Nachrichtenwarteschlangen während Netzwerkproblemen bei
-- **Gesundheitsüberwachung**: Kontinuierliche Service-Gesundheitsprüfungen
-- **Graceful Degradation**: Fortsetzung des Betriebs mit partieller Verbindung
+- **Automatic reconnection**: Handles base station disconnections gracefully  
+- **Queue persistence**: Maintains message queues during network issues
+- **Health monitoring**: Continuous service health checks
+- **Graceful degradation**: Continues operation with partial connectivity
 
-### Leistungsoptimierung
+### Performance Optimization
 
-- **Asynchrone Verarbeitung**: Nicht-blockierende Nachrichtenbehandlung
-- **Verbindungspooling**: Effizientes Basisstations-Verbindungsmanagement
-- **Speicherverwaltung**: Automatische Bereinigung alter Daten
-- **Batch-Operationen**: Effiziente Massen-Sensorkonfiguration
-
----
-
-## 📄 Lizenz
-
-Dieses Projekt steht unter einer **Nicht-kommerziellen Lizenz**. 
-
-### Was Sie TUN können:
-- ✅ Für persönliche Projekte verwenden
-- ✅ Für Bildungszwecke verwenden  
-- ✅ Für Forschung verwenden
-- ✅ Modifizieren und verteilen (nicht-kommerziell)
-- ✅ Den Code studieren
-
-### Was Sie NICHT tun können:
-- ❌ In kommerziellen Produkten oder Dienstleistungen verwenden
-- ❌ Die Software oder Derivate verkaufen
-- ❌ Zur Umsatzgenerierung verwenden
-
-### Kommerzielle Nutzung
-Für kommerzielle Lizenzierung, Unternehmensunterstützung oder benutzerdefinierte Entwicklung öffnen Sie bitte ein Issue auf GitHub oder kontaktieren Sie uns über das Repository.
-
-**Vollständige Lizenzbedingungen**: Siehe [LICENSE](LICENSE) Datei
+- **Asynchronous processing**: Non-blocking message handling
+- **Connection pooling**: Efficient base station connection management
+- **Memory management**: Automatic cleanup of old data
+- **Batch operations**: Efficient bulk sensor configuration
 
 ---
 
-## 🤝 Beitragen
+## Contributing
 
-Beiträge sind willkommen! Durch das Beitragen stimmen Sie zu, dass Ihre Beiträge unter denselben nicht-kommerziellen Bedingungen lizenziert werden.
+Feel free to submit issues and enhancement requests. When contributing:
 
-1. Repository forken
-2. Feature-Branch erstellen
-3. Ihre Änderungen vornehmen
-4. Gründlich testen
-5. Pull Request einreichen
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes with tests
+4. Submit a pull request
 
----
+## License
 
-## ⭐ Projekt unterstützen
-
-Wenn Ihnen dieses Projekt hilft, bitte:
-- Geben Sie ihm einen Stern auf GitHub ⭐
-- Teilen Sie es mit anderen, die es nützlich finden könnten
-- Melden Sie Bugs und schlagen Sie Verbesserungen vor
-- Erwägen Sie, Code oder Dokumentation beizutragen
+This project is licensed under the MIT License. See LICENSE file for details.
 
 ---
 
-Für Fragen oder Support überprüfen Sie bitte den Fehlerbehebungsbereich oder erstellen Sie ein Issue im Repository.
+For questions or support, please check the troubleshooting section or create an issue in the repository.

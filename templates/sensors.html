@@ -8,7 +8,9 @@
         <button class="btn me-2" onclick="reloadSensors()" title="Reload sensor configuration" style="background-color: #6c757d; color: white; border-color: #6c757d;">
             Reload Config
         </button>
-        <button type="button" class="btn btn-outline-danger ms-2" onclick="clearAllSensors()">Clear All (with Detach)</button>
+        <button class="btn btn-danger me-2" onclick="clearAllSensors()" title="Clear all sensors">
+            Clear All
+        </button>
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sensorModal" onclick="openSensorModal()" style="background-color: #ff8c00; border-color: #ff8c00;">
             Add New Sensor
         </button>
@@ -26,9 +28,7 @@
                         <th>Short Address</th>
                         <th>Bidirectional</th>
                         <th>Registration Status</th>
-                        <th>Base Stations</th>
-                        <th>Last Activity</th>
-                        <th>Preferred Path</th>
+                        <th>Preferred Downlink Path</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -90,70 +90,30 @@ function loadSensors() {
         .then(response => response.json())
         .then(sensorStatus => {
             const tbody = document.getElementById('sensors-table');
-            tbody.innerHTML = Object.values(sensorStatus).map(sensorData => {
-                const eui = sensorData.eui;
-                let statusBadge = '';
-                if (sensorData.registered) {
-                    statusBadge = '<span class="badge bg-success">Registered</span>';
-                } else {
-                    statusBadge = '<span class="badge bg-warning">Not Registered</span>';
-                }
-
-                // Registration info with base stations
-                let baseStationsText = '';
-                if (sensorData.base_stations && sensorData.base_stations.length > 0) {
-                    baseStationsText = sensorData.base_stations.join(', ');
-                } else {
-                    baseStationsText = '-';
-                }
-
-                // Last activity display
-                let lastActivityText = '-';
-                if (sensorData.registration_info && sensorData.registration_info.last_data_time_str) {
-                    lastActivityText = sensorData.registration_info.last_data_time_str;
-                } else if (sensorData.registration_info && sensorData.registration_info.registration_time) {
-                    lastActivityText = `<small class="text-muted">Reg: ${sensorData.registration_info.registration_time}</small>`;
-                }
-
-                // Auto-detach warning if sensor is inactive for more than 24 hours
-                let activityWarning = '';
-                if (sensorData.registration_info && sensorData.registration_info.last_data_timestamp) {
-                    const now = Date.now() / 1000;
-                    const hoursSinceActivity = (now - sensorData.registration_info.last_data_timestamp) / 3600;
-                    if (hoursSinceActivity > 24 && hoursSinceActivity < 48) {
-                        activityWarning = '<br><small class="text-warning">⚠️ Inactive >24h</small>';
-                    } else if (hoursSinceActivity >= 48) {
-                        activityWarning = '<br><small class="text-danger">🕐 Auto-detach due</small>';
-                    }
-                }
-                lastActivityText += activityWarning;
-
-                // Preferred path display
-                let preferredPathText = '-';
-                if (sensorData.preferredDownlinkPath) {
-                    const path = sensorData.preferredDownlinkPath;
-                    if (path.baseStation) {
-                        preferredPathText = `${path.baseStation}<br><small class="text-muted">SNR: ${path.snr}dB (${path.messageCount} msgs)</small>`;
-                    }
-                }
-
-                return `
-                    <tr>
-                        <td><code>${sensorData.eui}</code></td>
-                        <td><code>${sensorData.nwKey.substring(0, 8)}...</code></td>
-                        <td><code>${sensorData.shortAddr}</code></td>
-                        <td>${sensorData.bidi ? '<span class="badge bg-success">Yes</span>' : '<span class="badge bg-secondary">No</span>'}</td>
-                        <td>${statusBadge}</td>
-                        <td><small>${baseStationsText}</small></td>
-                        <td><small>${lastActivityText}</small></td>
-                        <td><small>${preferredPathText}</small></td>
-                        <td>
-                            <button class="btn btn-sm btn-outline-primary" onclick="editSensor('${eui}')">Edit</button>
-                            <button class="btn btn-sm btn-outline-danger ms-1" onclick="deleteSensor('${eui}')" title="${sensorData.registered ? 'Will detach from base stations and delete from config' : 'Delete from config'}">Delete${sensorData.registered ? ' (+ Detach)' : ''}</button>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
+            tbody.innerHTML = Object.values(sensorStatus).map(sensor => `
+                <tr>
+                    <td><code>${sensor.eui}</code></td>
+                    <td><code>${sensor.nwKey.substring(0, 8)}...</code></td>
+                    <td><code>${sensor.shortAddr}</code></td>
+                    <td>${sensor.bidi ? 'Yes' : 'No'}</td>
+                    <td>
+                        ${sensor.registered ? 
+                            `<span class="badge bg-success">Registered</span>
+                            <br><small>Base Stations (${sensor.total_registrations || 0}):</small>
+                            <br><small>${sensor.base_stations ? sensor.base_stations.join(', ') : 'N/A'}</small>` : 
+                            '<span class="badge bg-warning">Not Registered</span>'}</td>
+                    <td>${sensor.preferredDownlinkPath ? 
+                            `<strong>BS:</strong> ${sensor.preferredDownlinkPath.baseStation}
+                            <br><small><strong>SNR:</strong> ${sensor.preferredDownlinkPath.snr} dB</small>
+                            <br><small><strong>Messages:</strong> ${sensor.preferredDownlinkPath.messageCount}</small>
+                            <br><small><strong>Updated:</strong> ${new Date(sensor.preferredDownlinkPath.lastUpdated).toLocaleString()}</small>` : 
+                            '<span class="text-muted">No data received</span>'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="editSensor('${sensor.eui}')">Edit</button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteSensor('${sensor.eui}')">Delete</button>
+                    </td>
+                </tr>
+            `).join('');
         });
 }
 
@@ -212,24 +172,20 @@ function saveSensor() {
 }
 
 function deleteSensor(eui) {
-    if (confirm(`Are you sure you want to delete sensor ${eui}?\n\nThis will:\n• Send detach requests to all base stations (if registered)\n• Remove sensor from configuration`)) {
-        fetch(`/api/sensors/${eui}`, { method: 'DELETE' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showAlert(data.message, 'success');
-                    setTimeout(loadSensors, 2000); // Reload after 2 seconds to see status change
-                } else {
-                    showAlert(data.message, 'error');
-                }
-            })
-            .catch(error => {
-                showAlert('Error deleting sensor', 'error');
-            });
+    if (confirm('Are you sure you want to delete this sensor?')) {
+        fetch(`/api/sensors/${eui}`, {
+            method: 'DELETE'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                loadSensors();
+            } else {
+                alert('Error: ' + result.message);
+            }
+        });
     }
 }
-
-// Detach functionality is now integrated into delete and clear operations
 
 function reloadSensors() {
     fetch('/api/sensors/reload', {
@@ -247,33 +203,20 @@ function reloadSensors() {
 }
 
 function clearAllSensors() {
-    if (confirm('Are you sure you want to clear ALL sensor configurations?\n\nThis will:\n• Send detach requests for all registered sensors\n• Remove all sensors from configuration\n• This cannot be undone!')) {
-        fetch('/api/sensors/clear', { method: 'POST' })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showAlert(data.message, 'success');
-                    setTimeout(loadSensors, 3000); // Reload after 3 seconds to see status change
-                } else {
-                    showAlert(data.message, 'error');
-                }
-            })
-            .catch(error => {
-                showAlert('Error clearing sensors', 'error');
-            });
+    if (confirm('Are you sure you want to delete ALL sensors? This cannot be undone.')) {
+        fetch('/api/sensors/clear', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                loadSensors();
+                alert('All sensors cleared successfully');
+            } else {
+                alert('Error: ' + result.message);
+            }
+        });
     }
-}
-
-// Helper function for showing alerts
-function showAlert(message, type) {
-    const alertPlaceholder = document.createElement('div');
-    alertPlaceholder.className = `alert alert-${type} alert-dismissible fade show`;
-    alertPlaceholder.role = 'alert';
-    alertPlaceholder.innerHTML = `
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    `;
-    document.getElementById('sensors-table').parentNode.insertBefore(alertPlaceholder, document.getElementById('sensors-table'));
 }
 
 // Load sensors on page load

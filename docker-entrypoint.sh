@@ -2,72 +2,16 @@
 #!/bin/bash
 set -e
 
-echo "=== BSSCI Docker Entrypoint - Synology Edition ==="
-echo "Current user: $(id)"
-echo "Current working directory: $(pwd)"
+# Ensure proper permissions on log directory
+mkdir -p /app/logs
+chmod 755 /app/logs
 
-# Synology-specific setup
-if [ "$SYNOLOGY_DOCKER" = "1" ]; then
-    echo "=== Synology Docker Environment Detected ==="
-    
-    # Create writable copies of config files in container
-    echo "Setting up writable configuration files..."
-    
-    # Copy host config files to writable locations
-    if [ -f "/tmp/host_endpoints.json" ]; then
-        cp /tmp/host_endpoints.json /app/endpoints.json
-        chmod 666 /app/endpoints.json
-        echo "✓ endpoints.json copied and made writable"
-    else
-        echo "[]" > /app/endpoints.json
-        chmod 666 /app/endpoints.json
-        echo "✓ Created empty endpoints.json"
-    fi
-    
-    if [ -f "/tmp/host_bssci_config.py" ]; then
-        cp /tmp/host_bssci_config.py /app/bssci_config.py
-        chmod 666 /app/bssci_config.py
-        echo "✓ bssci_config.py copied and made writable"
-    else
-        echo "# Default BSSCI Configuration" > /app/bssci_config.py
-        chmod 666 /app/bssci_config.py
-        echo "✓ Created default bssci_config.py"
-    fi
-    
-    # Set up sync mechanism for config changes back to host
-    mkdir -p /app/sync
-    echo "#!/bin/bash" > /app/sync_to_host.sh
-    echo "# This script would sync changes back to host in a real deployment" >> /app/sync_to_host.sh
-    echo "# For Synology, manual backup of /app/endpoints.json and /app/bssci_config.py is recommended" >> /app/sync_to_host.sh
-    chmod +x /app/sync_to_host.sh
-else
-    echo "=== Standard Docker Environment ==="
-    # Standard permission fixes for non-Synology environments
-    chmod 666 /app/bssci_config.py /app/endpoints.json 2>/dev/null || true
-fi
+# Ensure certificates directory exists
+mkdir -p /app/certs
 
-# Ensure directories exist with proper permissions
-mkdir -p /app/logs /app/certs
-chmod 755 /app/logs /app/certs
-
-echo "=== Final File Permissions Check ==="
-ls -la /app/bssci_config.py /app/endpoints.json /app/logs 2>/dev/null || echo "Some files not accessible"
-
-# Test writability
-echo "=== Testing Configuration File Write Access ==="
-if echo "# Test write" >> /app/bssci_config.py 2>/dev/null; then
-    sed -i '$d' /app/bssci_config.py  # Remove test line
-    echo "✓ bssci_config.py is writable"
-else
-    echo "✗ bssci_config.py is NOT writable"
-fi
-
-if echo "test" > /tmp/test_endpoints.json && cat /tmp/test_endpoints.json > /app/endpoints.json 2>/dev/null; then
-    rm /tmp/test_endpoints.json
-    echo "✓ endpoints.json is writable"
-else
-    echo "✗ endpoints.json is NOT writable"
-fi
+# Fix permissions for configuration files at runtime
+chmod 644 /app/bssci_config.py /app/endpoints.json 2>/dev/null || true
+chown $(id -u):$(id -g) /app/bssci_config.py /app/endpoints.json 2>/dev/null || true
 
 # Generate self-signed certificates if they don't exist
 if [ ! -f "/app/certs/ca_cert.pem" ] || [ ! -f "/app/certs/service_center_cert.pem" ] || [ ! -f "/app/certs/service_center_key.pem" ]; then
@@ -93,8 +37,6 @@ if [ ! -f "/app/certs/ca_cert.pem" ] || [ ! -f "/app/certs/service_center_cert.p
     
     echo "SSL certificates generated successfully"
 fi
-
-echo "=== Container startup complete ==="
 
 # Execute the main command
 exec "$@"
