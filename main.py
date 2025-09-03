@@ -63,11 +63,18 @@ async def main() -> None:
     logger.info(f"   mqtt_out_queue ID: {id(mqtt_out_queue)}")
     logger.info(f"   mqtt_in_queue ID: {id(mqtt_in_queue)}")
 
-    # Fixed parameter order - both should use the same queue instances consistently
-    tls_server = TLSServer(
-        bssci_config.SENSOR_CONFIG_FILE, mqtt_out_queue, mqtt_in_queue
-    )
-    tls_server_instance = tls_server  # Store global reference
+    # Create TLS server instance
+    tls_server_instance = TLSServer(SENSOR_CONFIG_FILE, mqtt_out_queue, mqtt_in_queue)
+
+    # Make it available to web_main
+    try:
+        import web_main
+        web_main.set_tls_server(tls_server_instance)
+    except ImportError:
+        pass  # web_main not available in non-web mode
+
+    # Use the same instance for the server
+    tls_server = tls_server_instance
     mqtt_client = MQTTClient(mqtt_out_queue, mqtt_in_queue)
 
     logger.info("🔍 Queue Assignment Verification:")
