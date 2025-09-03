@@ -757,6 +757,13 @@ class TLSServer:
             # Connection response from base station
             logger.debug(f"Connection response received: {message}")
             
+        elif command == 'error':
+            # Error message from base station
+            error_code = message.get('code', 'unknown')
+            error_msg = message.get('message', 'no details')
+            logger.error(f"🚨 Base station error {error_code}: {error_msg}")
+            logger.debug(f"Full error message: {message}")
+            
         elif command == 'conCmp':
             # Connection complete from base station
             logger.info(f"✅ Connection complete received from base station")
@@ -794,13 +801,17 @@ class TLSServer:
         try:
             import msgpack
             
-            # Build connection response according to BSSCI spec
+            # Build connection response according to BSSCI spec v1.0.0 section 5.3.2
             response = {
                 "command": "conRsp",
                 "opId": con_message.get('opId', 0),  # Required: Match the opId from request
-                "result": "success",
-                "snScOpId": con_message.get('snBsOpId', 0),  # Match operation ID
-                "timestamp": int(asyncio.get_event_loop().time())
+                "scEui": 0x001122334455667788,  # Required: Service Center EUI64
+                "version": "1.0.0",  # Optional: Supported protocol version
+                "vendor": "BSSCI Service Center",  # Optional: Vendor name
+                "model": "Python Implementation",  # Optional: Model name
+                "name": "BSSCI-SC",  # Optional: Service Center name
+                "swVersion": "1.0.0",  # Optional: Software version
+                "snResume": False  # Optional: Not resuming previous session
             }
             
             # Encode response
