@@ -55,10 +55,12 @@ logger = logging.getLogger(__name__)
 # Global reference for TLS server instance
 tls_server_instance = None
 
+
 def run_web_ui():
     """Run the Flask web UI in a separate thread"""
     logger.info("Starting Web UI on port 5000")
     app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+
 
 def run_bssci_service():
     """Run the BSSCI service"""
@@ -66,10 +68,11 @@ def run_bssci_service():
     import main
     asyncio.run(main.main())
 
+
 def get_tls_server():
     """Get the TLS server instance"""
-    global tls_server_instance
     return tls_server_instance
+
 
 def set_tls_server(server):
     """Set the TLS server instance"""
@@ -80,10 +83,13 @@ def set_tls_server(server):
     try:
         import web_ui
         web_ui.set_tls_server(tls_server_instance)
-        logger.info(f"✅ TLS server instance passed to web UI successfully")
+        logger.info("✅ TLS server instance passed to web UI successfully")
         logger.info(f"   TLS server ID: {id(tls_server_instance)}")
         if hasattr(tls_server_instance, 'connected_base_stations'):
-            logger.info(f"   Connected base stations count: {len(tls_server_instance.connected_base_stations)}")
+            logger.info(
+                f"   Connected base stations count: "
+                f"{len(tls_server_instance.connected_base_stations)}"
+            )
     except ImportError as e:
         logger.error(f"❌ Failed to import web_ui: {e}")
     except Exception as e:

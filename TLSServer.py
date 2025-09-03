@@ -7,7 +7,7 @@ from typing import Any, Dict
 
 import bssci_config
 import messages
-from protocol import decode_messages, encode_message
+from protocol import encode_message
 
 logger = logging.getLogger(__name__)
 
@@ -24,15 +24,23 @@ class TLSServer:
         self.opID = -1
         self.mqtt_out_queue = mqtt_out_queue
         self.mqtt_in_queue = mqtt_in_queue
-        self.connected_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
-        self.connecting_base_stations: Dict[asyncio.streams.StreamWriter, str] = {}
+        self.connected_base_stations: Dict[
+            asyncio.streams.StreamWriter, str
+        ] = {}
+        self.connecting_base_stations: Dict[
+            asyncio.streams.StreamWriter, str
+        ] = {}
         self.sensor_config_file = sensor_config_file
-        self.registered_sensors: Dict[str, Dict[str, Any]] = {}  # EUI -> {status, base_stations: [], timestamp}
-        self.pending_attach_requests: Dict[int, Dict[str, Any]] = {}  # opID -> {sensor_eui, timestamp, base_station}
-        self._status_task_running = False  # Track if status request task is running
+        # EUI -> {status, base_stations: [], timestamp}
+        self.registered_sensors: Dict[str, Dict[str, Any]] = {}
+        # opID -> {sensor_eui, timestamp, base_station}
+        self.pending_attach_requests: Dict[int, Dict[str, Any]] = {}
+        # Track if status request task is running
+        self._status_task_running = False
 
         # Deduplication variables
-        self.deduplication_buffer: Dict[str, Dict[str, Any]] = {}  # message_key -> {message, timestamp, snr, bs_eui}
+        # message_key -> {message, timestamp, snr, bs_eui}
+        self.deduplication_buffer: Dict[str, Dict[str, Any]] = {}
         self.deduplication_delay = bssci_config.DEDUPLICATION_DELAY
         self.deduplication_stats = {
             'total_messages': 0,
@@ -41,8 +49,10 @@ class TLSServer:
         }
 
         # Auto-detach variables
-        self.sensor_last_seen: Dict[str, float] = {}  # eui -> timestamp of last message
-        self.sensor_warning_sent: Dict[str, bool] = {}  # eui -> whether warning was sent
+        # eui -> timestamp of last message
+        self.sensor_last_seen: Dict[str, float] = {}
+        # eui -> whether warning was sent
+        self.sensor_warning_sent: Dict[str, bool] = {}
 
         # Start the deduplication task
         asyncio.create_task(self.process_deduplication_buffer())
@@ -51,7 +61,6 @@ class TLSServer:
         if getattr(bssci_config, 'AUTO_DETACH_ENABLED', True):
             asyncio.create_task(self.auto_detach_monitor())
 
-
         try:
             with open(sensor_config_file, "r") as f:
                 self.sensor_config = json.load(f)
@@ -59,7 +68,7 @@ class TLSServer:
             self.sensor_config = []
 
         # Add queue logging
-        logger.info(f"🔍 TLS Server Queue Assignment:")
+        logger.info("🔍 TLS Server Queue Assignment:")
         logger.info(f"   mqtt_out_queue ID: {id(self.mqtt_out_queue)}")
         logger.info(f"   mqtt_in_queue ID: {id(self.mqtt_in_queue)}")
 
@@ -85,8 +94,15 @@ class TLSServer:
             ssl_ctx.verify_mode = ssl.CERT_REQUIRED
 
             # Log SSL context details
-            logger.info(f"   TLS Protocol versions: {ssl_ctx.minimum_version.name} - {ssl_ctx.maximum_version.name}")
-            logger.info("✓ SSL context configured successfully with client certificate verification")
+            logger.info(
+                f"   TLS Protocol versions: "
+                f"{ssl_ctx.minimum_version.name} - "
+                f"{ssl_ctx.maximum_version.name}"
+            )
+            logger.info(
+                "✓ SSL context configured successfully with "
+                "client certificate verification"
+            )
 
         except FileNotFoundError as e:
             logger.error(f"❌ SSL certificate file not found: {e}")
@@ -98,8 +114,11 @@ class TLSServer:
             logger.error(f"❌ Unexpected error setting up SSL: {e}")
             raise
 
-        logger.info(f"🚀 Starting BSSCI TLS server...")
-        logger.info(f"   Listen address: {bssci_config.LISTEN_HOST}:{bssci_config.LISTEN_PORT}")
+        logger.info("🚀 Starting BSSCI TLS server...")
+        logger.info(
+            f"   Listen address: "
+            f"{bssci_config.LISTEN_HOST}:{bssci_config.LISTEN_PORT}"
+        )
         logger.info(f"   Sensor config file: {self.sensor_config_file}")
         logger.info(f"   Loaded sensors: {len(self.sensor_config)}")
 
@@ -113,7 +132,10 @@ class TLSServer:
         logger.info("📨 Starting MQTT queue watcher task...")
         asyncio.create_task(self.queue_watcher())
 
-        logger.info("✓ BSSCI TLS Server is ready and listening for base station connections")
+        logger.info(
+            "✓ BSSCI TLS Server is ready and listening for "
+            "base station connections"
+        )
         async with server:
             await server.serve_forever()
 

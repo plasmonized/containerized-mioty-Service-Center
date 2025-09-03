@@ -23,7 +23,16 @@ STATUS_INTERVAL = int(os.getenv("STATUS_INTERVAL", "30"))
 DEDUPLICATION_DELAY = float(os.getenv("DEDUPLICATION_DELAY", "2.0"))
 
 # Auto-detach Configuration
-AUTO_DETACH_ENABLED = os.getenv("AUTO_DETACH_ENABLED", "true").lower() == "true"
-AUTO_DETACH_TIMEOUT = int(os.getenv("AUTO_DETACH_TIMEOUT", "259200"))  # 72 hours in seconds
-AUTO_DETACH_WARNING_TIMEOUT = int(os.getenv("AUTO_DETACH_WARNING_TIMEOUT", "129600"))  # 36 hours in seconds
-AUTO_DETACH_CHECK_INTERVAL = int(os.getenv("AUTO_DETACH_CHECK_INTERVAL", "3600"))  # Check every hour
+AUTO_DETACH_ENABLED = (
+    os.getenv("AUTO_DETACH_ENABLED", "true").lower() == "true"
+)
+# 72 hours in seconds
+AUTO_DETACH_TIMEOUT = int(os.getenv("AUTO_DETACH_TIMEOUT", "259200"))
+# 36 hours in seconds
+AUTO_DETACH_WARNING_TIMEOUT = int(
+    os.getenv("AUTO_DETACH_WARNING_TIMEOUT", "129600")
+)
+# Check every hour
+AUTO_DETACH_CHECK_INTERVAL = int(
+    os.getenv("AUTO_DETACH_CHECK_INTERVAL", "3600")
+)

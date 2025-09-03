@@ -2,11 +2,11 @@ import asyncio
 import json
 import logging
 from typing import Dict, Any
-from aiomqtt import Client, MqttError
-import paho.mqtt.client
+from aiomqtt import Client
 
-import bssci_config
-from bssci_config import MQTT_BROKER, MQTT_PORT, MQTT_USERNAME, MQTT_PASSWORD, BASE_TOPIC
+from bssci_config import (
+    MQTT_BROKER, MQTT_PORT, MQTT_USERNAME, MQTT_PASSWORD, BASE_TOPIC
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,15 +28,21 @@ class MQTTClient:
         self.mqtt_in_queue = mqtt_in_queue
 
         # Add queue logging
-        logger.info(f"🔍 MQTT Client Queue Assignment:")
+        logger.info("🔍 MQTT Client Queue Assignment:")
         logger.info(f"   mqtt_out_queue ID: {id(self.mqtt_out_queue)}")
         logger.info(f"   mqtt_in_queue ID: {id(self.mqtt_in_queue)}")
 
     def log_queue_info(self) -> None:
         """Log queue information for debugging"""
-        logger.info(f"🔍 MQTT Client Queue Information:")
-        logger.info(f"   mqtt_out_queue ID: {id(self.mqtt_out_queue)}, size: {self.mqtt_out_queue.qsize()}")
-        logger.info(f"   mqtt_in_queue ID: {id(self.mqtt_in_queue)}, size: {self.mqtt_in_queue.qsize()}")
+        logger.info("🔍 MQTT Client Queue Information:")
+        logger.info(
+            f"   mqtt_out_queue ID: {id(self.mqtt_out_queue)}, "
+            f"size: {self.mqtt_out_queue.qsize()}"
+        )
+        logger.info(
+            f"   mqtt_in_queue ID: {id(self.mqtt_in_queue)}, "
+            f"size: {self.mqtt_in_queue.qsize()}"
+        )
 
     async def start(self) -> None:
         """Start MQTT client with simple connection pattern"""
@@ -50,7 +56,10 @@ class MQTTClient:
                 logger.info("=" * 60)
                 logger.info(f"📡 Broker: {self.broker_host}:{MQTT_PORT}")
                 logger.info(f"👤 Username: {MQTT_USERNAME}")
-                logger.info(f"🔐 Password: {'*' * len(MQTT_PASSWORD) if MQTT_PASSWORD else 'NOT SET'}")
+                logger.info(
+                    f"🔐 Password: "
+                    f"{'*' * len(MQTT_PASSWORD) if MQTT_PASSWORD else 'NOT SET'}"
+                )
                 logger.info(f"🎯 Config Topic: {self.config_topic}")
                 logger.info(f"🏠 Base Topic: {self.base_topic}")
 

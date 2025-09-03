@@ -7,3 +7,5 @@ paho-mqtt
 cryptography
 cryptography
 python-dotenv==1.0.0
+black
+flake8
