@@ -776,6 +776,14 @@ class TLSServer:
             result = message.get('result', 'unknown')
             logger.info(f"📡 Attach prepare response for {eui}: {result}")
             
+        elif command == 'attPrpRsp':
+            # Attach propagate response from base station
+            op_id = message.get('opId')
+            result = message.get('result', 'success')  # Default to success if not specified
+            logger.info(f"✅ Attach propagate response received (opId: {op_id}): {result}")
+            logger.debug(f"Full attach propagate response: {message}")
+            # Base station has confirmed the sensor attach request
+            
         elif command == 'statusCmp':
             # Status complete message
             eui = message.get('eui')
