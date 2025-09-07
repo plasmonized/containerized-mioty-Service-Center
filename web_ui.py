@@ -510,111 +510,174 @@ def get_logs():
 # =========================
 
 def get_current_version():
-    """Get current Git version/commit"""
+    """Get current version - works with or without Git"""
     try:
-        # Try to unlock git if needed
-        lock_file = '.git/index.lock'
-        if os.path.exists(lock_file):
-            try:
-                os.remove(lock_file)
-                print("Removed stale git lock file")
-            except:
-                pass
-        
-        result = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], 
-                              capture_output=True, text=True, timeout=10)
-        if result.returncode == 0:
-            commit_hash = result.stdout.strip()
+        # First try Git commands
+        try:
+            # Try to unlock git if needed
+            lock_file = '.git/index.lock'
+            if os.path.exists(lock_file):
+                try:
+                    os.remove(lock_file)
+                    print("Removed stale git lock file")
+                except:
+                    pass
             
-            # Try to get tag
-            tag_result = subprocess.run(['git', 'describe', '--tags', '--exact-match', 'HEAD'], 
-                                      capture_output=True, text=True, timeout=10)
-            if tag_result.returncode == 0:
-                return tag_result.stdout.strip()
+            result = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], 
+                                  capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                commit_hash = result.stdout.strip()
+                
+                # Try to get tag
+                tag_result = subprocess.run(['git', 'describe', '--tags', '--exact-match', 'HEAD'], 
+                                          capture_output=True, text=True, timeout=10)
+                if tag_result.returncode == 0:
+                    return tag_result.stdout.strip()
+                else:
+                    return f"commit-{commit_hash}"
+        except FileNotFoundError:
+            # Git not installed, use fallback
+            pass
+        except Exception as e:
+            if "No such file or directory" in str(e):
+                # Git not installed
+                pass
             else:
-                return f"commit-{commit_hash}"
+                print(f"Git command error: {e}")
         
-        # Fallback: try to read .git/HEAD directly
+        # Fallback 1: try to read .git/HEAD directly
         try:
             with open('.git/HEAD', 'r') as f:
                 head_ref = f.read().strip()
                 if head_ref.startswith('ref: refs/heads/'):
+                    # Get branch name and try to read commit
                     branch = head_ref.split('/')[-1]
-                    return f"branch-{branch}"
+                    ref_path = f'.git/refs/heads/{branch}'
+                    try:
+                        with open(ref_path, 'r') as ref_file:
+                            commit = ref_file.read().strip()[:7]
+                            return f"local-{commit}"
+                    except:
+                        return f"branch-{branch}"
                 else:
                     # Direct commit hash
-                    return f"commit-{head_ref[:7]}"
+                    return f"local-{head_ref[:7]}"
+        except:
+            pass
+        
+        # Fallback 2: Use file modification timestamps
+        try:
+            import time
+            main_files = ['main.py', 'web_ui.py', 'TLSServer.py', 'mqtt_interface.py']
+            latest_time = 0
+            for file in main_files:
+                if os.path.exists(file):
+                    mtime = os.path.getmtime(file)
+                    latest_time = max(latest_time, mtime)
+            
+            if latest_time > 0:
+                date_str = time.strftime('%Y%m%d', time.localtime(latest_time))
+                return f"local-{date_str}"
         except:
             pass
             
-        return "git-unavailable"
+        return "local-version"
     except Exception as e:
         print(f"Error getting current version: {e}")
-        return "git-error"
+        return "version-unknown"
 
 def get_remote_version():
-    """Get latest remote version"""
+    """Get latest remote version - works with or without Git"""
     try:
-        # Try to unlock git if needed
-        lock_file = '.git/index.lock'
-        if os.path.exists(lock_file):
-            try:
-                os.remove(lock_file)
-            except:
-                pass
-        
-        # Fetch latest from remote
-        fetch_result = subprocess.run(['git', 'fetch', 'origin'], capture_output=True, text=True, timeout=30)
-        if fetch_result.returncode != 0:
-            print(f"Git fetch failed: {fetch_result.stderr}")
-            return "fetch-failed"
-        
-        # Get latest commit hash from origin/main
-        result = subprocess.run(['git', 'rev-parse', '--short', 'origin/main'], 
-                              capture_output=True, text=True, timeout=10)
-        if result.returncode == 0:
-            commit_hash = result.stdout.strip()
+        # First try Git commands  
+        try:
+            # Try to unlock git if needed
+            lock_file = '.git/index.lock'
+            if os.path.exists(lock_file):
+                try:
+                    os.remove(lock_file)
+                except:
+                    pass
             
-            # Try to get latest tag
-            tag_result = subprocess.run(['git', 'describe', '--tags', 'origin/main'], 
-                                      capture_output=True, text=True, timeout=10)
-            if tag_result.returncode == 0:
-                return tag_result.stdout.strip().split('-')[0]  # Get tag without commit info
+            # Fetch latest from remote
+            fetch_result = subprocess.run(['git', 'fetch', 'origin'], capture_output=True, text=True, timeout=30)
+            if fetch_result.returncode != 0:
+                print(f"Git fetch failed: {fetch_result.stderr}")
+                return "fetch-failed"
+            
+            # Get latest commit hash from origin/main
+            result = subprocess.run(['git', 'rev-parse', '--short', 'origin/main'], 
+                                  capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                commit_hash = result.stdout.strip()
+                
+                # Try to get latest tag
+                tag_result = subprocess.run(['git', 'describe', '--tags', 'origin/main'], 
+                                          capture_output=True, text=True, timeout=10)
+                if tag_result.returncode == 0:
+                    return tag_result.stdout.strip().split('-')[0]  # Get tag without commit info
+                else:
+                    return f"commit-{commit_hash}"
+        except FileNotFoundError:
+            # Git not installed, can't check remote
+            pass
+        except Exception as e:
+            if "No such file or directory" in str(e):
+                # Git not installed
+                pass
             else:
-                return f"commit-{commit_hash}"
+                print(f"Git command error: {e}")
         
-        return "remote-unavailable"
+        # Without Git, we can't check remote versions
+        return "git-required-for-remote"
     except Exception as e:
         print(f"Error getting remote version: {e}")
-        return "remote-error"
+        return "remote-check-unavailable"
 
 def get_commit_log(limit=5):
-    """Get recent commit log"""
+    """Get recent commit log - works with or without Git"""
     try:
-        # Try to unlock git if needed
-        lock_file = '.git/index.lock'
-        if os.path.exists(lock_file):
-            try:
-                os.remove(lock_file)
-            except:
+        # First try Git commands
+        try:
+            # Try to unlock git if needed
+            lock_file = '.git/index.lock'
+            if os.path.exists(lock_file):
+                try:
+                    os.remove(lock_file)
+                except:
+                    pass
+            
+            result = subprocess.run(['git', 'log', '--oneline', f'-{limit}'], 
+                                  capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                commits = []
+                for line in result.stdout.strip().split('\n'):
+                    if line:
+                        parts = line.split(' ', 1)
+                        commits.append({
+                            'hash': parts[0],
+                            'message': parts[1] if len(parts) > 1 else ''
+                        })
+                return commits
+        except FileNotFoundError:
+            # Git not installed
+            pass
+        except Exception as e:
+            if "No such file or directory" in str(e):
+                # Git not installed
                 pass
+            else:
+                print(f"Git command error: {e}")
         
-        result = subprocess.run(['git', 'log', '--oneline', f'-{limit}'], 
-                              capture_output=True, text=True, timeout=10)
-        if result.returncode == 0:
-            commits = []
-            for line in result.stdout.strip().split('\n'):
-                if line:
-                    parts = line.split(' ', 1)
-                    commits.append({
-                        'hash': parts[0],
-                        'message': parts[1] if len(parts) > 1 else ''
-                    })
-            return commits
-        return [{'hash': 'unavailable', 'message': 'Git log unavailable'}]
+        # Fallback: Return info about the current installation
+        return [
+            {'hash': 'local', 'message': 'Local installation - Git not available'},
+            {'hash': 'info', 'message': 'Install Git to see commit history'},
+            {'hash': 'note', 'message': 'Version checking works without Git'}
+        ]
     except Exception as e:
         print(f"Error getting commit log: {e}")
-        return [{'hash': 'error', 'message': f'Git error: {str(e)}'}]
+        return [{'hash': 'error', 'message': f'Unable to get history: {str(e)}'}]
 
 def check_for_updates():
     """Check if updates are available"""
@@ -622,15 +685,30 @@ def check_for_updates():
         current = get_current_version()
         remote = get_remote_version()
         
-        # Compare versions
-        updates_available = current != remote
+        # Determine if updates are available
+        updates_available = False
+        status_message = None
         
-        return {
+        if remote in ['git-required-for-remote', 'remote-check-unavailable']:
+            updates_available = False
+            status_message = 'Git installation required for remote version checking'
+        elif current.startswith('local-') and remote.startswith('git-required'):
+            updates_available = False
+            status_message = 'Local installation - remote checking requires Git'
+        elif current != remote and not remote.startswith('git-required') and not remote.startswith('remote-'):
+            updates_available = True
+        
+        result = {
             'current_version': current,
             'remote_version': remote,
             'updates_available': updates_available,
             'status': 'success'
         }
+        
+        if status_message:
+            result['message'] = status_message
+            
+        return result
     except Exception as e:
         return {
             'current_version': 'unknown',
