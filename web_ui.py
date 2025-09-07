@@ -512,6 +512,15 @@ def get_logs():
 def get_current_version():
     """Get current Git version/commit"""
     try:
+        # Try to unlock git if needed
+        lock_file = '.git/index.lock'
+        if os.path.exists(lock_file):
+            try:
+                os.remove(lock_file)
+                print("Removed stale git lock file")
+            except:
+                pass
+        
         result = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], 
                               capture_output=True, text=True, timeout=10)
         if result.returncode == 0:
@@ -524,16 +533,41 @@ def get_current_version():
                 return tag_result.stdout.strip()
             else:
                 return f"commit-{commit_hash}"
-        return "unknown"
+        
+        # Fallback: try to read .git/HEAD directly
+        try:
+            with open('.git/HEAD', 'r') as f:
+                head_ref = f.read().strip()
+                if head_ref.startswith('ref: refs/heads/'):
+                    branch = head_ref.split('/')[-1]
+                    return f"branch-{branch}"
+                else:
+                    # Direct commit hash
+                    return f"commit-{head_ref[:7]}"
+        except:
+            pass
+            
+        return "git-unavailable"
     except Exception as e:
         print(f"Error getting current version: {e}")
-        return "unknown"
+        return "git-error"
 
 def get_remote_version():
     """Get latest remote version"""
     try:
+        # Try to unlock git if needed
+        lock_file = '.git/index.lock'
+        if os.path.exists(lock_file):
+            try:
+                os.remove(lock_file)
+            except:
+                pass
+        
         # Fetch latest from remote
-        subprocess.run(['git', 'fetch', 'origin'], capture_output=True, timeout=30)
+        fetch_result = subprocess.run(['git', 'fetch', 'origin'], capture_output=True, text=True, timeout=30)
+        if fetch_result.returncode != 0:
+            print(f"Git fetch failed: {fetch_result.stderr}")
+            return "fetch-failed"
         
         # Get latest commit hash from origin/main
         result = subprocess.run(['git', 'rev-parse', '--short', 'origin/main'], 
@@ -548,14 +582,23 @@ def get_remote_version():
                 return tag_result.stdout.strip().split('-')[0]  # Get tag without commit info
             else:
                 return f"commit-{commit_hash}"
-        return "unknown"
+        
+        return "remote-unavailable"
     except Exception as e:
         print(f"Error getting remote version: {e}")
-        return "unknown"
+        return "remote-error"
 
 def get_commit_log(limit=5):
     """Get recent commit log"""
     try:
+        # Try to unlock git if needed
+        lock_file = '.git/index.lock'
+        if os.path.exists(lock_file):
+            try:
+                os.remove(lock_file)
+            except:
+                pass
+        
         result = subprocess.run(['git', 'log', '--oneline', f'-{limit}'], 
                               capture_output=True, text=True, timeout=10)
         if result.returncode == 0:
@@ -568,10 +611,10 @@ def get_commit_log(limit=5):
                         'message': parts[1] if len(parts) > 1 else ''
                     })
             return commits
-        return []
+        return [{'hash': 'unavailable', 'message': 'Git log unavailable'}]
     except Exception as e:
         print(f"Error getting commit log: {e}")
-        return []
+        return [{'hash': 'error', 'message': f'Git error: {str(e)}'}]
 
 def check_for_updates():
     """Check if updates are available"""
