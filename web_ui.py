@@ -142,9 +142,9 @@ def get_sensors():
                 
                 # Initialize sensor status from config file
                 for sensor in sensors:
-                    eui = sensor['eui'].lower()
+                    eui = sensor['eui'].upper()
                     sensor_status[eui] = {
-                        'eui': sensor['eui'],
+                        'eui': sensor['eui'].upper(),
                         'nwKey': sensor['nwKey'],
                         'shortAddr': sensor['shortAddr'],
                         'bidi': sensor['bidi'],
@@ -218,7 +218,7 @@ def add_sensor():
 
     # Check if sensor already exists
     for sensor in sensors:
-        if sensor['eui'].lower() == data['eui'].lower():
+        if sensor['eui'].upper() == data['eui'].upper():
             # Update existing sensor
             sensor.update(data)
             break
@@ -241,7 +241,7 @@ def delete_sensor(eui):
     except:
         sensors = []
 
-    sensors = [s for s in sensors if s['eui'].lower() != eui.lower()]
+    sensors = [s for s in sensors if s['eui'].upper() != eui.upper()]
 
     try:
         with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:

@@ -183,9 +183,9 @@ class TLSServer:
             logger.info(f"   ✓ Bidirectional flag: {bidi_value}")
 
             # Check for existing registrations to this base station
-            eui_lower = sensor["eui"].lower()
-            if eui_lower in self.registered_sensors:
-                reg_info = self.registered_sensors[eui_lower]
+            eui_upper = sensor["eui"].upper()
+            if eui_upper in self.registered_sensors:
+                reg_info = self.registered_sensors[eui_upper]
                 if reg_info.get('status') == 'registered':
                     existing_bases = reg_info.get('base_stations', [])
                     if bs_eui in existing_bases:
@@ -209,7 +209,7 @@ class TLSServer:
 
                 # Use normalized sensor data
                 normalized_sensor = {
-                    "eui": sensor["eui"],
+                    "eui": sensor["eui"].upper(),
                     "nwKey": nw_key,
                     "shortAddr": sensor["shortAddr"],
                     "bidi": bidi_value
@@ -374,7 +374,7 @@ class TLSServer:
             self.opID += 1
 
             # Remove from registered sensors
-            eui_key = sensor_eui.lower()
+            eui_key = sensor_eui.upper()
             if eui_key in self.registered_sensors:
                 # Remove this base station from the sensor's list
                 if 'base_stations' in self.registered_sensors[eui_key]:
@@ -487,7 +487,7 @@ class TLSServer:
             total_count = len(self.connected_base_stations)
 
             # Remove from registered sensors immediately
-            eui_key = sensor_eui.lower()
+            eui_key = sensor_eui.upper()
             if eui_key in self.registered_sensors:
                 self.registered_sensors[eui_key]['registered'] = False
                 self.registered_sensors[eui_key]['base_stations'] = []
@@ -794,7 +794,7 @@ class TLSServer:
 
                             # According to BSSCI specification, receiving attach response indicates success
                             # Store successful registration - support multiple base stations
-                            eui_key = sensor_eui.lower()
+                            eui_key = sensor_eui.upper()
                             if eui_key not in self.registered_sensors:
                                 self.registered_sensors[eui_key] = {
                                     'status': 'registered',
@@ -847,7 +847,7 @@ class TLSServer:
                                 logger.warning(f"   Fallback Sensor EUI: {sensor_eui}")
 
                                 # Store successful registration with fallback data
-                                eui_key = sensor_eui.lower()
+                                eui_key = sensor_eui.upper()
                                 if eui_key not in self.registered_sensors:
                                     self.registered_sensors[eui_key] = {
                                         'status': 'registered',
@@ -974,9 +974,9 @@ class TLSServer:
                         logger.info(f"     Data (dec): {message['userData']}")
 
                         # Check if this sensor is registered
-                        is_registered = eui.lower() in self.registered_sensors
+                        is_registered = eui.upper() in self.registered_sensors
                         if is_registered:
-                            reg_info = self.registered_sensors[eui.lower()]
+                            reg_info = self.registered_sensors[eui.upper()]
                             logger.info(f"   Registration Status: ✅ REGISTERED")
                             logger.info(f"     Registered to {len(reg_info.get('base_stations', []))} base station(s): {reg_info.get('base_stations', [])}")
                             logger.info(f"     Data received via: {bs_eui}")
@@ -1001,11 +1001,11 @@ class TLSServer:
                         )
                         await writer.drain()
                         # Update last seen timestamp for auto-detach functionality
-                        self.sensor_last_seen[eui.lower()] = asyncio.get_event_loop().time()
+                        self.sensor_last_seen[eui.upper()] = asyncio.get_event_loop().time()
 
                         # Reset warning flag if sensor becomes active again
-                        if eui.lower() in self.sensor_warning_sent:
-                            self.sensor_warning_sent[eui.lower()] = False
+                        if eui.upper() in self.sensor_warning_sent:
+                            self.sensor_warning_sent[eui.upper()] = False
 
                         logger.info(f"✅ UPLINK DATA PROCESSING COMPLETE for {eui}")
                         logger.info(f"   =================================")
@@ -1415,7 +1415,7 @@ class TLSServer:
             logger.info(f"Sensor configuration reloaded: {old_count} -> {new_count} sensors")
 
             # Clear registration status for removed sensors
-            configured_euis = {sensor['eui'].lower() for sensor in self.sensor_config}
+            configured_euis = {sensor['eui'].upper() for sensor in self.sensor_config}
             removed_euis = set(self.registered_sensors.keys()) - configured_euis
             for eui in removed_euis:
                 self.registered_sensors.pop(eui, None)
@@ -1430,7 +1430,7 @@ class TLSServer:
         current_time = asyncio.get_event_loop().time()
 
         for sensor in self.sensor_config:
-            eui = sensor['eui'].lower()
+            eui = sensor['eui'].upper()
             reg_info = self.registered_sensors.get(eui, {})
 
             # Get preferred downlink path from sensor config or from instance attribute
@@ -1507,11 +1507,11 @@ class TLSServer:
 
     def update_preferred_downlink_path(self, eui: str, bs_eui: str, snr: float) -> None:
         """Update the preferred downlink path for a sensor based on signal quality"""
-        eui_lower = eui.lower()
+        eui_upper = eui.upper()
 
         # Find the sensor in configuration
         for sensor in self.sensor_config:
-            if sensor["eui"].lower() == eui_lower:
+            if sensor["eui"].upper() == eui_upper:
                 # Update preferred downlink path
                 if "preferredDownlinkPath" not in sensor:
                     sensor["preferredDownlinkPath"] = {}
@@ -1541,7 +1541,8 @@ class TLSServer:
     def update_or_add_entry(self, msg: dict[str, Any]) -> None:
         # Update existing entry or add new one
         for sensor in self.sensor_config:
-            if sensor["eui"].lower() == msg["eui"].lower():
+            if sensor["eui"].upper() == msg["eui"].upper():
+                sensor["eui"] = msg["eui"].upper()  # Ensure stored EUI is uppercase
                 sensor["nwKey"] = msg["nwKey"]
                 sensor["shortAddr"] = msg["shortAddr"]
                 sensor["bidi"] = msg["bidi"]
@@ -1551,7 +1552,7 @@ class TLSServer:
             # No existing entry found → add new one
             self.sensor_config.append(
                 {
-                    "eui": msg["eui"],
+                    "eui": msg["eui"].upper(),
                     "nwKey": msg["nwKey"],
                     "shortAddr": msg["shortAddr"],
                     "bidi": msg["bidi"],
@@ -1642,7 +1643,7 @@ class TLSServer:
                 # Find sensor in config and attach
                 sensor_config = None
                 for sensor in self.sensor_config:
-                    if sensor['eui'].lower() == eui.lower():
+                    if sensor['eui'].upper() == eui.upper():
                         sensor_config = sensor
                         break
 

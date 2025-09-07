@@ -144,7 +144,7 @@ class MQTTClient:
                     base_parts = self.base_topic.split("/")
 
                     if len(topic_parts) > len(base_parts) + 1:
-                        eui = topic_parts[len(base_parts) + 1]
+                        eui = topic_parts[len(base_parts) + 1].upper()
                         logger.info(f"🔑 Extracted EUI: {eui}")
 
                         if hasattr(message.payload, 'decode'):
@@ -167,7 +167,7 @@ class MQTTClient:
 
                         # This is a config message (alternative method)
                         config = payload_dict
-                        config["eui"] = eui
+                        config["eui"] = eui.upper()
                         config["message_type"] = "config"
 
                         logger.info(f"✅ Configuration received for EUI {eui}")
@@ -312,7 +312,7 @@ class MQTTClient:
             # Legacy register should contain sensor configuration
             # Convert to standard config format
             config = payload.copy()
-            config["eui"] = eui
+            config["eui"] = eui.upper()
             config["message_type"] = "config"
             config["source"] = "legacy_register"
 
