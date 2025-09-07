@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+import subprocess
+import shutil
 import threading
 import time
 from datetime import datetime, timezone, timedelta
@@ -502,6 +504,198 @@ def get_logs():
         'filtered_logs': len(filtered_logs),
         'source': 'memory'
     })
+
+# =========================
+# UPDATE MANAGEMENT SYSTEM
+# =========================
+
+def get_current_version():
+    """Get current Git version/commit"""
+    try:
+        result = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'], 
+                              capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            commit_hash = result.stdout.strip()
+            
+            # Try to get tag
+            tag_result = subprocess.run(['git', 'describe', '--tags', '--exact-match', 'HEAD'], 
+                                      capture_output=True, text=True, timeout=10)
+            if tag_result.returncode == 0:
+                return tag_result.stdout.strip()
+            else:
+                return f"commit-{commit_hash}"
+        return "unknown"
+    except Exception as e:
+        print(f"Error getting current version: {e}")
+        return "unknown"
+
+def get_remote_version():
+    """Get latest remote version"""
+    try:
+        # Fetch latest from remote
+        subprocess.run(['git', 'fetch', 'origin'], capture_output=True, timeout=30)
+        
+        # Get latest commit hash from origin/main
+        result = subprocess.run(['git', 'rev-parse', '--short', 'origin/main'], 
+                              capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            commit_hash = result.stdout.strip()
+            
+            # Try to get latest tag
+            tag_result = subprocess.run(['git', 'describe', '--tags', 'origin/main'], 
+                                      capture_output=True, text=True, timeout=10)
+            if tag_result.returncode == 0:
+                return tag_result.stdout.strip().split('-')[0]  # Get tag without commit info
+            else:
+                return f"commit-{commit_hash}"
+        return "unknown"
+    except Exception as e:
+        print(f"Error getting remote version: {e}")
+        return "unknown"
+
+def get_commit_log(limit=5):
+    """Get recent commit log"""
+    try:
+        result = subprocess.run(['git', 'log', '--oneline', f'-{limit}'], 
+                              capture_output=True, text=True, timeout=10)
+        if result.returncode == 0:
+            commits = []
+            for line in result.stdout.strip().split('\n'):
+                if line:
+                    parts = line.split(' ', 1)
+                    commits.append({
+                        'hash': parts[0],
+                        'message': parts[1] if len(parts) > 1 else ''
+                    })
+            return commits
+        return []
+    except Exception as e:
+        print(f"Error getting commit log: {e}")
+        return []
+
+def check_for_updates():
+    """Check if updates are available"""
+    try:
+        current = get_current_version()
+        remote = get_remote_version()
+        
+        # Compare versions
+        updates_available = current != remote
+        
+        return {
+            'current_version': current,
+            'remote_version': remote,
+            'updates_available': updates_available,
+            'status': 'success'
+        }
+    except Exception as e:
+        return {
+            'current_version': 'unknown',
+            'remote_version': 'unknown', 
+            'updates_available': False,
+            'status': 'error',
+            'error': str(e)
+        }
+
+def create_backup():
+    """Create backup before update"""
+    try:
+        backup_dir = f"backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        
+        # Create backup directory
+        os.makedirs(backup_dir, exist_ok=True)
+        
+        # Backup important files
+        files_to_backup = ['.env', 'endpoints.json']
+        dirs_to_backup = ['logs', 'certs']
+        
+        for file in files_to_backup:
+            if os.path.exists(file):
+                shutil.copy2(file, backup_dir)
+                
+        for dir_name in dirs_to_backup:
+            if os.path.exists(dir_name):
+                shutil.copytree(dir_name, os.path.join(backup_dir, dir_name))
+        
+        return {'success': True, 'backup_dir': backup_dir}
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+def perform_update():
+    """Perform git pull update"""
+    try:
+        # Create backup first
+        backup_result = create_backup()
+        if not backup_result['success']:
+            return {'success': False, 'error': f"Backup failed: {backup_result['error']}"}
+        
+        # Perform git pull
+        result = subprocess.run(['git', 'pull', 'origin', 'main'], 
+                              capture_output=True, text=True, timeout=60)
+        
+        if result.returncode == 0:
+            return {
+                'success': True, 
+                'message': 'Update completed successfully',
+                'backup_dir': backup_result['backup_dir'],
+                'git_output': result.stdout
+            }
+        else:
+            return {
+                'success': False, 
+                'error': f"Git pull failed: {result.stderr}",
+                'backup_dir': backup_result['backup_dir']
+            }
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+@app.route('/api/system/version')
+def api_get_version():
+    """Get current and remote version info"""
+    try:
+        version_info = check_for_updates()
+        recent_commits = get_commit_log(5)
+        
+        return jsonify({
+            **version_info,
+            'recent_commits': recent_commits
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/system/check-updates')
+def api_check_updates():
+    """Check for available updates"""
+    try:
+        return jsonify(check_for_updates())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/system/update', methods=['POST'])
+def api_perform_update():
+    """Perform system update"""
+    try:
+        result = perform_update()
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/system/restart', methods=['POST'])
+def api_restart_system():
+    """Restart the service after update"""
+    try:
+        # Schedule restart in a separate thread to allow response to be sent
+        def restart_service():
+            time.sleep(2)  # Give time for response to be sent
+            os._exit(0)  # Force exit - service manager should restart
+            
+        restart_thread = threading.Thread(target=restart_service)
+        restart_thread.daemon = True
+        restart_thread.start()
+        
+        return jsonify({'success': True, 'message': 'Service restart initiated'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 # Global variable to store TLS server instance
 # tls_server_instance = None # Already defined at the top
