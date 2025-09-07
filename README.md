@@ -174,7 +174,10 @@ AUTO_DETACH_CHECK_INTERVAL = 3600    # 1 hour
    - **Bidirectional**: Enable/disable bidirectional communication
 
 #### Via MQTT Configuration
-Publish to topic: `{BASE_TOPIC}/ep/{EUI}/config`
+
+**Primary Method**: Publish sensor configuration to topic: `{BASE_TOPIC}/ep/{EUI}/config`
+
+**Required JSON Payload:**
 ```json
 {
   "nwKey": "0011223344556677889AABBCCDDEEFF00",
@@ -182,6 +185,39 @@ Publish to topic: `{BASE_TOPIC}/ep/{EUI}/config`
   "bidi": false
 }
 ```
+
+**Practical Example:**
+```bash
+# Register sensor with EUI FCA84A0300001234
+mosquitto_pub -h your-broker.com -u username -p password \
+  -t "mioty/ep/FCA84A0300001234/config" \
+  -m '{"nwKey": "0011223344556677889AABBCCDDEEFF00", "shortAddr": "1234", "bidi": false}'
+```
+
+**Alternative Command Method**: Use remote EP commands via topic: `EP/{EUI}/cmd/`
+
+**Available Commands:**
+- `attach` - Register/attach sensor to base stations
+- `detach` - Unregister/detach sensor from base stations
+- `status` - Query current registration status
+
+**Command Examples:**
+```bash
+# Attach sensor (requires prior config via /config topic)
+mosquitto_pub -h broker -t "EP/FCA84A0300001234/cmd/" -m "attach"
+
+# Detach sensor
+mosquitto_pub -h broker -t "EP/FCA84A0300001234/cmd/" -m "detach"
+
+# Request status
+mosquitto_pub -h broker -t "EP/FCA84A0300001234/cmd/" -m "status"
+```
+
+**Important Notes:**
+- The old `/bssci/ep/eui/register` topic is **no longer supported**
+- Sensor configuration must be published to `/config` topic before using `attach` command
+- All commands receive responses on `{BASE_TOPIC}/ep/{EUI}/response` topic
+- The system supports both `{BASE_TOPIC}/ep/+/cmd` and `EP/+/cmd/` topic patterns
 
 ### Sensor Status Indicators
 
@@ -259,7 +295,8 @@ The system uses a hierarchical MQTT topic structure:
 ├── ep/{EUI}/
 │   ├── ul              # Uplink data from sensors
 │   ├── dl              # Downlink data to sensors  
-│   ├── config          # Sensor configuration
+│   ├── config          # Sensor configuration (REGISTER SENSORS HERE)
+│   ├── cmd             # Standard sensor commands
 │   ├── status          # Sensor status updates
 │   ├── warning         # Inactivity warnings
 │   ├── response        # Command responses
@@ -267,26 +304,86 @@ The system uses a hierarchical MQTT topic structure:
 ├── bs/{EUI}/           # Base station status
 ├── config/             # System configuration
 └── health_check        # Connection health monitoring
+
+# Additional Remote Command Topics:
+EP/{EUI}/cmd/           # Remote EP commands from application center
 ```
+
+**Subscription Topics** (what the system listens to):
+- `{BASE_TOPIC}/ep/+/config` - Sensor configurations
+- `{BASE_TOPIC}/ep/+/cmd` - Standard commands
+- `{BASE_TOPIC}/ep/+/dl` - Downlink messages
+- `EP/+/cmd/` - Remote EP commands
+- `{BASE_TOPIC}/config/+` - System configuration
+
+**Publication Topics** (what the system sends):
+- `{BASE_TOPIC}/ep/{EUI}/ul` - Sensor uplink data
+- `{BASE_TOPIC}/ep/{EUI}/status` - Registration status
+- `{BASE_TOPIC}/ep/{EUI}/response` - Command responses
+- `{BASE_TOPIC}/ep/{EUI}/warning` - Inactivity warnings
+- `{BASE_TOPIC}/bs/{EUI}` - Base station status
 
 ### Remote Commands
 
-Send commands to sensors via MQTT topic `EP/{EUI}/cmd/`:
+The system supports two command topic patterns for maximum compatibility:
 
-#### Detach Command
+1. **Standard Commands**: `{BASE_TOPIC}/ep/{EUI}/cmd`
+2. **Remote EP Commands**: `EP/{EUI}/cmd/` (for application center integration)
+
+#### Sensor Registration Workflow
+
+**Step 1: Configure Sensor**
 ```bash
-mosquitto_pub -h broker -t "EP/FCA84A0300001234/cmd/" -m "detach"
+# Send sensor configuration
+mosquitto_pub -h broker -u user -p pass \
+  -t "mioty/ep/FCA84A0300001234/config" \
+  -m '{"nwKey": "0011223344556677889AABBCCDDEEFF00", "shortAddr": "1234", "bidi": false}'
 ```
 
-#### Attach Command  
+**Step 2: Attach Sensor (Optional - automatic on config)**
 ```bash
+# Explicitly attach sensor to base stations
 mosquitto_pub -h broker -t "EP/FCA84A0300001234/cmd/" -m "attach"
 ```
 
-#### Status Request
+#### Command Reference
+
+**Detach Command**
 ```bash
-mosquitto_pub -h broker -t "EP/FCA84A0300001234/cmd/" -m "status"
+# Using remote EP command pattern
+mosquitto_pub -h broker -t "EP/FCA84A0300001234/cmd/" -m "detach"
+
+# Using standard command pattern
+mosquitto_pub -h broker -t "mioty/ep/FCA84A0300001234/cmd" -m "detach"
 ```
+
+**Attach Command**
+```bash
+# Using remote EP command pattern  
+mosquitto_pub -h broker -t "EP/FCA84A0300001234/cmd/" -m "attach"
+
+# Using standard command pattern
+mosquitto_pub -h broker -t "mioty/ep/FCA84A0300001234/cmd" -m "attach"
+```
+
+**Status Request**
+```bash
+# Using remote EP command pattern
+mosquitto_pub -h broker -t "EP/FCA84A0300001234/cmd/" -m "status"
+
+# Using standard command pattern
+mosquitto_pub -h broker -t "mioty/ep/FCA84A0300001234/cmd" -m "status"
+```
+
+#### Important Migration Note
+
+⚠️ **Deprecated Topic**: The old `/bssci/ep/eui/register` topic is **no longer supported**. 
+
+**Migration Path:**
+- **Old**: `mosquitto_pub -t "/bssci/ep/FCA84A0300001234/register"` ❌
+- **New**: `mosquitto_pub -t "mioty/ep/FCA84A0300001234/config"` ✅
+
+The system now uses the `/config` topic for sensor registration followed by optional `/cmd` topics for control.
 
 ### Command Responses
 
