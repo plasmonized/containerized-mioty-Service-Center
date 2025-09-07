@@ -147,7 +147,10 @@ class MQTTClient:
                         eui = topic_parts[len(base_parts) + 1]
                         logger.info(f"🔑 Extracted EUI: {eui}")
 
-                        payload_str = message.payload.decode('utf-8')
+                        if hasattr(message.payload, 'decode'):
+                            payload_str = message.payload.decode('utf-8')
+                        else:
+                            payload_str = str(message.payload)
                         logger.info(f"📄 Payload: {payload_str}")
 
                         payload_dict = json.loads(payload_str)
@@ -212,6 +215,7 @@ class MQTTClient:
 
         try:
             while True:
+                msg = None
                 try:
                     logger.debug(f"⏳ WAITING FOR MQTT MESSAGE in queue (size: {self.mqtt_out_queue.qsize()})")
                     msg = await self.mqtt_out_queue.get()
