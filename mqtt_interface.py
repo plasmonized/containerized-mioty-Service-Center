@@ -22,7 +22,8 @@ class MQTTClient:
             self.base_topic = BASE_TOPIC[:-1]
         else:
             self.base_topic = BASE_TOPIC
-        self.config_topic = self.base_topic + "/ep/+/config"
+        self.config_topic = self.base_topic + "/ep/+/config"  # Legacy support, wird durch register ersetzt
+        self.register_topic = self.base_topic + "/ep/+/register"
         self.command_topic = self.base_topic + "/ep/+/cmd"
         self.mqtt_out_queue = mqtt_out_queue
         self.mqtt_in_queue = mqtt_in_queue
@@ -111,16 +112,20 @@ class MQTTClient:
         try:
             # Subscribe to topics with retained messages handling
             topics = [
-                (f"{self.base_topic}ep/+/dl", 0),  # Downlink messages
-                (f"{self.base_topic}ep/+/cmd", 0),  # Command messages
-                (f"{self.base_topic}config/+", 0),  # Configuration messages
-                ("EP/+/cmd/", 0),  # Remote EP command messages from application center
+                (f"{self.base_topic}/ep/+/dl", 0),  # Downlink messages
+                (f"{self.base_topic}/ep/+/cmd", 0),  # Command messages (vereinheitlicht)
+                (f"{self.base_topic}/ep/+/register", 0),  # Legacy sensor registration
+                (f"{self.base_topic}/ep/+/config", 0),  # Alternative config (still supported)
+                (f"{self.base_topic}/config/+", 0),  # System configuration messages
             ]
             await client.subscribe(topics)
             logger.info("✅ MQTT SUBSCRIPTION SUCCESSFUL")
             logger.info(f"👂 MQTT listening on config topic: {self.config_topic}")
+            logger.info(f"👂 MQTT listening on register topic: {self.register_topic}")
             logger.info(f"👂 MQTT listening on command topic: {self.command_topic}")
-            logger.info(f"👂 MQTT listening on EP command topic: EP/+/cmd/")
+            logger.info("👂 MQTT incoming message handler is now ACTIVE and listening...")
+            logger.info("   ✅ Legacy /register topic support enabled")
+            logger.info("   ✅ Unified /cmd topic for all commands")
             logger.info("👂 MQTT incoming message handler is now ACTIVE and listening...")
         except Exception as sub_error:
             logger.error(f"❌ MQTT subscription failed: {sub_error}")
@@ -148,16 +153,16 @@ class MQTTClient:
                         payload_dict = json.loads(payload_str)
 
                         # Check if this is a command message
-                        if "/cmd/" in str(message.topic):
-                            await self.handle_command_message(str(message.topic), payload_dict)
+                        if "/cmd" in str(message.topic):
+                            await self.handle_command_message(str(message.topic), payload_dict, eui)
                             return
 
-                        # Check if this is an EP command message (/EP/+/cmd/)
-                        if str(message.topic).startswith("EP/") and "/cmd/" in str(message.topic):
-                            await self.handle_ep_command_message(str(message.topic), payload_dict)
+                        # Check if this is a register message (Legacy support)
+                        if "/register" in str(message.topic):
+                            await self.handle_register_message(str(message.topic), payload_dict, eui)
                             return
 
-                        # This is a config message
+                        # This is a config message (alternative method)
                         config = payload_dict
                         config["eui"] = eui
                         config["message_type"] = "config"
@@ -237,94 +242,123 @@ class MQTTClient:
             logger.error(f"❌ MQTT OUTGOING HANDLER FATAL ERROR: {e}")
             raise
 
-    async def handle_command_message(self, topic: str, payload: Dict[str, Any]) -> None:
-        """Handle command messages from MQTT"""
-        logger.info(f"🎯 Processing command message from topic: {topic}")
+    async def handle_command_message(self, topic: str, payload: Dict[str, Any], eui: str) -> None:
+        """Handle unified command messages from MQTT (/bssci/ep/eui/cmd)"""
+        logger.info(f"🎯 Processing unified command message from topic: {topic}")
+        logger.info(f"🔑 EUI: {eui}")
 
         try:
-            # Extract EUI from topic
-            topic_parts = topic.split('/')
-            if len(topic_parts) >= 4 and topic_parts[0] == "ep":
-                eui = topic_parts[1]
-                command = payload.get('command', '').lower()
+            # Handle different command types - support both string and dict payloads
+            if isinstance(payload, str):
+                command = payload.lower().strip()
+                logger.info(f"📄 String Command: {command}")
+            else:
+                command = payload.get('command', payload.get('action', '')).lower().strip()
+                logger.info(f"📄 Dict Command: {command}")
 
-                logger.info(f"Command for sensor {eui}: {command}")
+            # Validate command
+            valid_commands = ['detach', 'attach', 'status']
+            if command not in valid_commands:
+                logger.warning(f"⚠️  Invalid command: {command}. Valid commands: {valid_commands}")
+                return
 
-                # Create command message for TLS server processing
-                command_msg = {
-                    'message_type': 'command',
-                    'eui': eui,
-                    'action': command,
-                    'timestamp': payload.get('timestamp', asyncio.get_event_loop().time())
-                }
+            logger.info(f"✅ Valid command for sensor {eui}: {command}")
 
-                # Add to in_queue for TLS server processing
-                await self.mqtt_in_queue.put(command_msg)
-                logger.info(f"✅ Command queued for TLS server processing")
+            # Create command message for TLS server processing
+            command_msg = {
+                'message_type': 'command',
+                'eui': eui,
+                'action': command,
+                'source': 'unified_cmd',
+                'timestamp': payload.get('timestamp', asyncio.get_event_loop().time()) if isinstance(payload, dict) else asyncio.get_event_loop().time()
+            }
+
+            # Add to in_queue for TLS server processing
+            await self.mqtt_in_queue.put(command_msg)
+            logger.info(f"✅ Unified command queued for TLS server processing")
+
+            # Send acknowledgment
+            ack_topic = f"ep/{eui}/response"
+            ack_payload = {
+                "command": command,
+                "status": "received",
+                "timestamp": asyncio.get_event_loop().time()
+            }
+
+            await self.mqtt_out_queue.put({
+                "topic": ack_topic,
+                "payload": json.dumps(ack_payload)
+            })
+
+            logger.info(f"📤 Command acknowledgment sent to {self.base_topic}/{ack_topic}")
 
         except Exception as e:
-            logger.error(f"❌ Error handling command message: {e}")
+            logger.error(f"❌ Error handling unified command message: {e}")
             logger.error(f"   Topic: {topic}")
             logger.error(f"   Payload: {payload}")
+            logger.error(f"   EUI: {eui}")
 
-    async def handle_ep_command_message(self, topic: str, payload: Dict[str, Any]) -> None:
-        """Handle EP command messages from MQTT (/EP/+/cmd/)"""
-        logger.info(f"🎯 Processing EP command message from topic: {topic}")
+    async def handle_register_message(self, topic: str, payload: Dict[str, Any], eui: str) -> None:
+        """Handle legacy sensor registration messages from MQTT (/bssci/ep/eui/register)"""
+        logger.info(f"🔐 Processing LEGACY registration message from topic: {topic}")
+        logger.info(f"🔑 EUI: {eui}")
+        logger.info("⚡ Legacy /register topic support - converting to config format")
 
         try:
-            # Extract EUI from topic pattern /EP/{eui}/cmd/
-            topic_parts = topic.split('/')
-            if len(topic_parts) >= 4 and topic_parts[0] == "EP" and topic_parts[2] == "cmd":
-                eui = topic_parts[1]
+            # Legacy register should contain sensor configuration
+            # Convert to standard config format
+            config = payload.copy()
+            config["eui"] = eui
+            config["message_type"] = "config"
+            config["source"] = "legacy_register"
 
-                # Handle different command types
-                if isinstance(payload, str):
-                    command = payload.lower().strip()
-                    payload_dict = {"command": command}
-                else:
-                    command = payload.get('command', payload.get('action', '')).lower().strip()
-                    payload_dict = payload
+            # Validate required fields for registration
+            required_fields = ['nwKey', 'shortAddr']
+            missing_fields = [field for field in required_fields if field not in config]
+            
+            if missing_fields:
+                logger.error(f"❌ Legacy registration missing required fields: {missing_fields}")
+                logger.error(f"   Required: {required_fields}")
+                logger.error(f"   Received: {list(config.keys())}")
+                return
 
-                logger.info(f"EP Command for sensor {eui}: {command}")
+            # Set default bidirectional if not specified
+            if 'bidi' not in config:
+                config['bidi'] = False
+                logger.info("🔧 Setting default bidi=false for legacy registration")
 
-                # Validate command
-                valid_commands = ['detach', 'attach', 'status']
-                if command not in valid_commands:
-                    logger.warning(f"⚠️  Invalid EP command: {command}. Valid commands: {valid_commands}")
-                    return
+            logger.info(f"✅ Legacy registration received for EUI {eui}")
+            logger.info(f"📋 nwKey: {config.get('nwKey', 'N/A')}")
+            logger.info(f"📋 shortAddr: {config.get('shortAddr', 'N/A')}")
+            logger.info(f"📋 bidi: {config.get('bidi', 'N/A')}")
+            
+            # Queue for TLS server processing
+            logger.info(f"   Queue size before put: {self.mqtt_in_queue.qsize()}")
+            await self.mqtt_in_queue.put(config)
+            logger.info(f"✅ Legacy registration queued successfully")
+            logger.info(f"   Queue size after put: {self.mqtt_in_queue.qsize()}")
 
-                # Create command message for TLS server processing
-                command_msg = {
-                    'message_type': 'command',
-                    'eui': eui,
-                    'action': command,
-                    'source': 'ep_command',
-                    'timestamp': payload_dict.get('timestamp', asyncio.get_event_loop().time())
-                }
+            # Send confirmation that legacy registration was processed
+            ack_topic = f"ep/{eui}/response"
+            ack_payload = {
+                "action": "legacy_register",
+                "status": "received",
+                "eui": eui,
+                "timestamp": asyncio.get_event_loop().time()
+            }
 
-                # Add to in_queue for TLS server processing
-                await self.mqtt_in_queue.put(command_msg)
-                logger.info(f"✅ EP Command queued for TLS server processing")
+            await self.mqtt_out_queue.put({
+                "topic": ack_topic,
+                "payload": json.dumps(ack_payload)
+            })
 
-                # Send acknowledgment back to application center
-                ack_topic = f"EP/{eui}/response"
-                ack_payload = {
-                    "command": command,
-                    "status": "received",
-                    "timestamp": asyncio.get_event_loop().time()
-                }
-
-                await self.mqtt_out_queue.put({
-                    "topic": ack_topic,
-                    "payload": json.dumps(ack_payload)
-                })
-
-                logger.info(f"📤 EP Command acknowledgment sent to {ack_topic}")
+            logger.info(f"📤 Legacy registration acknowledgment sent to {self.base_topic}/{ack_topic}")
 
         except Exception as e:
-            logger.error(f"❌ Error handling EP command message: {e}")
+            logger.error(f"❌ Error handling legacy registration message: {e}")
             logger.error(f"   Topic: {topic}")
             logger.error(f"   Payload: {payload}")
+            logger.error(f"   EUI: {eui}")
 
 
 if __name__ == "__main__":
