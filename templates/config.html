@@ -251,14 +251,25 @@ let currentVersionInfo = null;
 
 function loadVersionInfo() {
     fetch('/api/system/version')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
             currentVersionInfo = data;
             displayVersionInfo(data);
         })
         .catch(error => {
+            console.error('Version API Error:', error);
             document.getElementById('updateStatus').innerHTML = 
-                '<p class="text-danger">Error loading version information: ' + error + '</p>';
+                '<p class="text-danger">⚠️ Cannot connect to update API<br>' +
+                '<small>Error: ' + error.message + '<br>' +
+                'This may be a network connectivity issue.</small></p>';
+            
+            // Disable update button
+            document.getElementById('updateBtn').disabled = true;
         });
 }
 
@@ -310,7 +321,12 @@ function checkForUpdates() {
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Checking...';
     
     fetch('/api/system/check-updates')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
             currentVersionInfo = data;
             displayVersionInfo(data);
@@ -322,7 +338,9 @@ function checkForUpdates() {
             }
         })
         .catch(error => {
-            alert('Error checking for updates: ' + error);
+            console.error('Update check error:', error);
+            alert('Error checking for updates: ' + error.message + 
+                  '\n\nThis may be a network connectivity issue. Please check if you can access the service API.');
         })
         .finally(() => {
             button.disabled = false;
