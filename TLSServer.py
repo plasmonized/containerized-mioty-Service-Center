@@ -22,7 +22,7 @@ class TLSServer:
         mqtt_out_queue: asyncio.Queue[dict[str, str]],
         mqtt_in_queue: asyncio.Queue[dict[str, str]],
     ) -> None:
-        self.opID = -1
+        self.opID = 1  # Start with positive operation IDs as required by BSSCI protocol
         self.mqtt_out_queue = mqtt_out_queue
         self.mqtt_in_queue = mqtt_in_queue
         self.connected_base_stations: Dict[
@@ -244,7 +244,7 @@ class TLSServer:
                 logger.info(f"   Awaiting response from base station...")
                 logger.info("   =====================================")
 
-                self.opID -= 1
+                self.opID += 1  # Increment for next operation
             else:
                 logger.error(f"❌ ATTACH REQUEST VALIDATION FAILED")
                 logger.error(f"   Sensor EUI: {sensor.get('eui', 'unknown')}")
@@ -325,7 +325,7 @@ class TLSServer:
                             await writer.drain()
                             logger.info(f"✅ Status request transmitted to {bs_eui} (opID: {self.opID})")
                             requests_sent += 1
-                            self.opID -= 1
+                            self.opID += 1  # Increment for next operation
 
                         except Exception as e:
                             failed_requests += 1
