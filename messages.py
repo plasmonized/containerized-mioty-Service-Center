@@ -33,7 +33,7 @@ def build_attach_complete(opID: int) -> dict[str, object]:
 
 def build_detach_request(eui: str, opID: int) -> dict[str, object]:
     return {
-        "command": "detach",
+        "command": "detPrp",  # BSSCI protocol: detach propagate
         "opId": opID,
         "epEui": int.from_bytes(bytes.fromhex(eui), "big")
     }
