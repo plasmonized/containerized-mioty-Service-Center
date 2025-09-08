@@ -633,7 +633,7 @@ class TLSServer:
                             IDENTIFIER + len(msg).to_bytes(4, byteorder="little") + msg
                         )
                         await writer.drain()
-                        bs_eui = int(message["bsEui"]).to_bytes(8, byteorder="big").hex()
+                        bs_eui = int(message["bsEui"]).to_bytes(8, byteorder="big").hex().upper()
                         self.connecting_base_stations[writer] = bs_eui
                         logger.info(f"📤 BSSCI CONNECTION RESPONSE sent to base station {bs_eui}")
                         logger.info(f"   Base station {bs_eui} is now in connecting state")
@@ -729,7 +729,7 @@ class TLSServer:
                             "uptime": message["uptime"],
                         }
 
-                        mqtt_topic = f"bs/{bs_eui}"
+                        mqtt_topic = f"bs/{bs_eui.upper()}"
                         payload = json.dumps(data_dict)
 
                         logger.info(f"📤 MQTT PUBLICATION - BASE STATION STATUS")
