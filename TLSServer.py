@@ -1365,7 +1365,7 @@ class TLSServer:
             ssl_obj = writer.get_extra_info("ssl_object")
 
             station_info = {
-                "eui": bs_eui,
+                "eui": bs_eui.upper(),
                 "address": f"{addr[0]}:{addr[1]}" if addr else "unknown",
                 "status": "connected"
             }
@@ -1390,7 +1390,7 @@ class TLSServer:
         for writer, bs_eui in self.connecting_base_stations.items():
             addr = writer.get_extra_info("peername")
             connecting_stations.append({
-                "eui": bs_eui,
+                "eui": bs_eui.upper(),
                 "address": f"{addr[0]}:{addr[1]}" if addr else "unknown",
                 "status": "connecting"
             })

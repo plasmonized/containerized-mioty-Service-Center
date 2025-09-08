@@ -859,7 +859,7 @@ def get_bssci_service_status():
                 connected_count = len(connected_dict)
                 for writer, bs_eui in list(connected_dict.items()):
                     connected_stations.append({
-                        "eui": bs_eui,
+                        "eui": bs_eui.upper(),
                         "address": "connected",
                         "status": "connected"
                     })
@@ -869,7 +869,7 @@ def get_bssci_service_status():
                 connecting_count = len(connecting_dict)
                 for writer, bs_eui in list(connecting_dict.items()):
                     connecting_stations.append({
-                        "eui": bs_eui,
+                        "eui": bs_eui.upper(),
                         "address": "connecting", 
                         "status": "connecting"
                     })
