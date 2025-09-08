@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import os
 import ssl
 from datetime import datetime, timezone, timedelta
 from typing import Any, Dict
@@ -1528,18 +1529,37 @@ class TLSServer:
                 logger.info(f"   SNR: {snr:.2f} dB")
                 logger.info(f"   Total messages: {sensor['preferredDownlinkPath']['messageCount']}")
 
-                # Save configuration
+                # Save configuration with enhanced error handling
                 try:
+                    logger.debug(f"💾 Saving preferred downlink path to {self.sensor_config_file}")
+                    
                     with open(self.sensor_config_file, "w") as f:
-                        json.dump(self.sensor_config, f, indent=4)
+                        json.dump(self.sensor_config, f, indent=4, ensure_ascii=False)
+                        f.flush()
+                        os.fsync(f.fileno())
+                    
+                    logger.debug(f"✅ Preferred downlink path saved successfully")
+                    
                 except Exception as e:
-                    logger.error(f"Failed to save preferred downlink path: {e}")
+                    logger.error(f"❌ Failed to save preferred downlink path to {self.sensor_config_file}")
+                    logger.error(f"   Error: {type(e).__name__}: {e}")
+                    
+                    # Try emergency save
+                    try:
+                        emergency_file = f"{self.sensor_config_file}.preferred_path_emergency"
+                        with open(emergency_file, "w") as f:
+                            json.dump(self.sensor_config, f, indent=4)
+                        logger.error(f"   Emergency save to: {emergency_file}")
+                    except:
+                        logger.error(f"   Emergency save also failed!")
                 break
         else:
             logger.warning(f"⚠️  Sensor {eui} not found in configuration for preferred path update")
 
     def update_or_add_entry(self, msg: dict[str, Any]) -> None:
         # Update existing entry or add new one
+        config_updated = False
+        
         for sensor in self.sensor_config:
             if sensor["eui"].upper() == msg["eui"].upper():
                 sensor["eui"] = msg["eui"].upper()  # Ensure stored EUI is uppercase
@@ -1547,26 +1567,64 @@ class TLSServer:
                 sensor["shortAddr"] = msg["shortAddr"]
                 sensor["bidi"] = msg["bidi"]
                 logger.info(f"Updated configuration for existing endpoint {msg['eui']}")
+                config_updated = True
                 break
         else:
             # No existing entry found → add new one
-            self.sensor_config.append(
-                {
-                    "eui": msg["eui"].upper(),
-                    "nwKey": msg["nwKey"],
-                    "shortAddr": msg["shortAddr"],
-                    "bidi": msg["bidi"],
-                }
-            )
+            new_sensor = {
+                "eui": msg["eui"].upper(),
+                "nwKey": msg["nwKey"],
+                "shortAddr": msg["shortAddr"],
+                "bidi": msg["bidi"]
+            }
+            self.sensor_config.append(new_sensor)
             logger.info(f"Added new endpoint configuration for {msg['eui']}")
+            config_updated = True
 
-        # Save updated configuration to file
-        try:
-            with open(self.sensor_config_file, "w") as f:
-                json.dump(self.sensor_config, f, indent=4)
-            logger.info(f"Configuration saved to {self.sensor_config_file}")
-        except Exception as e:
-            logger.error(f"Failed to save configuration: {e}")
+        # Always save updated configuration to file when changes are made
+        if config_updated:
+            try:
+                logger.info(f"💾 SAVING configuration to {self.sensor_config_file}")
+                logger.info(f"   Total sensors in config: {len(self.sensor_config)}")
+                
+                # Ensure the file is writable and create backup
+                import shutil
+                if os.path.exists(self.sensor_config_file):
+                    backup_file = f"{self.sensor_config_file}.backup"
+                    shutil.copy2(self.sensor_config_file, backup_file)
+                    logger.info(f"   Created backup: {backup_file}")
+                
+                # Write the configuration with proper formatting
+                with open(self.sensor_config_file, "w") as f:
+                    json.dump(self.sensor_config, f, indent=4, ensure_ascii=False)
+                    f.flush()  # Force write to disk
+                    os.fsync(f.fileno())  # Force OS to write to disk
+                
+                # Verify the file was written correctly
+                with open(self.sensor_config_file, "r") as f:
+                    verify_config = json.load(f)
+                    if len(verify_config) != len(self.sensor_config):
+                        raise Exception(f"Verification failed: expected {len(self.sensor_config)}, got {len(verify_config)}")
+                
+                logger.info(f"✅ Configuration successfully saved and verified")
+                logger.info(f"   File: {self.sensor_config_file}")
+                logger.info(f"   Sensors saved: {len(self.sensor_config)}")
+                
+            except Exception as e:
+                logger.error(f"❌ CRITICAL: Failed to save configuration to {self.sensor_config_file}")
+                logger.error(f"   Error: {type(e).__name__}: {e}")
+                logger.error(f"   This means sensor configurations are only in memory!")
+                
+                # Try to save to alternative location
+                try:
+                    alt_file = f"{self.sensor_config_file}.emergency"
+                    with open(alt_file, "w") as f:
+                        json.dump(self.sensor_config, f, indent=4)
+                    logger.error(f"   Emergency backup saved to: {alt_file}")
+                except:
+                    logger.error(f"   Emergency backup also failed!")
+        else:
+            logger.debug(f"No configuration changes made for {msg['eui']}")
     
     def detach_sensor_sync(self, eui: str) -> bool:
         """Synchronous wrapper for detach_sensor (for Web UI)"""
