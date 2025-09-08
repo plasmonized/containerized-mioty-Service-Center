@@ -14,6 +14,7 @@ services:
       - ./certs:/app/certs:ro
       - ./endpoints.json:/app/endpoints.json:rw
       - ./bssci_config.py:/app/bssci_config.py:rw
+      - ./.env:/app/.env:rw
       - ./logs:/app/logs
     restart: unless-stopped
     environment:

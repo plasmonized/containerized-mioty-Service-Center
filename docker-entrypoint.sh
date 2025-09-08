@@ -24,15 +24,26 @@ if [ "$SYNOLOGY_DOCKER" = "1" ]; then
         echo "Copied endpoints.json to writable location"
     fi
     
+    if [ -f "/tmp/host_.env" ]; then
+        cp /tmp/host_.env /app/.env
+        echo "Copied .env to writable location"
+    fi
+    
+    # Ensure .env exists and is writable
+    touch /app/.env 2>/dev/null || true
+    
     # Set proper permissions on copied files
     chmod 644 /app/bssci_config.py /app/endpoints.json 2>/dev/null || true
-    chown $(id -u):$(id -g) /app/bssci_config.py /app/endpoints.json 2>/dev/null || true
+    chmod 666 /app/.env 2>/dev/null || true
+    chown $(id -u):$(id -g) /app/bssci_config.py /app/endpoints.json /app/.env 2>/dev/null || true
     
     echo "Synology setup complete - config files are now writable"
 else
     # Standard Docker setup - fix permissions for configuration files at runtime
+    touch /app/.env 2>/dev/null || true
     chmod 644 /app/bssci_config.py /app/endpoints.json 2>/dev/null || true
-    chown $(id -u):$(id -g) /app/bssci_config.py /app/endpoints.json 2>/dev/null || true
+    chmod 666 /app/.env 2>/dev/null || true
+    chown $(id -u):$(id -g) /app/bssci_config.py /app/endpoints.json /app/.env 2>/dev/null || true
 fi
 
 # Generate self-signed certificates if they don't exist

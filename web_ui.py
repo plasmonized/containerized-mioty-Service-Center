@@ -512,9 +512,22 @@ LOG_FILE=logs/bssci_service.log
 # Security
 SECRET_KEY=your-secret-key-here"""
         
-        # Write to .env file
-        with open('.env', 'w') as f:
-            f.write(env_content)
+        # Write to .env file with error handling for Docker environments
+        try:
+            with open('.env', 'w') as f:
+                f.write(env_content)
+        except PermissionError as pe:
+            # Try alternative approach for Docker/Synology environments
+            try:
+                import tempfile
+                import shutil
+                # Write to temp file first, then move
+                with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp:
+                    tmp.write(env_content)
+                    tmp_name = tmp.name
+                shutil.move(tmp_name, '.env')
+            except Exception as fallback_error:
+                raise Exception(f"Cannot write .env file. Docker volume not mounted as writable? Original error: {pe}, Fallback error: {fallback_error}")
         
         # Reload environment variables
         from dotenv import load_dotenv
