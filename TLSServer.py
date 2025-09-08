@@ -95,7 +95,7 @@ class TLSServer:
 
             # Log SSL context details
             logger.info(f"   TLS Protocol versions: {ssl_ctx.minimum_version.name} - {ssl_ctx.maximum_version.name}")
-            logger.info("✓ SSL context configured successfully with client certificate verification")
+            logger.info("✓ SSL context configured successfully with optional client certificate verification")
 
         except FileNotFoundError as e:
             logger.error(f"❌ SSL certificate file not found: {e}")
