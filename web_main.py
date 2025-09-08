@@ -55,6 +55,31 @@ logger = logging.getLogger(__name__)
 # Global reference for TLS server instance
 tls_server_instance = None
 
+def fix_env_file_permissions():
+    """Ensure .env file has proper permissions for configuration updates"""
+    env_file = '.env'
+    try:
+        if os.path.exists(env_file):
+            # Check if file is writable
+            if not os.access(env_file, os.W_OK):
+                logger.info("🔧 Fixing .env file permissions...")
+                # Try to make it writable
+                current_mode = os.stat(env_file).st_mode
+                os.chmod(env_file, current_mode | 0o666)
+                logger.info("✅ .env file permissions fixed")
+            else:
+                logger.info("✅ .env file permissions OK")
+        else:
+            # Create .env file if it doesn't exist
+            logger.info("📁 Creating .env file...")
+            with open(env_file, 'a'):
+                pass
+            os.chmod(env_file, 0o666)
+            logger.info("✅ .env file created with proper permissions")
+    except Exception as e:
+        logger.warning(f"⚠️  Warning: Could not fix .env permissions: {e}")
+        logger.warning("   Configuration updates may fail in some environments")
+
 def run_web_ui():
     """Run the Flask web UI in a separate thread"""
     logger.info("Starting Web UI on port 5000")
@@ -92,6 +117,9 @@ def set_tls_server(server):
 
 if __name__ == "__main__":
     logger.info("Starting BSSCI Service Center with Web UI")
+
+    # Fix .env file permissions at startup
+    fix_env_file_permissions()
 
     # Start web UI in a separate thread
     web_thread = threading.Thread(target=run_web_ui, daemon=True)
