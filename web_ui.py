@@ -1005,6 +1005,7 @@ def clear_logs():
     return jsonify({'success': True, 'message': 'Logs cleared successfully'})
 
 @app.route('/api/bssci/status')
+@app.route('/api/service/status')  # Support both endpoints for compatibility
 def bssci_status():
     try:
         status = get_bssci_service_status()
@@ -1025,6 +1026,7 @@ def bssci_status():
         return jsonify(error_response), 500
 
 @app.route('/api/base_stations')
+@app.route('/api/base-stations')  # Support both underscore and hyphen versions
 def get_base_stations():
     """Get status of connected base stations - thread-safe version"""
     try:
