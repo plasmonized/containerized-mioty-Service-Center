@@ -378,7 +378,7 @@ class TLSServer:
 
             writer.write(full_message)
             await writer.drain()
-            self.opID -= 1
+            self.opID += 1  # Increment for next operation
 
             # Remove from registered sensors
             eui_key = sensor_eui.upper()
@@ -539,41 +539,7 @@ class TLSServer:
             logger.error(f"❌ Error in sync detach all: {e}")
             return 0
 
-    async def send_status_requests(self) -> None:
-        logger.info(f"📊 STATUS REQUEST TASK STARTED")
-        logger.info(f"   Status request interval: {bssci_config.STATUS_INTERVAL} seconds")
-
-        try:
-            while True:
-                await asyncio.sleep(bssci_config.STATUS_INTERVAL)
-                if self.connected_base_stations:
-                    logger.info(f"📊 PERIODIC STATUS REQUEST CYCLE STARTING")
-                    logger.info(f"   Connected base stations: {len(self.connected_base_stations)}")
-                    logger.info(f"   Base stations: {list(self.connected_base_stations.values())}")
-
-                    for writer in list(self.connected_base_stations.keys()):
-                        try:
-                            bs_eui = self.connected_base_stations.get(writer, "unknown")
-                            logger.info(f"   📊 Sending status request to {bs_eui}")
-
-                            status_message = messages.build_status_request(self.opID)
-                            msg_pack = encode_message(status_message)
-                            full_message = IDENTIFIER + len(msg_pack).to_bytes(4, byteorder="little") + msg_pack
-
-                            writer.write(full_message)
-                            await writer.drain()
-                            self.opID += 1
-
-                        except Exception as e:
-                            logger.error(f"   ❌ Failed to send status to {bs_eui}: {e}")
-
-                    logger.info(f"📊 STATUS REQUEST CYCLE COMPLETED")
-                else:
-                    logger.debug(f"📊 No base stations connected - skipping status requests")
-
-        except Exception as e:
-            logger.error(f"❌ STATUS REQUEST TASK FAILED: {e}")
-            raise
+    # DUPLICATE METHOD REMOVED - Using the correct version above with proper error handling
 
     async def handle_client(
         self, reader: asyncio.streams.StreamReader, writer: asyncio.streams.StreamWriter
