@@ -39,6 +39,10 @@ def build_detach_request(eui: str, opID: int) -> dict[str, object]:
     }
 
 
+def build_detach_complete(opID: int) -> dict[str, object]:
+    return {"command": "detPrpCmp", "opId": opID}
+
+
 def build_ping_response(opID: int) -> dict[str, object]:
     return {"command": "pingRsp", "opId": opID}
 

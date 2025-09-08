@@ -894,6 +894,31 @@ class TLSServer:
                         await writer.drain()
                         logger.debug(f"📤 BSSCI ATTACH COMPLETE sent for opID {op_id}")
 
+                    elif msg_type == "detPrpRsp":
+                        # Handle detach response according to BSSCI specification
+                        op_id = message.get("opId", "unknown")
+                        bs_eui = self.connected_base_stations.get(writer, "unknown")
+
+                        logger.info(f"📨 BSSCI DETACH RESPONSE received from base station {bs_eui}")
+                        logger.info("   =====================================")
+                        logger.info(f"   Operation ID: {op_id}")
+                        logger.info(f"   Raw message: {message}")
+                        logger.info(f"   Note: Per BSSCI spec, detach response contains only command and opId")
+
+                        # Send detach complete response
+                        msg_pack = encode_message(
+                            messages.build_detach_complete(message.get("opId", ""))
+                        )
+                        writer.write(
+                            IDENTIFIER
+                            + len(msg_pack).to_bytes(4, byteorder="little")
+                            + msg_pack
+                        )
+                        await writer.drain()
+                        logger.info(f"📤 BSSCI DETACH COMPLETE sent for opID {op_id}")
+                        logger.info(f"✅ Detach operation completed successfully")
+                        logger.info("   =====================================")
+
                     elif msg_type == "ulData":
                         eui = int(message["epEui"]).to_bytes(8, byteorder="big").hex()
                         bs_eui = self.connected_base_stations[writer]
