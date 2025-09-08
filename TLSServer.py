@@ -91,7 +91,7 @@ class TLSServer:
                 certfile=bssci_config.CERT_FILE, keyfile=bssci_config.KEY_FILE
             )
             ssl_ctx.load_verify_locations(cafile=bssci_config.CA_FILE)
-            ssl_ctx.verify_mode = ssl.CERT_REQUIRED
+            ssl_ctx.verify_mode = ssl.CERT_OPTIONAL  # Allow connections even if client cert validation fails
 
             # Log SSL context details
             logger.info(f"   TLS Protocol versions: {ssl_ctx.minimum_version.name} - {ssl_ctx.maximum_version.name}")
@@ -289,8 +289,8 @@ class TLSServer:
                 await self.send_attach_request(writer, sensor)
                 successful_attachments += 1
 
-                # Small delay between requests to avoid overwhelming the base station
-                await asyncio.sleep(0.1)
+                # Larger delay between requests to avoid overwhelming the base station
+                await asyncio.sleep(0.5)
 
             except Exception as e:
                 failed_attachments += 1
