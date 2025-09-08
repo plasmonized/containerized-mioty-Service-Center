@@ -22,7 +22,7 @@ class TLSServer:
         mqtt_out_queue: asyncio.Queue[dict[str, str]],
         mqtt_in_queue: asyncio.Queue[dict[str, str]],
     ) -> None:
-        self.opID = 1  # Start with positive operation IDs as required by BSSCI protocol
+        self.opID = -1
         self.mqtt_out_queue = mqtt_out_queue
         self.mqtt_in_queue = mqtt_in_queue
         self.connected_base_stations: Dict[
@@ -91,11 +91,11 @@ class TLSServer:
                 certfile=bssci_config.CERT_FILE, keyfile=bssci_config.KEY_FILE
             )
             ssl_ctx.load_verify_locations(cafile=bssci_config.CA_FILE)
-            ssl_ctx.verify_mode = ssl.CERT_OPTIONAL  # Allow connections even if client cert validation fails
+            ssl_ctx.verify_mode = ssl.CERT_REQUIRED
 
             # Log SSL context details
             logger.info(f"   TLS Protocol versions: {ssl_ctx.minimum_version.name} - {ssl_ctx.maximum_version.name}")
-            logger.info("✓ SSL context configured successfully with optional client certificate verification")
+            logger.info("✓ SSL context configured successfully with client certificate verification")
 
         except FileNotFoundError as e:
             logger.error(f"❌ SSL certificate file not found: {e}")
@@ -228,30 +228,23 @@ class TLSServer:
                 logger.info(f"     Payload size: {len(msg_pack)} bytes")
 
                 writer.write(full_message)
-                
-                # Track this attach request for correlation with response BEFORE drain
-                # (in case drain fails, we still increment opID since message was sent)
-                current_op_id = self.opID
-                self.pending_attach_requests[current_op_id] = {
+                await writer.drain()
+
+                # Track this attach request for correlation with response
+                self.pending_attach_requests[self.opID] = {
                     'sensor_eui': sensor['eui'],
                     'timestamp': asyncio.get_event_loop().time(),
                     'base_station': bs_eui,
                     'sensor_config': normalized_sensor
                 }
-                
-                # Increment opID immediately after sending (before drain)
-                # This ensures unique opIDs even if connection fails during drain
-                self.opID += 1
 
                 logger.info(f"✅ BSSCI ATTACH REQUEST TRANSMITTED")
-                logger.info(f"   Operation ID {current_op_id} sent to base station {bs_eui}")
+                logger.info(f"   Operation ID {self.opID} sent to base station {bs_eui}")
                 logger.info(f"   Tracking request for correlation with response")
-                logger.info(f"   Next operation ID will be: {self.opID}")
-                
-                await writer.drain()  # Connection might fail here, but opID already incremented
-                
                 logger.info(f"   Awaiting response from base station...")
                 logger.info("   =====================================")
+
+                self.opID -= 1
             else:
                 logger.error(f"❌ ATTACH REQUEST VALIDATION FAILED")
                 logger.error(f"   Sensor EUI: {sensor.get('eui', 'unknown')}")
@@ -289,8 +282,8 @@ class TLSServer:
                 await self.send_attach_request(writer, sensor)
                 successful_attachments += 1
 
-                # Larger delay between requests to avoid overwhelming the base station
-                await asyncio.sleep(0.5)
+                # Small delay between requests to avoid overwhelming the base station
+                await asyncio.sleep(0.1)
 
             except Exception as e:
                 failed_attachments += 1
@@ -332,7 +325,7 @@ class TLSServer:
                             await writer.drain()
                             logger.info(f"✅ Status request transmitted to {bs_eui} (opID: {self.opID})")
                             requests_sent += 1
-                            self.opID += 1  # Increment for next operation
+                            self.opID -= 1
 
                         except Exception as e:
                             failed_requests += 1
@@ -385,7 +378,7 @@ class TLSServer:
 
             writer.write(full_message)
             await writer.drain()
-            self.opID += 1  # Increment for next operation
+            self.opID -= 1
 
             # Remove from registered sensors
             eui_key = sensor_eui.upper()
@@ -407,7 +400,7 @@ class TLSServer:
             # Notify via MQTT
             if self.mqtt_out_queue:
                 detach_notification = {
-                    "topic": f"ep/{sensor_eui.upper()}/status",
+                    "topic": f"ep/{sensor_eui}/status",
                     "payload": json.dumps({
                         "action": "detached",
                         "sensor_eui": sensor_eui,
@@ -546,7 +539,41 @@ class TLSServer:
             logger.error(f"❌ Error in sync detach all: {e}")
             return 0
 
-    # DUPLICATE METHOD REMOVED - Using the correct version above with proper error handling
+    async def send_status_requests(self) -> None:
+        logger.info(f"📊 STATUS REQUEST TASK STARTED")
+        logger.info(f"   Status request interval: {bssci_config.STATUS_INTERVAL} seconds")
+
+        try:
+            while True:
+                await asyncio.sleep(bssci_config.STATUS_INTERVAL)
+                if self.connected_base_stations:
+                    logger.info(f"📊 PERIODIC STATUS REQUEST CYCLE STARTING")
+                    logger.info(f"   Connected base stations: {len(self.connected_base_stations)}")
+                    logger.info(f"   Base stations: {list(self.connected_base_stations.values())}")
+
+                    for writer in list(self.connected_base_stations.keys()):
+                        try:
+                            bs_eui = self.connected_base_stations.get(writer, "unknown")
+                            logger.info(f"   📊 Sending status request to {bs_eui}")
+
+                            status_message = messages.build_status_request(self.opID)
+                            msg_pack = encode_message(status_message)
+                            full_message = IDENTIFIER + len(msg_pack).to_bytes(4, byteorder="little") + msg_pack
+
+                            writer.write(full_message)
+                            await writer.drain()
+                            self.opID += 1
+
+                        except Exception as e:
+                            logger.error(f"   ❌ Failed to send status to {bs_eui}: {e}")
+
+                    logger.info(f"📊 STATUS REQUEST CYCLE COMPLETED")
+                else:
+                    logger.debug(f"📊 No base stations connected - skipping status requests")
+
+        except Exception as e:
+            logger.error(f"❌ STATUS REQUEST TASK FAILED: {e}")
+            raise
 
     async def handle_client(
         self, reader: asyncio.streams.StreamReader, writer: asyncio.streams.StreamWriter
@@ -1002,7 +1029,7 @@ class TLSServer:
                         # Notify via MQTT
                         if self.mqtt_out_queue:
                             detach_response_notification = {
-                                "topic": f"ep/{eui.upper()}/status",
+                                "topic": f"ep/{eui}/status",
                                 "payload": json.dumps({
                                     "action": "detach_response",
                                     "sensor_eui": eui,
@@ -1083,7 +1110,7 @@ class TLSServer:
                     "data": message["userData"],
                 }
 
-                mqtt_topic = f"ep/{eui.upper()}/ul"
+                mqtt_topic = f"ep/{eui}/ul"
                 payload_json = json.dumps(data_dict)
 
                 logger.info(f"📤 PUBLISHING DEDUPLICATED MESSAGE")
@@ -1223,7 +1250,7 @@ class TLSServer:
             }
 
             await self.mqtt_out_queue.put({
-                "topic": f"ep/{eui.upper()}/warning",
+                "topic": f"ep/{eui}/warning",
                 "payload": json.dumps(warning_payload)
             })
 
@@ -1270,7 +1297,7 @@ class TLSServer:
                 }
 
                 await self.mqtt_out_queue.put({
-                    "topic": f"ep/{eui.upper()}/status",
+                    "topic": f"ep/{eui}/status",
                     "payload": json.dumps(detach_payload)
                 })
 
@@ -1288,7 +1315,7 @@ class TLSServer:
                 }
 
                 await self.mqtt_out_queue.put({
-                    "topic": f"ep/{eui.upper()}/error",
+                    "topic": f"ep/{eui}/error",
                     "payload": json.dumps(failure_payload)
                 })
 
@@ -1703,7 +1730,7 @@ class TLSServer:
                 }
 
                 await self.mqtt_out_queue.put({
-                    "topic": f"ep/{eui.upper()}/response",
+                    "topic": f"ep/{eui}/response",
                     "payload": json.dumps(response_payload)
                 })
 
@@ -1743,7 +1770,7 @@ class TLSServer:
                 }
 
                 await self.mqtt_out_queue.put({
-                    "topic": f"ep/{eui.upper()}/response",
+                    "topic": f"ep/{eui}/response",
                     "payload": json.dumps(response_payload)
                 })
 
@@ -1766,7 +1793,7 @@ class TLSServer:
                 }
 
                 await self.mqtt_out_queue.put({
-                    "topic": f"ep/{eui.upper()}/response",
+                    "topic": f"ep/{eui}/response",
                     "payload": json.dumps(response_payload)
                 })
 
@@ -1784,7 +1811,7 @@ class TLSServer:
                 }
 
                 await self.mqtt_out_queue.put({
-                    "topic": f"ep/{eui.upper()}/response",
+                    "topic": f"ep/{eui}/response",
                     "payload": json.dumps(response_payload)
                 })
 
@@ -1801,7 +1828,7 @@ class TLSServer:
                 }
 
                 await self.mqtt_out_queue.put({
-                    "topic": f"ep/{eui.upper()}/response",
+                    "topic": f"ep/{eui}/response",
                     "payload": json.dumps(response_payload)
                 })
             except:

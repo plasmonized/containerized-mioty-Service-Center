@@ -677,8 +677,7 @@ def get_remote_version():
             # Fetch latest from remote
             fetch_result = subprocess.run(['git', 'fetch', 'origin'], capture_output=True, text=True, timeout=30)
             if fetch_result.returncode != 0:
-                # In many environments (like Replit), git fetch may be restricted
-                print(f"Git fetch failed (normal in restricted environments): {fetch_result.stderr}")
+                print(f"Git fetch failed: {fetch_result.stderr}")
                 return "fetch-failed"
             
             # Get latest commit hash from origin/main
@@ -765,22 +764,18 @@ def check_for_updates():
         updates_available = False
         status_message = None
         
-        # Handle fetch failures and Git unavailability
-        if remote in ['fetch-failed', 'git-required-for-remote', 'remote-check-unavailable']:
+        if remote in ['git-required-for-remote', 'remote-check-unavailable']:
             updates_available = False
-            if remote == 'fetch-failed':
-                status_message = 'Git fetch failed - cannot check for updates (common in restricted environments)'
-            else:
-                status_message = 'Git installation required for remote version checking'
+            status_message = 'Git installation required for remote version checking'
         elif current.startswith('local-') and remote.startswith('git-required'):
             updates_available = False
             status_message = 'Local installation - remote checking requires Git'
-        elif current != remote and not remote.startswith('git-required') and not remote.startswith('remote-') and remote != 'fetch-failed':
+        elif current != remote and not remote.startswith('git-required') and not remote.startswith('remote-'):
             updates_available = True
         
         result = {
             'current_version': current,
-            'remote_version': remote if remote != 'fetch-failed' else 'unavailable',
+            'remote_version': remote,
             'updates_available': updates_available,
             'status': 'success'
         }

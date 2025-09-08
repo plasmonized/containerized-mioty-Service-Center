@@ -282,7 +282,7 @@ class MQTTClient:
             logger.info(f"✅ Unified command queued for TLS server processing")
 
             # Send acknowledgment
-            ack_topic = f"ep/{eui.upper()}/response"
+            ack_topic = f"ep/{eui}/response"
             ack_payload = {
                 "command": command,
                 "status": "received",
@@ -343,7 +343,7 @@ class MQTTClient:
             logger.info(f"   Queue size after put: {self.mqtt_in_queue.qsize()}")
 
             # Send confirmation that legacy registration was processed
-            ack_topic = f"ep/{eui.upper()}/response"
+            ack_topic = f"ep/{eui}/response"
             ack_payload = {
                 "action": "legacy_register",
                 "status": "received",
@@ -401,7 +401,7 @@ if __name__ == "__main__":
         }
         while True:
             await mqtt_out_queue.put(
-                {"topic": f"ep/{eui.upper()}/ul", "payload": json.dumps(data_dict)}
+                {"topic": f"ep/{eui}/ul", "payload": json.dumps(data_dict)}
             )
             await asyncio.sleep(5)
 
