@@ -400,7 +400,7 @@ class TLSServer:
             # Notify via MQTT
             if self.mqtt_out_queue:
                 detach_notification = {
-                    "topic": f"ep/{sensor_eui}/status",
+                    "topic": f"ep/{sensor_eui.upper()}/status",
                     "payload": json.dumps({
                         "action": "detached",
                         "sensor_eui": sensor_eui,
@@ -1029,7 +1029,7 @@ class TLSServer:
                         # Notify via MQTT
                         if self.mqtt_out_queue:
                             detach_response_notification = {
-                                "topic": f"ep/{eui}/status",
+                                "topic": f"ep/{eui.upper()}/status",
                                 "payload": json.dumps({
                                     "action": "detach_response",
                                     "sensor_eui": eui,
@@ -1110,7 +1110,7 @@ class TLSServer:
                     "data": message["userData"],
                 }
 
-                mqtt_topic = f"ep/{eui}/ul"
+                mqtt_topic = f"ep/{eui.upper()}/ul"
                 payload_json = json.dumps(data_dict)
 
                 logger.info(f"📤 PUBLISHING DEDUPLICATED MESSAGE")
@@ -1250,7 +1250,7 @@ class TLSServer:
             }
 
             await self.mqtt_out_queue.put({
-                "topic": f"ep/{eui}/warning",
+                "topic": f"ep/{eui.upper()}/warning",
                 "payload": json.dumps(warning_payload)
             })
 
@@ -1297,7 +1297,7 @@ class TLSServer:
                 }
 
                 await self.mqtt_out_queue.put({
-                    "topic": f"ep/{eui}/status",
+                    "topic": f"ep/{eui.upper()}/status",
                     "payload": json.dumps(detach_payload)
                 })
 
@@ -1315,7 +1315,7 @@ class TLSServer:
                 }
 
                 await self.mqtt_out_queue.put({
-                    "topic": f"ep/{eui}/error",
+                    "topic": f"ep/{eui.upper()}/error",
                     "payload": json.dumps(failure_payload)
                 })
 
@@ -1730,7 +1730,7 @@ class TLSServer:
                 }
 
                 await self.mqtt_out_queue.put({
-                    "topic": f"ep/{eui}/response",
+                    "topic": f"ep/{eui.upper()}/response",
                     "payload": json.dumps(response_payload)
                 })
 
@@ -1770,7 +1770,7 @@ class TLSServer:
                 }
 
                 await self.mqtt_out_queue.put({
-                    "topic": f"ep/{eui}/response",
+                    "topic": f"ep/{eui.upper()}/response",
                     "payload": json.dumps(response_payload)
                 })
 
@@ -1793,7 +1793,7 @@ class TLSServer:
                 }
 
                 await self.mqtt_out_queue.put({
-                    "topic": f"ep/{eui}/response",
+                    "topic": f"ep/{eui.upper()}/response",
                     "payload": json.dumps(response_payload)
                 })
 
@@ -1811,7 +1811,7 @@ class TLSServer:
                 }
 
                 await self.mqtt_out_queue.put({
-                    "topic": f"ep/{eui}/response",
+                    "topic": f"ep/{eui.upper()}/response",
                     "payload": json.dumps(response_payload)
                 })
 
@@ -1828,7 +1828,7 @@ class TLSServer:
                 }
 
                 await self.mqtt_out_queue.put({
-                    "topic": f"ep/{eui}/response",
+                    "topic": f"ep/{eui.upper()}/response",
                     "payload": json.dumps(response_payload)
                 })
             except:
