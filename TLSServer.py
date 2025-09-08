@@ -1590,9 +1590,29 @@ class TLSServer:
             # Ensure EUI is uppercase
             sensor_data['eui'] = sensor_data['eui'].upper()
             
-            # Add to MQTT queue for processing 
-            asyncio.create_task(self.mqtt_in_queue.put(sensor_data))
-            logger.info(f"✅ Sensor {sensor_data['eui']} queued for processing via UI")
+            # Add to MQTT queue using thread-safe method
+            import asyncio
+            import threading
+            
+            def queue_sensor():
+                try:
+                    # Get or create event loop for this thread
+                    try:
+                        loop = asyncio.get_event_loop()
+                    except RuntimeError:
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                    
+                    # Schedule the coroutine
+                    asyncio.ensure_future(self.mqtt_in_queue.put(sensor_data), loop=loop)
+                    logger.info(f"✅ Sensor {sensor_data['eui']} queued for processing via UI")
+                except Exception as e:
+                    logger.error(f"Failed to queue sensor in thread: {e}")
+            
+            # Run in separate thread to avoid blocking
+            thread = threading.Thread(target=queue_sensor)
+            thread.start()
+            
             return True
         except Exception as e:
             logger.error(f"Failed to add sensor via UI: {e}")

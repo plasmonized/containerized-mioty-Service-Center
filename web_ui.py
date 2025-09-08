@@ -211,45 +211,84 @@ def get_sensors():
 def add_sensor():
     data = request.json
     
-    # Use TLS server to add sensor (proper way)
     try:
+        # Ensure EUI is uppercase
+        data['eui'] = data['eui'].upper()
+        
+        # Step 1: Save directly to endpoints.json
+        try:
+            with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
+                sensors = json.load(f)
+        except:
+            sensors = []
+
+        # Check if sensor already exists
+        sensor_updated = False
+        for sensor in sensors:
+            if sensor['eui'].upper() == data['eui'].upper():
+                # Update existing sensor
+                sensor.update(data)
+                sensor_updated = True
+                break
+        
+        if not sensor_updated:
+            # Add new sensor
+            sensors.append(data)
+
+        # Save to file
+        with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
+            json.dump(sensors, f, indent=4)
+        
+        # Step 2: Notify TLS server to reload config and send attach requests
         global tls_server_instance
         tls_server = tls_server_instance
         
-        if tls_server and hasattr(tls_server, 'add_sensor_via_ui'):
-            # Ensure EUI is uppercase
-            data['eui'] = data['eui'].upper()
-            
-            success = tls_server.add_sensor_via_ui(data)
-            if success:
-                return jsonify({'success': True, 'message': 'Sensor queued for processing'})
-            else:
-                return jsonify({'success': False, 'message': 'Failed to queue sensor'})
-        else:
-            # Fallback: direct file write (should not happen in normal operation)
-            print("TLS server not available, using fallback direct file write")
+        if tls_server and hasattr(tls_server, 'reload_sensor_config'):
             try:
-                with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
-                    sensors = json.load(f)
-            except:
-                sensors = []
-
-            # Check if sensor already exists
-            for sensor in sensors:
-                if sensor['eui'].upper() == data['eui'].upper():
-                    # Update existing sensor
-                    sensor.update(data)
-                    break
-            else:
-                # Add new sensor
-                sensors.append(data)
-
-            try:
-                with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
-                    json.dump(sensors, f, indent=4)
-                return jsonify({'success': True, 'message': 'Sensor saved successfully (fallback mode)'})
+                # Reload the sensor configuration in TLS server
+                tls_server.reload_sensor_config()
+                
+                # Force attach to connected base stations if any
+                if hasattr(tls_server, 'connected_base_stations') and tls_server.connected_base_stations:
+                    print(f"Triggering attach for new sensor {data['eui']} to {len(tls_server.connected_base_stations)} base stations")
+                    
+                    # Find the sensor config for attach request
+                    for sensor in tls_server.sensor_config:
+                        if sensor['eui'].upper() == data['eui'].upper():
+                            # Create an asyncio task to send attach requests
+                            import asyncio
+                            import threading
+                            
+                            def send_attaches():
+                                try:
+                                    # Create new event loop for this thread
+                                    loop = asyncio.new_event_loop()
+                                    asyncio.set_event_loop(loop)
+                                    
+                                    async def attach_to_bases():
+                                        for writer in list(tls_server.connected_base_stations.keys()):
+                                            try:
+                                                await tls_server.send_attach_request(writer, sensor)
+                                                print(f"Attach request sent for {data['eui']}")
+                                            except Exception as e:
+                                                print(f"Failed to send attach for {data['eui']}: {e}")
+                                    
+                                    # Run the attach requests
+                                    loop.run_until_complete(attach_to_bases())
+                                    loop.close()
+                                except Exception as e:
+                                    print(f"Error in attach thread: {e}")
+                            
+                            # Run in background thread
+                            threading.Thread(target=send_attaches, daemon=True).start()
+                            break
+                            
+                return jsonify({'success': True, 'message': 'Sensor saved and attach requests sent to base stations'})
             except Exception as e:
-                return jsonify({'success': False, 'message': str(e)})
+                print(f"Error notifying TLS server: {e}")
+                return jsonify({'success': True, 'message': 'Sensor saved but failed to notify TLS server'})
+        else:
+            return jsonify({'success': True, 'message': 'Sensor saved (TLS server not available for attach)'})
                 
     except Exception as e:
         return jsonify({'success': False, 'message': f'Error: {str(e)}'})
