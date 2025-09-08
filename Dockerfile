@@ -13,8 +13,8 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application files (exclude .env to prevent read-only issues)
-COPY --exclude=.env . .
+# Copy application files
+COPY . .
 
 # Create necessary directories
 RUN mkdir -p certs logs
