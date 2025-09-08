@@ -1616,6 +1616,10 @@ class TLSServer:
         """Process MQTT command messages"""
         eui = command.get('eui')
         action = command.get('action', '').lower()
+        
+        if not eui:
+            logger.error(f"❌ MQTT command missing EUI: {command}")
+            return
 
         logger.info(f"🎯 PROCESSING MQTT COMMAND for {eui}: {action}")
 
@@ -1681,7 +1685,7 @@ class TLSServer:
 
             elif action == 'status':
                 # Get sensor status
-                eui_key = eui.lower()
+                eui_key = eui.upper()  # Use upper for consistency
                 if eui_key in self.registered_sensors:
                     sensor_status = self.registered_sensors[eui_key]
                 else:
