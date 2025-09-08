@@ -228,23 +228,30 @@ class TLSServer:
                 logger.info(f"     Payload size: {len(msg_pack)} bytes")
 
                 writer.write(full_message)
-                await writer.drain()
-
-                # Track this attach request for correlation with response
-                self.pending_attach_requests[self.opID] = {
+                
+                # Track this attach request for correlation with response BEFORE drain
+                # (in case drain fails, we still increment opID since message was sent)
+                current_op_id = self.opID
+                self.pending_attach_requests[current_op_id] = {
                     'sensor_eui': sensor['eui'],
                     'timestamp': asyncio.get_event_loop().time(),
                     'base_station': bs_eui,
                     'sensor_config': normalized_sensor
                 }
+                
+                # Increment opID immediately after sending (before drain)
+                # This ensures unique opIDs even if connection fails during drain
+                self.opID += 1
 
                 logger.info(f"✅ BSSCI ATTACH REQUEST TRANSMITTED")
-                logger.info(f"   Operation ID {self.opID} sent to base station {bs_eui}")
+                logger.info(f"   Operation ID {current_op_id} sent to base station {bs_eui}")
                 logger.info(f"   Tracking request for correlation with response")
+                logger.info(f"   Next operation ID will be: {self.opID}")
+                
+                await writer.drain()  # Connection might fail here, but opID already incremented
+                
                 logger.info(f"   Awaiting response from base station...")
                 logger.info("   =====================================")
-
-                self.opID += 1  # Increment for next operation
             else:
                 logger.error(f"❌ ATTACH REQUEST VALIDATION FAILED")
                 logger.error(f"   Sensor EUI: {sensor.get('eui', 'unknown')}")
