@@ -32,7 +32,11 @@ def build_attach_complete(opID: int) -> dict[str, object]:
 
 
 def build_detach_request(eui: str, opID: int) -> dict[str, object]:
-    return {"command": "detachReq", "eui": eui, "opId": opID}
+    return {
+        "command": "detach",
+        "opId": opID,
+        "epEui": int.from_bytes(bytes.fromhex(eui), "big")
+    }
 
 
 def build_ping_response(opID: int) -> dict[str, object]:

@@ -23,14 +23,16 @@ logger = logging.getLogger(__name__)
 def internal_error(error):
     """Handle internal server errors and return JSON"""
     app.logger.error(f"Internal server error: {error}")
-    return jsonify({
-        'error': 'Internal server error',
-        'running': False,
-        'service_type': 'web_ui',
-        'tls_server': {'active': False},
-        'mqtt_broker': {'active': False},
-        'base_stations': {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []}
-    }), 500
+    if request.path.startswith('/api/'):
+        return jsonify({
+            'error': 'Internal server error',
+            'running': False,
+            'service_type': 'web_ui',
+            'tls_server': {'active': False},
+            'mqtt_broker': {'active': False},
+            'base_stations': {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []}
+        }), 500
+    return error
 
 @app.errorhandler(404)
 def not_found_error(error):
@@ -1020,7 +1022,7 @@ def bssci_status():
             'registered_sensors': 0,
             'pending_requests': 0
         }
-        return jsonify(error_response)
+        return jsonify(error_response), 500
 
 @app.route('/api/base_stations')
 def get_base_stations():
