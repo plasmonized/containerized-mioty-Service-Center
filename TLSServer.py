@@ -1567,6 +1567,36 @@ class TLSServer:
             logger.info(f"Configuration saved to {self.sensor_config_file}")
         except Exception as e:
             logger.error(f"Failed to save configuration: {e}")
+    
+    def detach_sensor_sync(self, eui: str) -> bool:
+        """Synchronous wrapper for detach_sensor (for Web UI)"""
+        try:
+            # Create new event loop for sync call
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                result = loop.run_until_complete(self.detach_sensor(eui))
+                return result
+            finally:
+                loop.close()
+        except Exception as e:
+            logger.error(f"Sync detach failed for {eui}: {e}")
+            return False
+            
+    def add_sensor_via_ui(self, sensor_data: dict) -> bool:
+        """Add sensor via Web UI - sends to MQTT queue for processing"""
+        try:
+            # Ensure EUI is uppercase
+            sensor_data['eui'] = sensor_data['eui'].upper()
+            
+            # Add to MQTT queue for processing 
+            asyncio.create_task(self.mqtt_in_queue.put(sensor_data))
+            logger.info(f"✅ Sensor {sensor_data['eui']} queued for processing via UI")
+            return True
+        except Exception as e:
+            logger.error(f"Failed to add sensor via UI: {e}")
+            return False
 
     async def process_mqtt_messages(self) -> None:
         """Process incoming MQTT messages for sensor configuration and commands"""
@@ -1602,7 +1632,7 @@ class TLSServer:
                             continue
 
                         # Process the sensor configuration
-                        await self.process_sensor_config(message)
+                        await self.process_sensor_config_message(message)
 
                 except Exception as e:
                     logger.error(f"❌ Failed to process MQTT message: {e}")
@@ -1611,6 +1641,32 @@ class TLSServer:
         except Exception as e:
             logger.error(f"❌ MQTT MESSAGE PROCESSOR FAILED: {e}")
             raise
+
+    async def process_sensor_config_message(self, message: dict) -> None:
+        """Process sensor configuration messages from MQTT"""
+        logger.info(f"🔧 PROCESSING SENSOR CONFIGURATION MESSAGE")
+        logger.info(f"   EUI: {message.get('eui', 'unknown')}")
+        logger.info(f"   Short Address: {message.get('shortAddr', 'unknown')}")
+        logger.info(f"   Network Key: {message.get('nwKey', 'unknown')[:8]}...")
+        logger.info(f"   Bidirectional: {message.get('bidi', 'unknown')}")
+        
+        # Send attach requests to connected base stations
+        if self.connected_base_stations:
+            logger.info(f"📤 PROPAGATING to {len(self.connected_base_stations)} connected base stations")
+            for writer, bs_eui in self.connected_base_stations.items():
+                logger.info(f"   Sending attach request to base station: {bs_eui}")
+                try:
+                    await self.send_attach_request(writer, message)
+                except Exception as e:
+                    logger.error(f"Failed to send attach request to {bs_eui}: {e}")
+        else:
+            logger.warning("⚠️  NO BASE STATIONS CONNECTED")
+            logger.warning("   Configuration saved but attach requests will be sent when base stations connect")
+        
+        # Update local configuration
+        logger.info(f"💾 UPDATING local configuration file")
+        self.update_or_add_entry(message)
+        logger.info(f"✅ SENSOR CONFIGURATION processing complete for {message['eui']}")
 
     async def process_mqtt_command(self, command: dict) -> None:
         """Process MQTT command messages"""

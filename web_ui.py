@@ -210,28 +210,49 @@ def get_sensors():
 @app.route('/api/sensors', methods=['POST'])
 def add_sensor():
     data = request.json
+    
+    # Use TLS server to add sensor (proper way)
     try:
-        with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
-            sensors = json.load(f)
-    except:
-        sensors = []
+        global tls_server_instance
+        tls_server = tls_server_instance
+        
+        if tls_server and hasattr(tls_server, 'add_sensor_via_ui'):
+            # Ensure EUI is uppercase
+            data['eui'] = data['eui'].upper()
+            
+            success = tls_server.add_sensor_via_ui(data)
+            if success:
+                return jsonify({'success': True, 'message': 'Sensor queued for processing'})
+            else:
+                return jsonify({'success': False, 'message': 'Failed to queue sensor'})
+        else:
+            # Fallback: direct file write (should not happen in normal operation)
+            print("TLS server not available, using fallback direct file write")
+            try:
+                with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
+                    sensors = json.load(f)
+            except:
+                sensors = []
 
-    # Check if sensor already exists
-    for sensor in sensors:
-        if sensor['eui'].upper() == data['eui'].upper():
-            # Update existing sensor
-            sensor.update(data)
-            break
-    else:
-        # Add new sensor
-        sensors.append(data)
+            # Check if sensor already exists
+            for sensor in sensors:
+                if sensor['eui'].upper() == data['eui'].upper():
+                    # Update existing sensor
+                    sensor.update(data)
+                    break
+            else:
+                # Add new sensor
+                sensors.append(data)
 
-    try:
-        with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
-            json.dump(sensors, f, indent=4)
-        return jsonify({'success': True, 'message': 'Sensor saved successfully'})
+            try:
+                with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
+                    json.dump(sensors, f, indent=4)
+                return jsonify({'success': True, 'message': 'Sensor saved successfully (fallback mode)'})
+            except Exception as e:
+                return jsonify({'success': False, 'message': str(e)})
+                
     except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+        return jsonify({'success': False, 'message': f'Error: {str(e)}'})
 
 @app.route('/api/sensors/<eui>', methods=['DELETE'])
 def delete_sensor(eui):
