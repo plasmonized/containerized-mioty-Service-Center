@@ -120,7 +120,8 @@ class TLSServer:
         )
 
         logger.info("📨 Starting MQTT message processor task...")
-        asyncio.create_task(self.process_mqtt_messages())
+        self.mqtt_processor_task = asyncio.create_task(self.process_mqtt_messages())
+        # Keep task reference to prevent garbage collection
 
         logger.info("✓ BSSCI TLS Server is ready and listening for base station connections")
         async with server:
@@ -1667,7 +1668,17 @@ class TLSServer:
             logger.error(f"❌ MQTT MESSAGE PROCESSOR FAILED: {e}")
             import traceback
             logger.error(f"   Traceback: {traceback.format_exc()}")
-            raise
+            
+            # Auto-restart the task for robustness
+            logger.warning("🔄 Attempting to auto-restart MQTT message processor...")
+            try:
+                await asyncio.sleep(5)  # Wait 5 seconds before restart
+                logger.info("🔄 Restarting MQTT message processor...")
+                self.mqtt_processor_task = asyncio.create_task(self.process_mqtt_messages())
+                logger.info("✅ MQTT message processor restarted successfully")
+            except Exception as restart_error:
+                logger.error(f"❌ Failed to restart MQTT processor: {restart_error}")
+                raise
 
     async def process_sensor_config_message(self, message: dict) -> None:
         """Process sensor configuration messages from MQTT"""
