@@ -40,19 +40,29 @@ class MQTTClient:
         logger.info(f"   mqtt_in_queue ID: {id(self.mqtt_in_queue)}, size: {self.mqtt_in_queue.qsize()}")
 
     async def start(self) -> None:
-        """Start MQTT client with simple connection pattern"""
+        """Start MQTT client with enhanced connection pattern and circuit breaker"""
         retry_delay = 5.0
         max_delay = 60.0
-
+        connection_attempts = 0
+        max_attempts_before_break = 10  # Circuit breaker threshold
+        
         while True:
+            connection_attempts += 1
             try:
                 logger.info("=" * 60)
-                logger.info("🔄 MQTT CONNECTION ATTEMPT")
+                logger.info(f"🔄 MQTT CONNECTION ATTEMPT #{connection_attempts}")
                 logger.info("=" * 60)
                 logger.info(f"📡 Broker: {self.broker_host}:{MQTT_PORT}")
                 logger.info(f"👤 Username: {MQTT_USERNAME}")
                 logger.info(f"🔐 Password: {'*' * len(MQTT_PASSWORD) if MQTT_PASSWORD else 'NOT SET'}")
                 logger.info(f"🎯 Config Topic: {self.config_topic}")
+                
+                # Circuit breaker logic
+                if connection_attempts > max_attempts_before_break:
+                    logger.error(f"🚨 CIRCUIT BREAKER: Too many failed attempts ({connection_attempts})")
+                    logger.error("   Waiting 5 minutes before retry...")
+                    await asyncio.sleep(300)  # Wait 5 minutes
+                    connection_attempts = 0  # Reset counter
                 logger.info(f"🏠 Base Topic: {self.base_topic}")
 
                 # Use the working simple pattern with authentication
