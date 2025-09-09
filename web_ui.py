@@ -270,37 +270,37 @@ def add_sensor():
                         for sensor in tls_server.sensor_config:
                             if (isinstance(sensor, dict) and 'eui' in sensor and 
                                 str(sensor['eui']).upper() == str(data['eui']).upper()):
-                            # Create an asyncio task to send attach requests
-                            import asyncio
-                            import threading
-                            
-                            def send_attaches():
-                                """Send attach requests using thread-safe asyncio patterns"""
-                                try:
-                                    async def attach_to_bases():
-                                        for writer in list(tls_server.connected_base_stations.keys()):
-                                            try:
-                                                await tls_server.send_attach_request(writer, sensor)
-                                                print(f"Attach request sent for {data['eui']}")
-                                            except Exception as e:
-                                                print(f"Failed to send attach for {data['eui']}: {e}")
-                                    
-                                    # Try to schedule in existing event loop
+                                # Create an asyncio task to send attach requests
+                                import asyncio
+                                import threading
+                                
+                                def send_attaches():
+                                    """Send attach requests using thread-safe asyncio patterns"""
                                     try:
-                                        loop = asyncio.get_running_loop()
-                                        # Schedule in main event loop (thread-safe)
-                                        future = asyncio.run_coroutine_threadsafe(attach_to_bases(), loop)
-                                        print(f"Attach requests scheduled for {data['eui']}")
-                                    except RuntimeError:
-                                        # No running loop - log for manual intervention
-                                        print(f"Warning: No event loop running - attach requests for {data['eui']} not sent")
+                                        async def attach_to_bases():
+                                            for writer in list(tls_server.connected_base_stations.keys()):
+                                                try:
+                                                    await tls_server.send_attach_request(writer, sensor)
+                                                    print(f"Attach request sent for {data['eui']}")
+                                                except Exception as e:
+                                                    print(f"Failed to send attach for {data['eui']}: {e}")
                                         
-                                except Exception as e:
-                                    print(f"Error scheduling attach requests: {e}")
-                            
-                            # Use direct call instead of threading
-                            send_attaches()
-                            break
+                                        # Try to schedule in existing event loop
+                                        try:
+                                            loop = asyncio.get_running_loop()
+                                            # Schedule in main event loop (thread-safe)
+                                            future = asyncio.run_coroutine_threadsafe(attach_to_bases(), loop)
+                                            print(f"Attach requests scheduled for {data['eui']}")
+                                        except RuntimeError:
+                                            # No running loop - log for manual intervention
+                                            print(f"Warning: No event loop running - attach requests for {data['eui']} not sent")
+                                            
+                                    except Exception as e:
+                                        print(f"Error scheduling attach requests: {e}")
+                                
+                                # Use direct call instead of threading
+                                send_attaches()
+                                break
                             
                 return jsonify({'success': True, 'message': 'Sensor saved and attach requests sent to base stations'})
             except Exception as e:
