@@ -129,7 +129,8 @@ class MQTTClient:
                 (f"{self.base_topic}/ep/+/config", 0),  # Alternative config (still supported)
                 (f"{self.base_topic}/config/+", 0),  # System configuration messages
             ]
-            await client.subscribe(topics)
+            # Fix type issue by casting properly
+            await client.subscribe([(topic, qos) for topic, qos in topics])
             logger.info("✅ MQTT SUBSCRIPTION SUCCESSFUL")
             logger.info(f"👂 MQTT listening on config topic: {self.config_topic}")
             logger.info(f"👂 MQTT listening on register topic: {self.register_topic}")
@@ -158,8 +159,11 @@ class MQTTClient:
                         eui = topic_parts[len(base_parts) + 1].upper()
                         logger.info(f"🔑 Extracted EUI: {eui}")
 
-                        if hasattr(message.payload, 'decode'):
+                        # Robust payload handling
+                        if isinstance(message.payload, bytes):
                             payload_str = message.payload.decode('utf-8')
+                        elif isinstance(message.payload, str):
+                            payload_str = message.payload
                         else:
                             payload_str = str(message.payload)
                         logger.info(f"📄 Payload: {payload_str}")
@@ -169,12 +173,12 @@ class MQTTClient:
                         # Check if this is a command message
                         if "/cmd" in str(message.topic):
                             await self.handle_command_message(str(message.topic), payload_dict, eui)
-                            return
+                            continue
 
                         # Check if this is a register message (Legacy support)
                         if "/register" in str(message.topic):
                             await self.handle_register_message(str(message.topic), payload_dict, eui)
-                            return
+                            continue
 
                         # This is a config message (alternative method)
                         config = payload_dict
@@ -248,7 +252,9 @@ class MQTTClient:
                     # For connection errors, re-raise to trigger reconnection
                     if isinstance(e, (ConnectionError, OSError)) or "connection" in str(e).lower() or "not currently connected" in str(e).lower():
                         logger.error("   CONNECTION ERROR - TRIGGERING RECONNECTION")
-                        await self.mqtt_out_queue.put(msg)  # Put message back
+                        # Only put message back if it's not None
+                        if msg is not None:
+                            await self.mqtt_out_queue.put(msg)  # Put message back
                         raise
                     # For other errors, continue
                     logger.error("   NON-CONNECTION ERROR - Continuing...")
