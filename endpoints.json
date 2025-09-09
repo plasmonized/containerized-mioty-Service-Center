@@ -40,5 +40,11 @@
         "nwKey": "00112233445566778899AABBCCDDEE99",
         "shortAddr": "DIR1",
         "bidi": false
+    },
+    {
+        "eui": "TEST442A_FIXED",
+        "nwKey": "00112233445566778899AABBCCDDEEFF",
+        "shortAddr": "T442",
+        "bidi": false
     }
 ]
