@@ -1641,9 +1641,14 @@ class TLSServer:
                         await self.process_mqtt_command(message)
                     else:
                         # Process configuration messages
-                        # Validate required fields
-                        required_fields = ['eui', 'nwKey', 'shortAddr']
+                        # Validate required fields (same as old queue_watcher)
+                        required_fields = ['eui', 'nwKey', 'shortAddr', 'bidi']
                         missing_fields = [field for field in required_fields if field not in message]
+                        
+                        # Set default bidi if missing (for backward compatibility)
+                        if 'bidi' not in message:
+                            message['bidi'] = False
+                            logger.info("🔧 Setting default bidi=false for legacy compatibility")
 
                         if missing_fields:
                             logger.error(f"❌ Invalid sensor configuration - missing fields: {missing_fields}")
@@ -1656,8 +1661,12 @@ class TLSServer:
                     logger.error(f"❌ Failed to process MQTT message: {e}")
                     logger.error(f"   Message: {message}")
 
+        except asyncio.CancelledError:
+            logger.info("📨 MQTT message processor stopped gracefully")
         except Exception as e:
             logger.error(f"❌ MQTT MESSAGE PROCESSOR FAILED: {e}")
+            import traceback
+            logger.error(f"   Traceback: {traceback.format_exc()}")
             raise
 
     async def process_sensor_config_message(self, message: dict) -> None:
