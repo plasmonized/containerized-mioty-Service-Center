@@ -119,8 +119,8 @@ class TLSServer:
             ssl=ssl_ctx,
         )
 
-        logger.info("📨 Starting MQTT queue watcher task...")
-        asyncio.create_task(self.queue_watcher())
+        logger.info("📨 Starting MQTT message processor task...")
+        asyncio.create_task(self.process_mqtt_messages())
 
         logger.info("✓ BSSCI TLS Server is ready and listening for base station connections")
         async with server:
@@ -1344,50 +1344,6 @@ class TLSServer:
                     "payload": json.dumps(failure_payload)
                 })
 
-    async def queue_watcher(self) -> None:
-        logger.info("📨 MQTT queue watcher started - monitoring for configuration updates")
-        logger.info(f"   Watching queue ID: {id(self.mqtt_in_queue)}")
-        try:
-            while True:
-                logger.debug(f"⏳ Queue watcher waiting for message (queue size: {self.mqtt_in_queue.qsize()})")
-                msg = dict(await self.mqtt_in_queue.get())
-                logger.info(f"📥 MQTT CONFIGURATION MESSAGE received")
-                logger.debug(f"   Raw message: {msg}")
-
-                if (
-                    "eui" in msg.keys()
-                    and "nwKey" in msg.keys()
-                    and "shortAddr" in msg.keys()
-                    and "bidi" in msg.keys()
-                ):
-                    logger.info(f"🔧 PROCESSING ENDPOINT CONFIGURATION")
-                    logger.info(f"   Endpoint EUI: {msg['eui']}")
-                    logger.info(f"   Short Address: {msg['shortAddr']}")
-                    logger.info(f"   Network Key: {msg['nwKey'][:8]}...{msg['nwKey'][-8:]}")
-                    logger.info(f"   Bidirectional: {msg['bidi']}")
-
-                    if self.connected_base_stations:
-                        logger.info(f"📤 PROPAGATING to {len(self.connected_base_stations)} connected base stations")
-                        for writer, bs_eui in self.connected_base_stations.items():
-                            logger.info(f"   Sending attach request to base station: {bs_eui}")
-                            await self.send_attach_request(writer, msg)
-                    else:
-                        logger.warning("⚠️  NO BASE STATIONS CONNECTED")
-                        logger.warning("   Configuration saved but attach requests will be sent when base stations connect")
-
-                    logger.info(f"💾 UPDATING local configuration file")
-                    self.update_or_add_entry(msg)
-                    logger.info(f"✅ ENDPOINT CONFIGURATION processing complete for {msg['eui']}")
-                else:
-                    logger.error(f"❌ INVALID MQTT configuration message - missing required fields")
-                    logger.error(f"   Required: eui, nwKey, shortAddr, bidi")
-                    logger.error(f"   Received: {list(msg.keys())}")
-        except asyncio.CancelledError:
-            logger.info("📨 MQTT queue watcher stopped")
-        except Exception as e:
-            logger.error(f"❌ Error in MQTT queue watcher: {e}")
-            import traceback
-            logger.error(f"   Traceback: {traceback.format_exc()}")
 
     def get_base_station_status(self) -> dict:
         """Get status of connected base stations"""
