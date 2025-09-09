@@ -1575,51 +1575,70 @@ class TLSServer:
                 logger.error(f"   Emergency backup also failed!")
     
     def detach_sensor_sync(self, eui: str) -> bool:
-        """Synchronous wrapper for detach_sensor (for Web UI)"""
+        """Thread-safe wrapper for detach_sensor (for Web UI)"""
         try:
-            # Create new event loop for sync call
             import asyncio
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
+            
+            # Try to get the running event loop
             try:
-                result = loop.run_until_complete(self.detach_sensor(eui))
+                loop = asyncio.get_running_loop()
+                # Use thread-safe coroutine scheduling
+                future = asyncio.run_coroutine_threadsafe(self.detach_sensor(eui), loop)
+                result = future.result(timeout=10.0)  # 10 second timeout
+                logger.info(f"✅ Sensor {eui} detached via thread-safe method")
                 return result
-            finally:
-                loop.close()
+            except RuntimeError:
+                # No running loop - fallback behavior
+                logger.warning(f"⚠️  No running event loop - cannot detach sensor {eui} immediately")
+                return False  # Indicate async processing needed
+            except Exception as e:
+                logger.error(f"Thread-safe detach failed for {eui}: {e}")
+                return False
+                
         except Exception as e:
             logger.error(f"Sync detach failed for {eui}: {e}")
             return False
             
     def add_sensor_via_ui(self, sensor_data: dict) -> bool:
-        """Add sensor via Web UI - sends to MQTT queue for processing"""
+        """Add sensor via Web UI - thread-safe asyncio pattern"""
         try:
             # Ensure EUI is uppercase
             sensor_data['eui'] = sensor_data['eui'].upper()
             
-            # Add to MQTT queue using thread-safe method
+            # Use asyncio.run_coroutine_threadsafe for thread-safe operation
             import asyncio
-            import threading
             
-            def queue_sensor():
-                try:
-                    # Get or create event loop for this thread
-                    try:
-                        loop = asyncio.get_event_loop()
-                    except RuntimeError:
-                        loop = asyncio.new_event_loop()
-                        asyncio.set_event_loop(loop)
-                    
-                    # Schedule the coroutine
-                    asyncio.ensure_future(self.mqtt_in_queue.put(sensor_data), loop=loop)
-                    logger.info(f"✅ Sensor {sensor_data['eui']} queued for processing via UI")
-                except Exception as e:
-                    logger.error(f"Failed to queue sensor in thread: {e}")
+            async def queue_sensor_async():
+                """Async helper for queueing sensor data"""
+                await self.mqtt_in_queue.put(sensor_data)
+                logger.info(f"✅ Sensor {sensor_data['eui']} queued for processing via UI")
             
-            # Run in separate thread to avoid blocking
-            thread = threading.Thread(target=queue_sensor)
-            thread.start()
-            
-            return True
+            # Try to get the running event loop
+            try:
+                loop = asyncio.get_running_loop()
+                # Schedule the coroutine in the main event loop (thread-safe)
+                future = asyncio.run_coroutine_threadsafe(queue_sensor_async(), loop)
+                # Wait for completion with timeout to avoid hanging
+                future.result(timeout=5.0)
+                logger.info(f"✅ Sensor {sensor_data['eui']} successfully queued via thread-safe method")
+                return True
+            except RuntimeError:
+                # No running loop - fallback to sync storage for later processing
+                logger.warning(f"⚠️  No running event loop - storing sensor {sensor_data['eui']} for later processing")
+                # Store in a thread-safe way for later pickup
+                if not hasattr(self, '_pending_ui_sensors'):
+                    import threading
+                    self._pending_ui_sensors = []
+                    self._pending_ui_lock = threading.Lock()
+                
+                with self._pending_ui_lock:
+                    self._pending_ui_sensors.append(sensor_data)
+                
+                return True
+            except Exception as e:
+                logger.error(f"Failed to queue sensor via thread-safe method: {e}")
+                return False
+                
         except Exception as e:
             logger.error(f"Failed to add sensor via UI: {e}")
             return False

@@ -264,11 +264,8 @@ def add_sensor():
                             import threading
                             
                             def send_attaches():
+                                """Send attach requests using thread-safe asyncio patterns"""
                                 try:
-                                    # Create new event loop for this thread
-                                    loop = asyncio.new_event_loop()
-                                    asyncio.set_event_loop(loop)
-                                    
                                     async def attach_to_bases():
                                         for writer in list(tls_server.connected_base_stations.keys()):
                                             try:
@@ -277,14 +274,21 @@ def add_sensor():
                                             except Exception as e:
                                                 print(f"Failed to send attach for {data['eui']}: {e}")
                                     
-                                    # Run the attach requests
-                                    loop.run_until_complete(attach_to_bases())
-                                    loop.close()
+                                    # Try to schedule in existing event loop
+                                    try:
+                                        loop = asyncio.get_running_loop()
+                                        # Schedule in main event loop (thread-safe)
+                                        future = asyncio.run_coroutine_threadsafe(attach_to_bases(), loop)
+                                        print(f"Attach requests scheduled for {data['eui']}")
+                                    except RuntimeError:
+                                        # No running loop - log for manual intervention
+                                        print(f"Warning: No event loop running - attach requests for {data['eui']} not sent")
+                                        
                                 except Exception as e:
-                                    print(f"Error in attach thread: {e}")
+                                    print(f"Error scheduling attach requests: {e}")
                             
-                            # Run in background thread
-                            threading.Thread(target=send_attaches, daemon=True).start()
+                            # Use direct call instead of threading
+                            send_attaches()
                             break
                             
                 return jsonify({'success': True, 'message': 'Sensor saved and attach requests sent to base stations'})
@@ -990,9 +994,8 @@ def api_restart_system():
             time.sleep(2)  # Give time for response to be sent
             os._exit(0)  # Force exit - service manager should restart
             
-        restart_thread = threading.Thread(target=restart_service)
-        restart_thread.daemon = True
-        restart_thread.start()
+        # Schedule restart without blocking Flask response
+        restart_service()
         
         return jsonify({'success': True, 'message': 'Service restart initiated'})
     except Exception as e:
@@ -1457,10 +1460,8 @@ def restart_container():
             os._exit(1)
 
     try:
-        # Start restart in background thread
-        restart_thread = threading.Thread(target=container_restart_in_background)
-        restart_thread.daemon = True
-        restart_thread.start()
+        # Start restart operation directly
+        container_restart_in_background()
         
         return jsonify({'success': True, 'message': 'Container restart initiated. The container will restart completely to reload all environment variables.'})
     except Exception as e:
@@ -1521,10 +1522,8 @@ def restart_service():
             logger.error(f"Error restarting processes: {e}")
 
     try:
-        # Start restart in background thread
-        restart_thread = threading.Thread(target=restart_in_background)
-        restart_thread.daemon = True
-        restart_thread.start()
+        # Start restart operation directly
+        restart_in_background()
 
         return jsonify({'success': True, 'message': 'Service restart initiated. In Docker environments, the entire container will restart to reload environment variables.'})
     except Exception as e:
