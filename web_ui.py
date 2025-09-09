@@ -216,8 +216,14 @@ def add_sensor():
     data = request.json
     
     try:
+        # Type safety: Validate request data
+        if data is None:
+            return jsonify({'success': False, 'message': 'No JSON data provided'}), 400
+        if 'eui' not in data or not data['eui']:
+            return jsonify({'success': False, 'message': 'EUI field is required'}), 400
+            
         # Ensure EUI is uppercase
-        data['eui'] = data['eui'].upper()
+        data['eui'] = str(data['eui']).upper()
         
         # Step 1: Save directly to endpoints.json
         try:
@@ -226,14 +232,15 @@ def add_sensor():
         except:
             sensors = []
 
-        # Check if sensor already exists
+        # Check if sensor already exists (with type safety)
         sensor_updated = False
         for sensor in sensors:
-            if sensor['eui'].upper() == data['eui'].upper():
-                # Update existing sensor
-                sensor.update(data)
-                sensor_updated = True
-                break
+            if isinstance(sensor, dict) and 'eui' in sensor and sensor['eui']:
+                if str(sensor['eui']).upper() == str(data['eui']).upper():
+                    # Update existing sensor
+                    sensor.update(data)
+                    sensor_updated = True
+                    break
         
         if not sensor_updated:
             # Add new sensor
@@ -247,18 +254,22 @@ def add_sensor():
         global tls_server_instance
         tls_server = tls_server_instance
         
-        if tls_server and hasattr(tls_server, 'reload_sensor_config'):
+        if tls_server is not None and hasattr(tls_server, 'reload_sensor_config'):
             try:
                 # Reload the sensor configuration in TLS server
                 tls_server.reload_sensor_config()
                 
-                # Force attach to connected base stations if any
-                if hasattr(tls_server, 'connected_base_stations') and tls_server.connected_base_stations:
+                # Force attach to connected base stations if any (with None safety)
+                if (hasattr(tls_server, 'connected_base_stations') and 
+                    tls_server.connected_base_stations is not None and 
+                    len(tls_server.connected_base_stations) > 0):
                     print(f"Triggering attach for new sensor {data['eui']} to {len(tls_server.connected_base_stations)} base stations")
                     
-                    # Find the sensor config for attach request
-                    for sensor in tls_server.sensor_config:
-                        if sensor['eui'].upper() == data['eui'].upper():
+                    # Find the sensor config for attach request (with type safety)
+                    if hasattr(tls_server, 'sensor_config') and tls_server.sensor_config is not None:
+                        for sensor in tls_server.sensor_config:
+                            if (isinstance(sensor, dict) and 'eui' in sensor and 
+                                str(sensor['eui']).upper() == str(data['eui']).upper()):
                             # Create an asyncio task to send attach requests
                             import asyncio
                             import threading
@@ -471,15 +482,19 @@ def update_config():
     try:
         data = request.json
         
-        # Convert hours to seconds for timeout values
+        # Type safety: Validate request data
+        if data is None:
+            return jsonify({'success': False, 'message': 'No JSON data provided'}), 400
+        
+        # Convert hours to seconds for timeout values (with type safety)
         auto_detach_timeout = int(data.get('AUTO_DETACH_TIMEOUT', 72)) * 3600
         auto_detach_warning_timeout = int(data.get('AUTO_DETACH_WARNING_TIMEOUT', 36)) * 3600
         auto_detach_check_interval = int(data.get('AUTO_DETACH_CHECK_INTERVAL', 1)) * 3600
         
-        # Update the .env file - this is the primary configuration source
+        # Update the .env file - this is the primary configuration source (with type safety)
         env_content = f"""# TLS Server Configuration
-LISTEN_HOST={data['LISTEN_HOST']}
-LISTEN_PORT={data['LISTEN_PORT']}
+LISTEN_HOST={data.get('LISTEN_HOST', '0.0.0.0')}
+LISTEN_PORT={data.get('LISTEN_PORT', 16018)}
 
 # SSL/TLS Certificate Configuration
 CERT_FILE=certs/service_center_cert.pem
@@ -487,16 +502,16 @@ KEY_FILE=certs/service_center_key.pem
 CA_FILE=certs/ca_cert.pem
 
 # MQTT Configuration
-MQTT_BROKER={data['MQTT_BROKER']}
-MQTT_PORT={data['MQTT_PORT']}
-MQTT_USERNAME={data['MQTT_USERNAME']}
-MQTT_PASSWORD={data['MQTT_PASSWORD']}
-BASE_TOPIC={data['BASE_TOPIC']}
+MQTT_BROKER={data.get('MQTT_BROKER', 'localhost')}
+MQTT_PORT={data.get('MQTT_PORT', 1883)}
+MQTT_USERNAME={data.get('MQTT_USERNAME', '')}
+MQTT_PASSWORD={data.get('MQTT_PASSWORD', '')}
+BASE_TOPIC={data.get('BASE_TOPIC', 'bssci/')}
 
 # Application Configuration
 SENSOR_CONFIG_FILE=endpoints.json
-STATUS_INTERVAL={data['STATUS_INTERVAL']}
-DEDUPLICATION_DELAY={data['DEDUPLICATION_DELAY']}
+STATUS_INTERVAL={data.get('STATUS_INTERVAL', 30)}
+DEDUPLICATION_DELAY={data.get('DEDUPLICATION_DELAY', 2.0)}
 
 # Web Interface Configuration
 WEB_HOST=0.0.0.0
@@ -1015,7 +1030,7 @@ def get_bssci_service_status():
         global tls_server_instance
         tls_server = tls_server_instance
         
-        if not tls_server:
+        if tls_server is None:
             return {
                 'running': False,
                 'service_type': 'web_ui',
@@ -1028,8 +1043,17 @@ def get_bssci_service_status():
                 'error': 'TLS server not available'
             }
             
-        # Get base station status safely without asyncio operations
+        # Get base station status safely without asyncio operations (with type safety)
         bs_status = {'total_connected': 0, 'total_connecting': 0, 'connected': [], 'connecting': []}
+        
+        # Safe access to base station data
+        if hasattr(tls_server, 'connected_base_stations') and tls_server.connected_base_stations is not None:
+            bs_status['total_connected'] = len(tls_server.connected_base_stations)
+            bs_status['connected'] = list(tls_server.connected_base_stations.values()) if tls_server.connected_base_stations else []
+        
+        if hasattr(tls_server, 'connecting_base_stations') and tls_server.connecting_base_stations is not None:
+            bs_status['total_connecting'] = len(tls_server.connecting_base_stations)
+            bs_status['connecting'] = list(tls_server.connecting_base_stations.values()) if tls_server.connecting_base_stations else []
         try:
             # Thread-safe access to base station collections
             connected_count = 0
