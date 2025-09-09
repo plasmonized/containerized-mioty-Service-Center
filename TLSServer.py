@@ -1538,10 +1538,15 @@ class TLSServer:
                 logger.info(f"   SNR: {snr:.2f} dB")
                 logger.info(f"   Total messages: {sensor['preferredDownlinkPath']['messageCount']}")
 
-                # Save configuration
+                # Save configuration with atomic write
                 try:
-                    with open(self.sensor_config_file, "w") as f:
+                    import tempfile
+                    import os
+                    temp_file = self.sensor_config_file + '.tmp'
+                    with open(temp_file, "w") as f:
                         json.dump(self.sensor_config, f, indent=4)
+                    # Atomic rename prevents race condition corruption
+                    os.replace(temp_file, self.sensor_config_file) 
                     logger.debug(f"✅ Preferred downlink path saved successfully")
                 except Exception as e:
                     logger.error(f"❌ Failed to save preferred downlink path: {e}")
@@ -1570,11 +1575,16 @@ class TLSServer:
             self.sensor_config.append(new_sensor)
             logger.info(f"Added new endpoint configuration for {msg['eui']}")
 
-        # Save updated configuration to file
+        # Save updated configuration to file with atomic write
         try:
             logger.info(f"💾 SAVING configuration to {self.sensor_config_file}")
-            with open(self.sensor_config_file, "w") as f:
+            import tempfile
+            import os
+            temp_file = self.sensor_config_file + '.tmp'
+            with open(temp_file, "w") as f:
                 json.dump(self.sensor_config, f, indent=4)
+            # Atomic rename prevents corruption from concurrent writes
+            os.replace(temp_file, self.sensor_config_file)
             logger.info(f"✅ Configuration saved to {self.sensor_config_file}")
         except Exception as e:
             logger.error(f"❌ Failed to save configuration: {e}")

@@ -1,0 +1,75 @@
+[
+    {
+        "eui": "TESTBLOCK3",
+        "nwKey": "00112233445566778899AABBCCDDEE99",
+        "shortAddr": "BLK3",
+        "bidi": false
+    }
+] },
+    {
+        "eui": "FCA84A03000003BC",
+        "nwKey": "28DDB218FAD568035A500060FC8662DC",
+        "shortAddr": "03BC",
+        "bidi": false
+    },
+    {
+        "eui": "FCA84A030000127C",
+        "nwKey": "00112233445566778899AABBCCDDEE",
+        "shortAddr": "0000",
+        "bidi": false
+    },
+    {
+        "eui": "test1234567890ab",
+        "nwKey": "00112233445566778899AABBCCDDEE01",
+        "shortAddr": "1234",
+        "bidi": false
+    },
+    {
+        "eui": "TEST1234567890GH",
+        "nwKey": "00112233445566778899AABBCCDDEE04",
+        "shortAddr": "1237",
+        "bidi": false
+    },
+    {
+        "eui": "FCA84A02000003C3",
+        "nwKey": "C8BAC488748EBB51E606CB2F3486D381",
+        "shortAddr": "03C3",
+        "bidi": false
+    },
+    {
+        "eui": "TEST001TEST001TEST001TEST001",
+        "nwKey": "00112233445566778899AABBCCDDEE99",
+        "shortAddr": "001",
+        "bidi": false
+    },
+    {
+        "eui": "TEST002TEST002TEST002TEST002",
+        "nwKey": "00112233445566778899AABBCCDDEE99",
+        "shortAddr": "002",
+        "bidi": false
+    },
+    {
+        "eui": "TEST003TEST003TEST003TEST003",
+        "nwKey": "00112233445566778899AABBCCDDEE99",
+        "shortAddr": "003",
+        "bidi": false
+    },
+    {
+        "eui": "FCA84A0200000065",
+        "nwKey": "5B30668392466C17481B1506A4626B30",
+        "shortAddr": "442A",
+        "bidi": true
+    },
+    {
+        "eui": "DEADLOCK1",
+        "nwKey": "00112233445566778899AABBCCDDEE99",
+        "shortAddr": "DEAD",
+        "bidi": false
+    },
+    {
+        "eui": "TESTBLOCK2",
+        "nwKey": "00112233445566778899AABBCCDDEE99",
+        "shortAddr": "BLK2",
+        "bidi": false
+    }
+]

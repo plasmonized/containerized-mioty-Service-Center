@@ -246,9 +246,16 @@ def add_sensor():
             # Add new sensor
             sensors.append(data)
 
-        # Save to file
-        with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
+        # Save to file with atomic write to prevent race conditions
+        import tempfile
+        import os
+        import time
+        # Use timestamp for unique temp file names to avoid collisions
+        temp_file = bssci_config.SENSOR_CONFIG_FILE + f'.tmp.{int(time.time()*1000000)}'
+        with open(temp_file, 'w') as f:
             json.dump(sensors, f, indent=4)
+        # Atomic rename (prevents corruption from concurrent writes)  
+        os.replace(temp_file, bssci_config.SENSOR_CONFIG_FILE)
         
         # Step 2: Notify TLS server to reload config and send attach requests
         global tls_server_instance
