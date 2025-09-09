@@ -1651,7 +1651,7 @@ class TLSServer:
                         
                         # Set default bidi if missing (for sensor registration compatibility)
                         if 'bidi' not in message:
-                            message['bidi'] = False
+                            message['bidi'] = False  # Keep as boolean for internal processing
                             logger.info("🔧 Setting default bidi=false for sensor registration compatibility")
 
                         if missing_fields:
@@ -1731,10 +1731,29 @@ class TLSServer:
                 
                 # Check for complete inactivity (no messages processed for too long)
                 time_since_activity = current_time - last_mqtt_activity
-                if time_since_activity > 300:  # 5 minutes of no activity
+                if time_since_activity > 180:  # 3 minutes of no activity (more aggressive)
                     logger.warning(f"🐕 WATCHDOG: No MQTT activity for {time_since_activity:.1f} seconds")
                     logger.info(f"   Queue size: {queue_size}")
                     logger.info(f"   Task status: {'running' if not self.mqtt_processor_task.done() else 'stopped'}")
+                    
+                    # CRITICAL FIX: Force restart MQTT processor when inactive too long
+                    if time_since_activity > 600:  # 10 minutes = force restart
+                        logger.error(f"🚨 WATCHDOG EMERGENCY: MQTT inactive for {time_since_activity:.1f}s - FORCING RESTART!")
+                        
+                        # Cancel the old task
+                        if not self.mqtt_processor_task.done():
+                            self.mqtt_processor_task.cancel()
+                            try:
+                                await self.mqtt_processor_task
+                            except asyncio.CancelledError:
+                                pass
+                        
+                        # Start fresh task
+                        mqtt_restart_count += 1
+                        logger.warning(f"🔄 EMERGENCY RESTART #{mqtt_restart_count}")
+                        self.mqtt_processor_task = asyncio.create_task(self.process_mqtt_messages())
+                        last_mqtt_activity = current_time  # Reset timer
+                        logger.info("✅ EMERGENCY RESTART completed")
                 
                 # Periodic health report
                 if int(current_time) % 300 == 0:  # Every 5 minutes
