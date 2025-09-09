@@ -5,8 +5,10 @@ import subprocess
 import shutil
 import threading
 import time
+import csv
+import io
 from datetime import datetime, timezone, timedelta
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify, redirect, url_for, Response
 from typing import List, Dict, Any
 import bssci_config
 
@@ -52,7 +54,7 @@ def ensure_json_api():
 
 # Global variables for log storage and configuration
 log_entries: List[Dict[str, Any]] = []
-max_log_entries = 1000
+max_log_entries = 10000  # Increased from 1000 to 10000 for longer history
 
 # Custom log handler to capture all logs with timezone support
 class WebUILogHandler(logging.Handler):
@@ -579,6 +581,109 @@ def get_logs():
         'filtered_logs': len(filtered_logs),
         'source': 'memory'
     })
+
+@app.route('/api/logs/export/csv')
+def export_logs_csv():
+    """Export logs to CSV format"""
+    global log_entries
+    
+    # Get query parameters for filtering
+    level_filter = request.args.get('level', 'all').upper()
+    logger_filter = request.args.get('logger', 'all')
+    
+    # Filter logs based on parameters
+    filtered_logs = log_entries
+    
+    if level_filter != 'ALL':
+        filtered_logs = [log for log in filtered_logs if log['level'] == level_filter]
+    
+    if logger_filter != 'all':
+        filtered_logs = [log for log in filtered_logs if logger_filter.lower() in log['logger'].lower()]
+    
+    # Create CSV content
+    output = io.StringIO()
+    writer = csv.DictWriter(output, fieldnames=['timestamp', 'level', 'logger', 'message', 'source'])
+    writer.writeheader()
+    writer.writerows(filtered_logs)
+    
+    # Get current timestamp for filename
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    filename = f'bssci_logs_{timestamp}.csv'
+    
+    # Create response
+    response = Response(
+        output.getvalue(),
+        mimetype='text/csv',
+        headers={'Content-Disposition': f'attachment; filename={filename}'}
+    )
+    
+    return response
+
+@app.route('/api/sensors/export/csv')
+def export_sensors_csv():
+    """Export sensor data to CSV format"""
+    try:
+        global tls_server_instance
+        tls_server = tls_server_instance
+        
+        # Load sensors from config file
+        sensor_data = []
+        try:
+            with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
+                sensors = json.load(f)
+        except:
+            sensors = []
+        
+        # Get registration data from TLS server
+        registration_data = {}
+        if tls_server and hasattr(tls_server, 'registered_sensors'):
+            registration_data = getattr(tls_server, 'registered_sensors', {})
+        
+        # Prepare CSV data
+        for sensor in sensors:
+            eui = sensor['eui'].upper()
+            reg_info = registration_data.get(eui, {})
+            
+            csv_row = {
+                'eui': sensor['eui'].upper(),
+                'nwKey': sensor['nwKey'],
+                'shortAddr': sensor['shortAddr'],
+                'bidi': sensor['bidi'],
+                'registered': reg_info.get('status') == 'registered',
+                'total_base_stations': len(reg_info.get('base_stations', [])),
+                'base_stations': ';'.join(reg_info.get('base_stations', [])),
+                'registration_timestamp': reg_info.get('timestamp', ''),
+                'preferredDownlinkPath': sensor.get('preferredDownlinkPath', ''),
+                'export_timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+            sensor_data.append(csv_row)
+        
+        # Create CSV content
+        output = io.StringIO()
+        if sensor_data:
+            writer = csv.DictWriter(output, fieldnames=sensor_data[0].keys())
+            writer.writeheader()
+            writer.writerows(sensor_data)
+        else:
+            # Empty CSV with headers
+            writer = csv.DictWriter(output, fieldnames=['eui', 'nwKey', 'shortAddr', 'bidi', 'registered', 'total_base_stations', 'base_stations', 'export_timestamp'])
+            writer.writeheader()
+        
+        # Get current timestamp for filename
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        filename = f'bssci_sensors_{timestamp}.csv'
+        
+        # Create response
+        response = Response(
+            output.getvalue(),
+            mimetype='text/csv',
+            headers={'Content-Disposition': f'attachment; filename={filename}'}
+        )
+        
+        return response
+        
+    except Exception as e:
+        return jsonify({'error': f'CSV export failed: {str(e)}'}), 500
 
 # =========================
 # UPDATE MANAGEMENT SYSTEM
