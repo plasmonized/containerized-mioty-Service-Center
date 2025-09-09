@@ -122,6 +122,9 @@ class TLSServer:
         logger.info("📨 Starting MQTT message processor task...")
         self.mqtt_processor_task = asyncio.create_task(self.process_mqtt_messages())
         # Keep task reference to prevent garbage collection
+        
+        logger.info("🐕 Starting process watchdog...")
+        self.watchdog_task = asyncio.create_task(self.process_watchdog())
 
         logger.info("✓ BSSCI TLS Server is ready and listening for base station connections")
         async with server:
@@ -1679,6 +1682,75 @@ class TLSServer:
             except Exception as restart_error:
                 logger.error(f"❌ Failed to restart MQTT processor: {restart_error}")
                 raise
+
+    async def process_watchdog(self) -> None:
+        """Watchdog that monitors critical processes and restarts them if they crash"""
+        logger.info("🐕 PROCESS WATCHDOG STARTING")
+        logger.info("   Monitoring MQTT processor task health...")
+        
+        watchdog_interval = 30  # Check every 30 seconds
+        last_mqtt_activity = asyncio.get_event_loop().time()
+        mqtt_restart_count = 0
+        
+        try:
+            while True:
+                await asyncio.sleep(watchdog_interval)
+                current_time = asyncio.get_event_loop().time()
+                
+                # Check if MQTT processor task is still alive
+                if self.mqtt_processor_task.done():
+                    logger.error("🚨 WATCHDOG ALERT: MQTT processor task has stopped!")
+                    
+                    try:
+                        # Get the exception if the task failed
+                        exc = self.mqtt_processor_task.exception()
+                        if exc:
+                            logger.error(f"   Task failed with exception: {exc}")
+                        else:
+                            logger.warning("   Task completed without exception")
+                    except:
+                        logger.warning("   Could not retrieve task exception")
+                    
+                    # Restart the MQTT processor
+                    mqtt_restart_count += 1
+                    logger.warning(f"🔄 WATCHDOG: Restarting MQTT processor (attempt #{mqtt_restart_count})...")
+                    
+                    try:
+                        self.mqtt_processor_task = asyncio.create_task(self.process_mqtt_messages())
+                        logger.info("✅ WATCHDOG: MQTT processor restarted successfully")
+                        await asyncio.sleep(5)  # Give it time to start
+                    except Exception as restart_error:
+                        logger.error(f"❌ WATCHDOG: Failed to restart MQTT processor: {restart_error}")
+                        await asyncio.sleep(30)  # Wait longer before next attempt
+                        continue
+                
+                # Check MQTT queue activity (indirect health check)
+                queue_size = self.mqtt_in_queue.qsize()
+                if queue_size > 0:
+                    last_mqtt_activity = current_time
+                
+                # Check for complete inactivity (no messages processed for too long)
+                time_since_activity = current_time - last_mqtt_activity
+                if time_since_activity > 300:  # 5 minutes of no activity
+                    logger.warning(f"🐕 WATCHDOG: No MQTT activity for {time_since_activity:.1f} seconds")
+                    logger.info(f"   Queue size: {queue_size}")
+                    logger.info(f"   Task status: {'running' if not self.mqtt_processor_task.done() else 'stopped'}")
+                
+                # Periodic health report
+                if int(current_time) % 300 == 0:  # Every 5 minutes
+                    logger.info(f"🐕 WATCHDOG HEALTH REPORT:")
+                    logger.info(f"   MQTT processor: {'✅ running' if not self.mqtt_processor_task.done() else '❌ stopped'}")
+                    logger.info(f"   MQTT queue size: {queue_size}")
+                    logger.info(f"   Restarts performed: {mqtt_restart_count}")
+                    logger.info(f"   Last activity: {time_since_activity:.1f}s ago")
+                    
+        except asyncio.CancelledError:
+            logger.info("🐕 WATCHDOG stopped gracefully")
+        except Exception as e:
+            logger.error(f"❌ WATCHDOG CRITICAL ERROR: {e}")
+            import traceback
+            logger.error(f"   Traceback: {traceback.format_exc()}")
+            raise
 
     async def process_sensor_config_message(self, message: dict) -> None:
         """Process sensor configuration messages from MQTT"""
