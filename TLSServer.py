@@ -1669,6 +1669,10 @@ class TLSServer:
                 message = await self.mqtt_in_queue.get()
                 message_count += 1
 
+                # CRITICAL FIX: Update activity timestamp when message is processed
+                if hasattr(self, '_last_mqtt_activity'):
+                    self._last_mqtt_activity = time.time()
+
                 logger.info(f"🎉 MQTT MESSAGE #{message_count} RECEIVED!")
                 logger.info(f"   EUI: {message.get('eui', 'unknown')}")
                 logger.info(f"   Message Type: {message.get('message_type', 'config')}")
@@ -1727,6 +1731,7 @@ class TLSServer:
         
         watchdog_interval = 30  # Check every 30 seconds
         last_mqtt_activity = time.time()
+        self._last_mqtt_activity = last_mqtt_activity  # Store as instance variable
         mqtt_restart_count = 0
         
         try:
@@ -1772,10 +1777,16 @@ class TLSServer:
                         await asyncio.sleep(30)  # Wait longer before next attempt
                         continue
                 
-                # Check MQTT queue activity (indirect health check)
+                # Check MQTT queue activity AND processed messages  
                 queue_size = self.mqtt_in_queue.qsize()
+                
+                # Update activity if queue has messages OR if messages were recently processed
                 if queue_size > 0:
                     last_mqtt_activity = current_time
+                elif hasattr(self, '_last_mqtt_activity'):
+                    # Use the most recent activity timestamp from message processing
+                    if self._last_mqtt_activity > last_mqtt_activity:
+                        last_mqtt_activity = self._last_mqtt_activity
                 
                 # Check for complete inactivity (no messages processed for too long)
                 time_since_activity = current_time - last_mqtt_activity

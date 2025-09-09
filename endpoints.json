@@ -36,15 +36,27 @@
         "bidi": false
     },
     {
-        "eui": "TEST123",
+        "eui": "TEST001TEST001TEST001TEST001",
         "nwKey": "00112233445566778899AABBCCDDEE99",
-        "shortAddr": "9999",
+        "shortAddr": "001",
         "bidi": false
     },
     {
-        "eui": "FCA84A0200000065",
-        "nwKey": "5B30668392466C17481B1506A4626B30",
+        "eui": "TEST002TEST002TEST002TEST002",
+        "nwKey": "00112233445566778899AABBCCDDEE99",
+        "shortAddr": "002",
+        "bidi": false
+    },
+    {
+        "eui": "TEST003TEST003TEST003TEST003",
+        "nwKey": "00112233445566778899AABBCCDDEE99",
+        "shortAddr": "003",
+        "bidi": false
+    },
+    {
+        "eui": "442A442A442A442A",
+        "nwKey": "00112233445566778899AABBCCDDEE99",
         "shortAddr": "442A",
-        "bidi": true
+        "bidi": false
     }
 ]
