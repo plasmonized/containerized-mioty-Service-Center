@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import ssl
+import time
 from datetime import datetime, timezone, timedelta
 from typing import Any, Dict
 
@@ -235,9 +236,10 @@ class TLSServer:
                 await writer.drain()
 
                 # Track this attach request for correlation with response
+                import time
                 self.pending_attach_requests[self.opID] = {
                     'sensor_eui': sensor['eui'],
-                    'timestamp': asyncio.get_event_loop().time(),
+                    'timestamp': time.time(),
                     'base_station': bs_eui,
                     'sensor_config': normalized_sensor
                 }
@@ -403,13 +405,14 @@ class TLSServer:
 
             # Notify via MQTT
             if self.mqtt_out_queue:
+                import time
                 detach_notification = {
                     "topic": f"ep/{sensor_eui.upper()}/status",
                     "payload": json.dumps({
                         "action": "detached",
                         "sensor_eui": sensor_eui,
                         "base_station_eui": bs_eui,
-                        "timestamp": asyncio.get_event_loop().time()
+                        "timestamp": time.time()
                     })
                 }
                 await self.mqtt_out_queue.put(detach_notification)
@@ -613,7 +616,8 @@ class TLSServer:
                 pass
             return
 
-        connection_start_time = asyncio.get_event_loop().time()
+        import time
+        connection_start_time = time.time()
         messages_processed = 0
 
         try:
@@ -657,7 +661,7 @@ class TLSServer:
                         ):
                             bs_eui = self.connecting_base_stations.pop(writer)  # Remove from connecting
                             self.connected_base_stations[writer] = bs_eui
-                            connection_time = asyncio.get_event_loop().time() - connection_start_time
+                            connection_time = time.time() - connection_start_time
 
                             logger.info(f"✅ BSSCI CONNECTION ESTABLISHED with base station {bs_eui}")
                             logger.info("   =====================================")
@@ -790,7 +794,7 @@ class TLSServer:
                             sensor_eui = pending_request['sensor_eui']
                             sensor_config = pending_request['sensor_config']
                             request_time = pending_request['timestamp']
-                            response_time = asyncio.get_event_loop().time()
+                            response_time = time.time()
                             processing_duration = response_time - request_time
 
                             logger.info(f"✅ ATTACH RESPONSE CORRELATED with pending request")
@@ -863,7 +867,7 @@ class TLSServer:
                                     self.registered_sensors[eui_key] = {
                                         'status': 'registered',
                                         'base_stations': [],
-                                        'timestamp': asyncio.get_event_loop().time(),
+                                        'timestamp': time.time(),
                                         'registration_time': self._get_local_time(),
                                         'registrations': []
                                     }
@@ -877,7 +881,7 @@ class TLSServer:
                                         'registration_time': self._get_local_time(),
                                         'fallback_used': True
                                     })
-                                    self.registered_sensors[eui_key]['timestamp'] = asyncio.get_event_loop().time()
+                                    self.registered_sensors[eui_key]['timestamp'] = time.time()
 
                                 logger.warning(f"   ✅ FALLBACK REGISTRATION: Sensor {sensor_eui} registered to {bs_eui}")
 
@@ -952,7 +956,7 @@ class TLSServer:
 
                                 self.deduplication_buffer[message_key] = {
                                     'message': message,
-                                    'timestamp': asyncio.get_event_loop().time(),
+                                    'timestamp': time.time(),
                                     'snr': snr,
                                     'bs_eui': bs_eui
                                 }
@@ -982,7 +986,7 @@ class TLSServer:
 
                             self.deduplication_buffer[message_key] = {
                                 'message': message,
-                                'timestamp': asyncio.get_event_loop().time(),
+                                'timestamp': time.time(),
                                 'snr': snr,
                                 'bs_eui': bs_eui
                             }
@@ -1037,7 +1041,7 @@ class TLSServer:
                         )
                         await writer.drain()
                         # Update last seen timestamp for auto-detach functionality
-                        self.sensor_last_seen[eui.upper()] = asyncio.get_event_loop().time()
+                        self.sensor_last_seen[eui.upper()] = time.time()
 
                         # Reset warning flag if sensor becomes active again
                         if eui.upper() in self.sensor_warning_sent:
@@ -1063,7 +1067,7 @@ class TLSServer:
                                     "action": "detach_response",
                                     "sensor_eui": eui,
                                     "result": status,
-                                    "timestamp": asyncio.get_event_loop().time()
+                                    "timestamp": time.time()
                                 })
                             }
                             await self.mqtt_out_queue.put(detach_response_notification)
@@ -1083,7 +1087,7 @@ class TLSServer:
         except Exception as e:
             logger.error(f"❌ Unexpected error handling connection from {addr}: {e}")
         finally:
-            connection_duration = asyncio.get_event_loop().time() - connection_start_time
+            connection_duration = time.time() - connection_start_time
 
             try:
                 with open(self.sensor_config_file, "w") as f:
@@ -1111,7 +1115,7 @@ class TLSServer:
         logger.info(f"🧠 Starting deduplication buffer processing task with delay: {self.deduplication_delay}s")
         while True:
             await asyncio.sleep(self.deduplication_delay)
-            current_time = asyncio.get_event_loop().time()
+            current_time = time.time()
 
             # Find messages that have been in the buffer longer than the delay
             messages_to_publish = []
@@ -1196,7 +1200,7 @@ class TLSServer:
         try:
             while True:
                 await asyncio.sleep(getattr(bssci_config, 'AUTO_DETACH_CHECK_INTERVAL', 3600))
-                current_time = asyncio.get_event_loop().time()
+                current_time = time.time()
 
                 auto_detach_timeout = getattr(bssci_config, 'AUTO_DETACH_TIMEOUT', 259200)
                 warning_timeout = getattr(bssci_config, 'AUTO_DETACH_WARNING_TIMEOUT', 129600)
@@ -1275,7 +1279,7 @@ class TLSServer:
                 "hours_until_detach": round(hours_until_detach, 1),
                 "warning_threshold_hours": warning_timeout / 3600,
                 "detach_threshold_hours": detach_timeout / 3600,
-                "timestamp": asyncio.get_event_loop().time()
+                "timestamp": time.time()
             }
 
             await self.mqtt_out_queue.put({
@@ -1322,7 +1326,7 @@ class TLSServer:
                     "reason": "inactivity",
                     "inactive_hours": round(hours_inactive, 1),
                     "threshold_hours": getattr(bssci_config, 'AUTO_DETACH_TIMEOUT', 259200) / 3600,
-                    "timestamp": asyncio.get_event_loop().time()
+                    "timestamp": time.time()
                 }
 
                 await self.mqtt_out_queue.put({
@@ -1340,7 +1344,7 @@ class TLSServer:
                     "action": "auto_detach_failed",
                     "sensor_eui": eui,
                     "inactive_hours": round(hours_inactive, 1),
-                    "timestamp": asyncio.get_event_loop().time()
+                    "timestamp": time.time()
                 }
 
                 await self.mqtt_out_queue.put({
@@ -1419,7 +1423,7 @@ class TLSServer:
     def get_sensor_registration_status(self) -> Dict[str, Dict[str, Any]]:
         """Get registration status of all sensors"""
         status = {}
-        current_time = asyncio.get_event_loop().time()
+        current_time = time.time()
 
         for sensor in self.sensor_config:
             eui = sensor['eui'].upper()
@@ -1689,13 +1693,13 @@ class TLSServer:
         logger.info("   Monitoring MQTT processor task health...")
         
         watchdog_interval = 30  # Check every 30 seconds
-        last_mqtt_activity = asyncio.get_event_loop().time()
+        last_mqtt_activity = time.time()
         mqtt_restart_count = 0
         
         try:
             while True:
                 await asyncio.sleep(watchdog_interval)
-                current_time = asyncio.get_event_loop().time()
+                current_time = time.time()
                 
                 # Check if MQTT processor task is still alive
                 if self.mqtt_processor_task.done():
@@ -1818,7 +1822,7 @@ class TLSServer:
                     "action": "detach_response",
                     "sensor_eui": eui,
                     "success": success,
-                    "timestamp": asyncio.get_event_loop().time()
+                    "timestamp": time.time()
                 }
 
                 await self.mqtt_out_queue.put({
@@ -1858,7 +1862,7 @@ class TLSServer:
                     "sensor_eui": eui,
                     "success": success,
                     "attached_to": success_count if success else 0,
-                    "timestamp": asyncio.get_event_loop().time()
+                    "timestamp": time.time()
                 }
 
                 await self.mqtt_out_queue.put({
@@ -1881,7 +1885,7 @@ class TLSServer:
                     "action": "status_response",
                     "sensor_eui": eui,
                     "status": sensor_status,
-                    "timestamp": asyncio.get_event_loop().time()
+                    "timestamp": time.time()
                 }
 
                 await self.mqtt_out_queue.put({
@@ -1899,7 +1903,7 @@ class TLSServer:
                     "action": "error_response",
                     "sensor_eui": eui,
                     "error": f"Unknown command: {action}",
-                    "timestamp": asyncio.get_event_loop().time()
+                    "timestamp": time.time()
                 }
 
                 await self.mqtt_out_queue.put({
@@ -1916,7 +1920,7 @@ class TLSServer:
                     "action": "error_response",
                     "sensor_eui": eui,
                     "error": str(e),
-                    "timestamp": asyncio.get_event_loop().time()
+                    "timestamp": time.time()
                 }
 
                 await self.mqtt_out_queue.put({

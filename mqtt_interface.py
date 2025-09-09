@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+import time
 from typing import Dict, Any
 from aiomqtt import Client, MqttError
 import paho.mqtt.client
@@ -85,7 +86,7 @@ class MQTTClient:
                     # Test connection
                     logger.info("🏓 Testing MQTT connection with ping...")
                     test_topic = f"{self.base_topic}/connection_test"
-                    test_payload = f'{{"status": "connected", "timestamp": "{asyncio.get_event_loop().time()}"}}'
+                    test_payload = f'{{"status": "connected", "timestamp": "{time.time()}"}}'
                     await client.publish(test_topic, test_payload)
                     logger.info("✅ MQTT ping successful - connection is stable")
 
@@ -207,7 +208,7 @@ class MQTTClient:
 
                 # Send a test message to verify connection
                 test_topic = f"{self.base_topic}/health_check"
-                test_payload = f'{{"timestamp": "{asyncio.get_event_loop().time()}", "status": "alive"}}'
+                test_payload = f'{{"timestamp": "{time.time()}", "status": "alive"}}'
 
                 logger.debug("💓 Performing MQTT health check...")
                 await client.publish(test_topic, test_payload)
@@ -284,7 +285,7 @@ class MQTTClient:
                 'eui': eui,
                 'action': command,
                 'source': 'unified_cmd',
-                'timestamp': payload.get('timestamp', asyncio.get_event_loop().time()) if isinstance(payload, dict) else asyncio.get_event_loop().time()
+                'timestamp': payload.get('timestamp', time.time()) if isinstance(payload, dict) else time.time()
             }
 
             # Add to in_queue for TLS server processing
@@ -296,7 +297,7 @@ class MQTTClient:
             ack_payload = {
                 "command": command,
                 "status": "received",
-                "timestamp": asyncio.get_event_loop().time()
+                "timestamp": time.time()
             }
 
             await self.mqtt_out_queue.put({
@@ -358,7 +359,7 @@ class MQTTClient:
                 "action": "sensor_register",
                 "status": "received",
                 "eui": eui,
-                "timestamp": asyncio.get_event_loop().time()
+                "timestamp": time.time()
             }
 
             await self.mqtt_out_queue.put({
