@@ -16,5 +16,23 @@
         "nwKey": "00112233445566778899AABBCCDDEE99",
         "shortAddr": "FINAL",
         "bidi": false
+    },
+    {
+        "eui": "FCA84A0300001222",
+        "nwKey": "5B30668392466C17481B1506A4626B30",
+        "shortAddr": "442A",
+        "bidi": false
+    },
+    {
+        "eui": "TEST_BLOCK_CHECK",
+        "nwKey": "00112233445566778899AABBCCDDEE99",
+        "shortAddr": "TEST",
+        "bidi": false
+    },
+    {
+        "eui": "USER_TEST_$(DATE +%S)",
+        "nwKey": "00112233445566778899AABBCCDDEE99",
+        "shortAddr": "USR1",
+        "bidi": false
     }
 ]
