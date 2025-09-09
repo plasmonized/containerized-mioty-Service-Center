@@ -36,12 +36,6 @@
         "bidi": false
     },
     {
-        "eui": "FCA84A0200000065",
-        "nwKey": "5B30668392466C17481B1506A4626B30",
-        "shortAddr": "442A",
-        "bidi": false
-    },
-    {
         "eui": "FCA84A0300001222",
         "nwKey": "BBE81045093AB863D207CBD4311357D2",
         "shortAddr": "1222",
