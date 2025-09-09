@@ -2,6 +2,9 @@
 {% block title %}Sensors{% endblock %}
 
 {% block content %}
+
+<!-- Alert notification area -->
+<div id="alertContainer" class="mb-3"></div>
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Sensor Management</h1>
     <div>
@@ -338,6 +341,29 @@ function clearAllSensors() {
             });
         }
     }
+
+// Missing showAlert function - fixes JavaScript error
+function showAlert(type, message) {
+    const alertContainer = document.getElementById('alertContainer');
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>`;
+    
+    alertContainer.innerHTML = alertHtml;
+    
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        const alert = alertContainer.querySelector('.alert');
+        if (alert) {
+            const bsAlert = new bootstrap.Alert(alert);
+            bsAlert.close();
+        }
+    }, 5000);
+}
 
 // Load sensors on page load
 loadSensors();

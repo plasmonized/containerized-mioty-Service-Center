@@ -16,6 +16,15 @@ services:
       - ./bssci_config.py:/app/bssci_config.py:rw
       - ./.env:/app/.env:rw
       - ./logs:/app/logs
+    # Synology-specific permission fixes
+    tmpfs:
+      - /tmp:noexec,nosuid,size=100m
+    privileged: false
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
     restart: unless-stopped
     environment:
       - PYTHONUNBUFFERED=1
