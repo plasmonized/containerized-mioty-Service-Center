@@ -22,7 +22,7 @@ class MQTTClient:
             self.base_topic = BASE_TOPIC[:-1]
         else:
             self.base_topic = BASE_TOPIC
-        self.config_topic = self.base_topic + "/ep/+/config"  # Legacy support, wird durch register ersetzt
+        self.config_topic = self.base_topic + "/ep/+/config"  # Alternative configuration method
         self.register_topic = self.base_topic + "/ep/+/register"
         self.command_topic = self.base_topic + "/ep/+/cmd"
         self.mqtt_out_queue = mqtt_out_queue
@@ -114,7 +114,7 @@ class MQTTClient:
             topics = [
                 (f"{self.base_topic}/ep/+/dl", 0),  # Downlink messages
                 (f"{self.base_topic}/ep/+/cmd", 0),  # Command messages (vereinheitlicht)
-                (f"{self.base_topic}/ep/+/register", 0),  # Legacy sensor registration
+                (f"{self.base_topic}/ep/+/register", 0),  # Primary sensor registration
                 (f"{self.base_topic}/ep/+/config", 0),  # Alternative config (still supported)
                 (f"{self.base_topic}/config/+", 0),  # System configuration messages
             ]
@@ -303,10 +303,10 @@ class MQTTClient:
             logger.error(f"   EUI: {eui}")
 
     async def handle_register_message(self, topic: str, payload: Dict[str, Any], eui: str) -> None:
-        """Handle legacy sensor registration messages from MQTT (/bssci/ep/eui/register)"""
-        logger.info(f"🔐 Processing LEGACY registration message from topic: {topic}")
+        """Handle sensor registration messages from MQTT (/bssci/ep/eui/register)"""
+        logger.info(f"🔐 Processing sensor registration message from topic: {topic}")
         logger.info(f"🔑 EUI: {eui}")
-        logger.info("⚡ Legacy /register topic support - converting to config format")
+        logger.info("⚡ Primary /register topic - converting to config format")
 
         try:
             # Legacy register should contain sensor configuration
@@ -314,14 +314,14 @@ class MQTTClient:
             config = payload.copy()
             config["eui"] = eui.upper()
             config["message_type"] = "config"
-            config["source"] = "legacy_register"
+            config["source"] = "mqtt_register"
 
             # Validate required fields for registration
             required_fields = ['nwKey', 'shortAddr']
             missing_fields = [field for field in required_fields if field not in config]
             
             if missing_fields:
-                logger.error(f"❌ Legacy registration missing required fields: {missing_fields}")
+                logger.error(f"❌ Sensor registration missing required fields: {missing_fields}")
                 logger.error(f"   Required: {required_fields}")
                 logger.error(f"   Received: {list(config.keys())}")
                 return
@@ -329,9 +329,9 @@ class MQTTClient:
             # Set default bidirectional if not specified
             if 'bidi' not in config:
                 config['bidi'] = False
-                logger.info("🔧 Setting default bidi=false for legacy registration")
+                logger.info("🔧 Setting default bidi=false for sensor registration")
 
-            logger.info(f"✅ Legacy registration received for EUI {eui}")
+            logger.info(f"✅ Sensor registration received for EUI {eui}")
             logger.info(f"📋 nwKey: {config.get('nwKey', 'N/A')}")
             logger.info(f"📋 shortAddr: {config.get('shortAddr', 'N/A')}")
             logger.info(f"📋 bidi: {config.get('bidi', 'N/A')}")
@@ -339,13 +339,13 @@ class MQTTClient:
             # Queue for TLS server processing
             logger.info(f"   Queue size before put: {self.mqtt_in_queue.qsize()}")
             await self.mqtt_in_queue.put(config)
-            logger.info(f"✅ Legacy registration queued successfully")
+            logger.info(f"✅ Sensor registration queued successfully")
             logger.info(f"   Queue size after put: {self.mqtt_in_queue.qsize()}")
 
-            # Send confirmation that legacy registration was processed
+            # Send confirmation that sensor registration was processed
             ack_topic = f"ep/{eui.upper()}/response"
             ack_payload = {
-                "action": "legacy_register",
+                "action": "sensor_register",
                 "status": "received",
                 "eui": eui,
                 "timestamp": asyncio.get_event_loop().time()
@@ -356,10 +356,10 @@ class MQTTClient:
                 "payload": json.dumps(ack_payload)
             })
 
-            logger.info(f"📤 Legacy registration acknowledgment sent to {self.base_topic}/{ack_topic}")
+            logger.info(f"📤 Sensor registration acknowledgment sent to {self.base_topic}/{ack_topic}")
 
         except Exception as e:
-            logger.error(f"❌ Error handling legacy registration message: {e}")
+            logger.error(f"❌ Error handling sensor registration message: {e}")
             logger.error(f"   Topic: {topic}")
             logger.error(f"   Payload: {payload}")
             logger.error(f"   EUI: {eui}")

@@ -1645,10 +1645,10 @@ class TLSServer:
                         required_fields = ['eui', 'nwKey', 'shortAddr', 'bidi']
                         missing_fields = [field for field in required_fields if field not in message]
                         
-                        # Set default bidi if missing (for backward compatibility)
+                        # Set default bidi if missing (for sensor registration compatibility)
                         if 'bidi' not in message:
                             message['bidi'] = False
-                            logger.info("🔧 Setting default bidi=false for legacy compatibility")
+                            logger.info("🔧 Setting default bidi=false for sensor registration compatibility")
 
                         if missing_fields:
                             logger.error(f"❌ Invalid sensor configuration - missing fields: {missing_fields}")

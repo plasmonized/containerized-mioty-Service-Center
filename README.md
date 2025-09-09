@@ -175,7 +175,7 @@ AUTO_DETACH_CHECK_INTERVAL = 3600    # 1 hour
 
 #### Via MQTT Registration (Recommended)
 
-**Primary Method**: Legacy sensor registration via topic: `{BASE_TOPIC}/ep/{EUI}/register`
+**Primary Method**: Sensor registration via topic: `{BASE_TOPIC}/ep/{EUI}/register`
 
 **Required JSON Payload:**
 ```json
@@ -188,7 +188,7 @@ AUTO_DETACH_CHECK_INTERVAL = 3600    # 1 hour
 
 **Practical Example:**
 ```bash
-# Register sensor with EUI FCA84A0300001234 (Legacy method - RECOMMENDED)
+# Register sensor with EUI FCA84A0300001234 (Primary registration method)
 mosquitto_pub -h your-broker.com -u username -p password \
   -t "mioty/ep/FCA84A0300001234/register" \
   -m '{"nwKey": "0011223344556677889AABBCCDDEEFF00", "shortAddr": "1234", "bidi": false}'
@@ -222,7 +222,7 @@ mosquitto_pub -h broker -t "mioty/ep/FCA84A0300001234/cmd" -m "status"
 ```
 
 **Important Notes:**
-- ✅ Legacy `/bssci/ep/eui/register` topic is **fully supported** for backward compatibility
+- ✅ Primary `/bssci/ep/eui/register` topic is **fully supported** for new sensor registration
 - ✅ Unified `/bssci/ep/eui/cmd` topic for all sensor commands
 - ✅ All commands receive responses on `{BASE_TOPIC}/ep/{EUI}/response` topic
 - ❌ **Removed**: Dual command patterns - only one unified command structure
@@ -301,7 +301,7 @@ The system uses a simplified, unified MQTT topic structure under `{BASE_TOPIC}/e
 ```
 {BASE_TOPIC}/
 ├── ep/{EUI}/
-│   ├── register        # 🎯 SENSOR REGISTRATION (Legacy - RECOMMENDED)
+│   ├── register        # 🎯 SENSOR REGISTRATION (Primary method)
 │   ├── config          # Alternative sensor configuration
 │   ├── cmd             # 🎯 UNIFIED SENSOR COMMANDS (attach, detach, status)
 │   ├── ul              # Uplink data from sensors
@@ -316,7 +316,7 @@ The system uses a simplified, unified MQTT topic structure under `{BASE_TOPIC}/e
 ```
 
 **Subscription Topics** (what the system listens to):
-- `{BASE_TOPIC}/ep/+/register` - 🎯 **Legacy sensor registration (RECOMMENDED)**
+- `{BASE_TOPIC}/ep/+/register` - 🎯 **Primary sensor registration**
 - `{BASE_TOPIC}/ep/+/config` - Alternative sensor configuration
 - `{BASE_TOPIC}/ep/+/cmd` - 🎯 **Unified sensor commands**
 - `{BASE_TOPIC}/ep/+/dl` - Downlink messages
@@ -331,7 +331,7 @@ The system uses a simplified, unified MQTT topic structure under `{BASE_TOPIC}/e
 
 **Key Simplifications:**
 - ✅ **Single command pattern**: Only `{BASE_TOPIC}/ep/{EUI}/cmd`
-- ✅ **Legacy support**: `/register` topic fully supported
+- ✅ **Primary registration**: `/register` topic for new sensors
 - ❌ **Removed**: Duplicate `EP/+/cmd/` patterns (eliminated confusion)
 - ✅ **Unified**: All sensor operations under `/bssci/ep/eui/` namespace
 
@@ -343,9 +343,9 @@ The system now uses a **single, unified command pattern** for all sensor operati
 
 #### Complete Sensor Workflow
 
-**Step 1: Register Sensor (Legacy Method - RECOMMENDED)**
+**Step 1: Register Sensor (Primary Method)**
 ```bash
-# Register sensor using legacy topic (recommended for compatibility)
+# Register sensor using primary registration topic
 mosquitto_pub -h broker -u user -p pass \
   -t "mioty/ep/FCA84A0300001234/register" \
   -m '{"nwKey": "0011223344556677889AABBCCDDEEFF00", "shortAddr": "1234", "bidi": false}'
@@ -365,12 +365,12 @@ mosquitto_pub -h broker -t "mioty/ep/FCA84A0300001234/cmd" -m "detach"
 mosquitto_pub -h broker -t "mioty/ep/FCA84A0300001234/cmd" -m "status"
 ```
 
-#### Legacy Support
+#### Sensor Registration
 
-✅ **Legacy Registration**: The `/bssci/ep/eui/register` topic is **fully supported** for backward compatibility with existing systems.
+✅ **Primary Registration**: The `/bssci/ep/eui/register` topic is the **primary method** for registering new sensors in the system.
 
 ```bash
-# Legacy registration (RECOMMENDED for stability)
+# Primary sensor registration method
 mosquitto_pub -h broker -t "mioty/ep/FCA84A0300001234/register" \
   -m '{"nwKey": "0011223344556677889AABBCCDDEEFF00", "shortAddr": "1234", "bidi": false}'
 ```
