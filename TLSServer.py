@@ -56,12 +56,20 @@ class TLSServer:
         # eui -> whether warning was sent
         self.sensor_warning_sent: Dict[str, bool] = {}
 
-        # Start the deduplication task
-        asyncio.create_task(self.process_deduplication_buffer())
+        # Initialize task registry for proper lifecycle management
+        self._background_tasks = set()
+        self._shutdown_event = asyncio.Event()
+        
+        # Start the deduplication task with proper tracking
+        dedup_task = asyncio.create_task(self.process_deduplication_buffer())
+        self._background_tasks.add(dedup_task)
+        dedup_task.add_done_callback(self._background_tasks.discard)
 
-        # Start auto-detach monitoring if enabled
+        # Start auto-detach monitoring if enabled with proper tracking
         if getattr(bssci_config, 'AUTO_DETACH_ENABLED', True):
-            asyncio.create_task(self.auto_detach_monitor())
+            detach_task = asyncio.create_task(self.auto_detach_monitor())
+            self._background_tasks.add(detach_task)
+            detach_task.add_done_callback(self._background_tasks.discard)
 
         try:
             with open(sensor_config_file, "r") as f:
@@ -122,10 +130,13 @@ class TLSServer:
 
         logger.info("📨 Starting MQTT message processor task...")
         self.mqtt_processor_task = asyncio.create_task(self.process_mqtt_messages())
-        # Keep task reference to prevent garbage collection
+        self._background_tasks.add(self.mqtt_processor_task)
+        self.mqtt_processor_task.add_done_callback(self._background_tasks.discard)
         
         logger.info("🐕 Starting process watchdog...")
         self.watchdog_task = asyncio.create_task(self.process_watchdog())
+        self._background_tasks.add(self.watchdog_task)
+        self.watchdog_task.add_done_callback(self._background_tasks.discard)
 
         logger.info("✓ BSSCI TLS Server is ready and listening for base station connections")
         async with server:
@@ -689,7 +700,10 @@ class TLSServer:
                             if not hasattr(self, '_status_task_running') or not self._status_task_running:
                                 logger.info(f"📊 Starting periodic status request task for all base stations")
                                 self._status_task_running = True
-                                asyncio.create_task(self.send_status_requests())
+                                # Track status request task in registry
+                                status_task = asyncio.create_task(self.send_status_requests())
+                                self._background_tasks.add(status_task)
+                                status_task.add_done_callback(self._background_tasks.discard)
                             else:
                                 logger.info(f"📊 Status request task already running, will include this base station")
                         else:
@@ -1739,7 +1753,18 @@ class TLSServer:
                     logger.warning(f"🔄 WATCHDOG: Restarting MQTT processor (attempt #{mqtt_restart_count})...")
                     
                     try:
+                        # Cancel old task properly before creating new one
+                        if hasattr(self, 'mqtt_processor_task') and not self.mqtt_processor_task.done():
+                            self.mqtt_processor_task.cancel()
+                            try:
+                                await self.mqtt_processor_task
+                            except asyncio.CancelledError:
+                                pass
+                        
+                        # Create new task with proper tracking
                         self.mqtt_processor_task = asyncio.create_task(self.process_mqtt_messages())
+                        self._background_tasks.add(self.mqtt_processor_task)
+                        self.mqtt_processor_task.add_done_callback(self._background_tasks.discard)
                         logger.info("✅ WATCHDOG: MQTT processor restarted successfully")
                         await asyncio.sleep(5)  # Give it time to start
                     except Exception as restart_error:
@@ -1771,10 +1796,12 @@ class TLSServer:
                             except asyncio.CancelledError:
                                 pass
                         
-                        # Start fresh task
+                        # Start fresh task with proper tracking
                         mqtt_restart_count += 1
                         logger.warning(f"🔄 EMERGENCY RESTART #{mqtt_restart_count}")
                         self.mqtt_processor_task = asyncio.create_task(self.process_mqtt_messages())
+                        self._background_tasks.add(self.mqtt_processor_task)
+                        self.mqtt_processor_task.add_done_callback(self._background_tasks.discard)
                         last_mqtt_activity = current_time  # Reset timer
                         logger.info("✅ EMERGENCY RESTART completed")
                 
@@ -1793,6 +1820,34 @@ class TLSServer:
             import traceback
             logger.error(f"   Traceback: {traceback.format_exc()}")
             raise
+
+    async def shutdown(self) -> None:
+        """Graceful shutdown of TLS server and background tasks"""
+        logger.info("🔄 Initiating TLS server shutdown...")
+        
+        # Signal shutdown to all background tasks
+        if hasattr(self, '_shutdown_event'):
+            self._shutdown_event.set()
+        
+        # Cancel and await all background tasks
+        if hasattr(self, '_background_tasks'):
+            logger.info(f"📋 Cancelling {len(self._background_tasks)} background tasks...")
+            for task in self._background_tasks.copy():  # Copy to avoid modification during iteration
+                if not task.done():
+                    task.cancel()
+            
+            # Wait for all tasks to complete with timeout
+            if self._background_tasks:
+                try:
+                    await asyncio.wait_for(
+                        asyncio.gather(*self._background_tasks, return_exceptions=True),
+                        timeout=10.0
+                    )
+                    logger.info("✅ All background tasks stopped gracefully")
+                except asyncio.TimeoutError:
+                    logger.warning("⚠️  Some tasks didn't stop within timeout")
+        
+        logger.info("✅ TLS server shutdown complete")
 
     async def process_sensor_config_message(self, message: dict) -> None:
         """Process sensor configuration messages from MQTT"""
