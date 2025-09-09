@@ -34,5 +34,11 @@
         "nwKey": "00112233445566778899AABBCCDDEE99",
         "shortAddr": "USR1",
         "bidi": false
+    },
+    {
+        "eui": "DIRECT_API_TEST",
+        "nwKey": "00112233445566778899AABBCCDDEE99",
+        "shortAddr": "DIR1",
+        "bidi": false
     }
 ]
