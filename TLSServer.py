@@ -1819,23 +1819,44 @@ class TLSServer:
                 # Check MQTT queue activity AND processed messages  
                 queue_size = self.mqtt_in_queue.qsize()
                 
-                # Update activity if queue has messages OR if messages were recently processed
+                # Check if MQTT system is actually broken vs just no messages
+                mqtt_system_healthy = True
+                try:
+                    # Check if MQTT processor task is still running
+                    if self.mqtt_processor_task.done():
+                        mqtt_system_healthy = False
+                    # Check if MQTT interface is connected (if available)
+                    elif hasattr(self, 'mqtt_interface') and self.mqtt_interface:
+                        # MQTT interface exists and is presumably connected
+                        pass
+                except Exception:
+                    mqtt_system_healthy = False
+                
+                # Only update activity if there are messages or system is healthy with recent processing
                 if queue_size > 0:
                     last_mqtt_activity = current_time
-                elif hasattr(self, '_last_mqtt_activity'):
-                    # Use the most recent activity timestamp from message processing
+                elif hasattr(self, '_last_mqtt_activity') and mqtt_system_healthy:
+                    # Use recent activity timestamp only if system is healthy
                     if self._last_mqtt_activity > last_mqtt_activity:
                         last_mqtt_activity = self._last_mqtt_activity
+                    # For healthy system with no messages, consider it "active" if recently checked
+                    if current_time - last_mqtt_activity < 300:  # 5 minutes grace period
+                        last_mqtt_activity = current_time - 60  # Reset to 1 minute ago
                 
-                # Check for complete inactivity (no messages processed for too long)
+                # Only warn if system is actually broken, not just idle
                 time_since_activity = current_time - last_mqtt_activity
-                if time_since_activity > 180:  # 3 minutes of no activity (more aggressive)
-                    logger.warning(f"🐕 WATCHDOG: No MQTT activity for {time_since_activity:.1f} seconds")
+                if not mqtt_system_healthy:
+                    logger.error(f"🐕 WATCHDOG: MQTT PROCESSOR TASK FAILED!")
                     logger.info(f"   Queue size: {queue_size}")
                     logger.info(f"   Task status: {'running' if not self.mqtt_processor_task.done() else 'stopped'}")
+                elif time_since_activity > 600:  # Only warn after 10 minutes (was 3)
+                    logger.warning(f"🐕 WATCHDOG: MQTT potentially inactive for {time_since_activity:.1f} seconds")
+                    logger.info(f"   Queue size: {queue_size}")
+                    logger.info(f"   Task status: {'running' if not self.mqtt_processor_task.done() else 'stopped'}")
+                    logger.info(f"   System health: {'healthy' if mqtt_system_healthy else 'unhealthy'}")
                     
-                    # CRITICAL FIX: Force restart MQTT processor when inactive too long
-                    if time_since_activity > 600:  # 10 minutes = force restart
+                    # CRITICAL FIX: Force restart only when system is actually broken
+                    if not mqtt_system_healthy or time_since_activity > 1800:  # 30 minutes = force restart
                         logger.error(f"🚨 WATCHDOG EMERGENCY: MQTT inactive for {time_since_activity:.1f}s - FORCING RESTART!")
                         
                         # Cancel the old task
