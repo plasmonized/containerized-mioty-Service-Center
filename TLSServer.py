@@ -404,10 +404,17 @@ class TLSServer:
             if eui_key in self.registered_sensors:
                 # Remove this base station from the sensor's list
                 if 'base_stations' in self.registered_sensors[eui_key]:
-                    self.registered_sensors[eui_key]['base_stations'] = [
-                        bs for bs in self.registered_sensors[eui_key]['base_stations']
-                        if bs['base_station_eui'] != bs_eui
-                    ]
+                    # Handle both string and dictionary formats in base_stations list
+                    filtered_stations = []
+                    for bs in self.registered_sensors[eui_key]['base_stations']:
+                        # Check if bs is a dictionary with base_station_eui key
+                        if isinstance(bs, dict) and 'base_station_eui' in bs:
+                            if bs['base_station_eui'] != bs_eui:
+                                filtered_stations.append(bs)
+                        # Check if bs is a string (direct EUI)
+                        elif isinstance(bs, str) and bs != bs_eui:
+                            filtered_stations.append(bs)
+                    self.registered_sensors[eui_key]['base_stations'] = filtered_stations
 
                     # If no base stations left, mark as not registered
                     if not self.registered_sensors[eui_key]['base_stations']:
@@ -420,11 +427,11 @@ class TLSServer:
             if self.mqtt_out_queue:
                 import time
                 detach_notification = {
-                    "topic": f"ep/{sensor_eui.upper()}/status",
+                    "topic": f"ep/{str(sensor_eui).upper()}/status",
                     "payload": json.dumps({
                         "action": "detached",
-                        "sensor_eui": sensor_eui,
-                        "base_station_eui": bs_eui,
+                        "sensor_eui": str(sensor_eui),
+                        "base_station_eui": str(bs_eui),
                         "timestamp": time.time()
                     })
                 }
