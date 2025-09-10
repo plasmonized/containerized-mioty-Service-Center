@@ -481,7 +481,7 @@ def config():
         'BASE_TOPIC': os.getenv('BASE_TOPIC', 'bssci/'),
         'STATUS_INTERVAL': int(os.getenv('STATUS_INTERVAL', '30')),
         'DEDUPLICATION_DELAY': float(os.getenv('DEDUPLICATION_DELAY', '2.0')),
-        'AUTO_DETACH_ENABLED': os.getenv('AUTO_DETACH_ENABLED', 'true').lower() == 'true',
+        'AUTO_DETACH_ENABLED': os.getenv('AUTO_DETACH_ENABLED', 'false').lower() == 'true',
         # Display values in hours
         'AUTO_DETACH_TIMEOUT': timeout_hours,
         'AUTO_DETACH_WARNING_TIMEOUT': warning_hours,
