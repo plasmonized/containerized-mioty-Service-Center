@@ -2,11 +2,7 @@ version: '3.8'
 
 services:
   bssci-service-center:
-    build: 
-      context: .
-      dockerfile: Dockerfile
-      args:
-        - ENABLE_GIT=true
+    build: .
     container_name: bssci-service-center
     init: true
     ports:
