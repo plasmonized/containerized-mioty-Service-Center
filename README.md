@@ -498,6 +498,9 @@ The main dashboard provides real-time system status:
 
 ## API Reference
 
+### Base URL Structure
+All API endpoints are available at: `http://your-host:5000/api/`
+
 ### Sensor Operations
 
 #### Individual Sensor Attachment
