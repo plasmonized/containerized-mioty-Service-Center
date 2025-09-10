@@ -153,12 +153,22 @@ def get_sensors():
                         'registered': False,
                         'registration_info': {},
                         'base_stations': [],
+                        'missing_registrations': [],
                         'total_registrations': 0,
+                        'total_available_bases': 0,
                         'preferredDownlinkPath': sensor.get('preferredDownlinkPath', None),
                         'activity_status': 'no_data',
                         'hours_since_last_seen': 0
                     }
                     
+                # Get connected base stations list for missing registration tracking
+                connected_bases = []
+                if tls_server and hasattr(tls_server, 'connected_base_stations'):
+                    connected_bases = list(tls_server.connected_base_stations.values())
+                    # Update total available bases for all sensors
+                    for sensor_eui in sensor_status:
+                        sensor_status[sensor_eui]['total_available_bases'] = len(connected_bases)
+                
                 # Now safely get real registration data from TLS server
                 if tls_server and hasattr(tls_server, 'registered_sensors'):
                     try:
@@ -173,9 +183,13 @@ def get_sensors():
                                     base_stations_list = reg_data.get('base_stations', [])
                                     registrations_list = reg_data.get('registrations', [])
                                     
+                                    # Calculate missing registrations
+                                    missing_bases = [bs for bs in connected_bases if bs not in base_stations_list]
+                                    
                                     sensor_status[sensor_eui].update({
                                         'registered': reg_data.get('status') == 'registered',
                                         'base_stations': base_stations_list,
+                                        'missing_registrations': missing_bases,
                                         'total_registrations': len(base_stations_list),
                                         'registration_info': {
                                             'status': reg_data.get('status', 'unknown'),
@@ -191,6 +205,11 @@ def get_sensors():
                                     
                     except Exception as e:
                         print(f"Error accessing TLS server registration data: {e}")
+                
+                # For sensors without registration data, mark all connected bases as missing
+                for sensor_eui in sensor_status:
+                    if not sensor_status[sensor_eui]['base_stations']:
+                        sensor_status[sensor_eui]['missing_registrations'] = connected_bases.copy()
                         
                 print(f"Processed sensor status for {len(sensor_status)} sensors with registration data")
                 return jsonify(sensor_status)
@@ -292,6 +311,37 @@ def delete_sensor(eui):
         with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
             json.dump(sensors, f, indent=4)
         return jsonify({'success': True, 'message': 'Sensor deleted successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/sensors/<eui>/attach', methods=['POST'])
+def attach_sensor(eui):
+    """Attach a specific sensor to all base stations"""
+    try:
+        global tls_server_instance
+        tls_server = tls_server_instance
+        
+        if not tls_server:
+            return jsonify({'success': False, 'message': 'TLS server not available'})
+        
+        if not hasattr(tls_server, 'connected_base_stations') or not tls_server.connected_base_stations:
+            return jsonify({'success': False, 'message': 'No base stations connected'})
+        
+        if hasattr(tls_server, 'attach_sensor_sync'):
+            attached_count = tls_server.attach_sensor_sync(eui)
+            bs_count = len(tls_server.connected_base_stations)
+            if attached_count > 0:
+                return jsonify({
+                    'success': True, 
+                    'message': f'Sensor {eui} attached to {attached_count}/{bs_count} base stations'
+                })
+            else:
+                return jsonify({
+                    'success': False, 
+                    'message': f'Failed to attach sensor {eui} to any base stations'
+                })
+        else:
+            return jsonify({'success': False, 'message': 'Attach function not available'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
