@@ -5,38 +5,19 @@
 
 The BSSCI Service Center is a comprehensive IoT device management system that provides secure communication between mioty sensors, base stations, and MQTT brokers. It implements the BSSCI (Base Station Service Center Interface) protocol with advanced features for sensor lifecycle management, automatic detachment, and real-time monitoring.
 
-## 🆕 Recent Improvements (September 2025)
-
-### Enhanced Sensor Management Interface
-- **Individual Sensor Attachment**: Each sensor now has its own dedicated "Attach" button for immediate deployment
-- **Professional Button Layout**: Organized button groups with Bootstrap styling and FontAwesome icons
-- **Improved User Experience**: Confirmation dialogs for critical operations with clear success/error messaging
-- **Bulk Operation Improvements**: Reorganized management buttons (Reload Config, Attach All, Detach All)
-
-### API Enhancements
-- **New Endpoint**: `/api/sensors/{eui}/attach` for individual sensor attachment
-- **Improved Error Handling**: Better validation and more informative response messages
-- **Enhanced Backend Functions**: New synchronous wrapper functions for stable sensor operations
-
-### System Stability
-- **Resolved Critical Bugs**: Fixed sensor attachment regression that prevented "Attach All" functionality
-- **Auto-Detach Corrections**: Resolved configuration display and conversion issues
-- **Service Reliability**: Improved MQTT connection stability and error recovery
-
 ## Table of Contents
 
-1. [Recent Improvements](#recent-improvements-september-2025)
-2. [System Architecture](#system-architecture)
-3. [Core Features](#core-features)
-4. [Installation & Setup](#installation--setup)
-5. [Configuration](#configuration)
-6. [Sensor Management](#sensor-management)
-7. [Auto-Detach System](#auto-detach-system)
-8. [MQTT Integration](#mqtt-integration)
-9. [Web Interface](#web-interface)
-10. [API Reference](#api-reference)
-11. [Troubleshooting](#troubleshooting)
-12. [Advanced Features](#advanced-features)
+1. [System Architecture](#system-architecture)
+2. [Core Features](#core-features)
+3. [Installation & Setup](#installation--setup)
+4. [Configuration](#configuration)
+5. [Sensor Management](#sensor-management)
+6. [Auto-Detach System](#auto-detach-system)
+7. [MQTT Integration](#mqtt-integration)
+8. [Web Interface](#web-interface)
+9. [API Reference](#api-reference)
+10. [Troubleshooting](#troubleshooting)
+11. [Advanced Features](#advanced-features)
 
 ## System Architecture
 
