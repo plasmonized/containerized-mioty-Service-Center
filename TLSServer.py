@@ -620,6 +620,26 @@ class TLSServer:
         addr = writer.get_extra_info("peername")
         ssl_obj = writer.get_extra_info("ssl_object")
 
+        # Comprehensive exception handling to prevent unhandled exceptions in client_connected_cb
+        try:
+            # SSL handshake and certificate validation
+            self._handle_ssl_handshake(addr, ssl_obj)
+            
+            # Main connection processing
+            await self._process_client_connection(reader, writer, addr)
+            
+        except Exception as e:
+            # Catch ANY unhandled exception to prevent asyncio client_connected_cb errors
+            logger.error(f"❌ Unhandled exception in client handler for {addr}: {e}")
+            logger.error(f"   Exception type: {type(e).__name__}")
+            try:
+                writer.close()
+                await writer.wait_closed()
+            except:
+                pass
+        
+    def _handle_ssl_handshake(self, addr, ssl_obj):
+        """Handle SSL handshake and certificate validation"""
         try:
             logger.info(f"🔗 New BSSCI connection attempt from {addr}")
 
@@ -651,12 +671,10 @@ class TLSServer:
             else:
                 logger.error(f"   ❌ SSL connection error from {addr}: {e}")
             
-            try:
-                writer.close()
-                await writer.wait_closed()
-            except:
-                pass
-            return
+            raise  # Re-raise to be caught by main handler
+        
+    async def _process_client_connection(self, reader, writer, addr):
+        """Process the main client connection and message handling"""
 
         import time
         connection_start_time = time.time()
@@ -667,7 +685,7 @@ class TLSServer:
                 data = await reader.read(4096)
                 if not data:
                     break
-                # try:
+                    
                 for message in decode_messages(data):
                     msg_type = message.get("command", "")
                     messages_processed += 1
