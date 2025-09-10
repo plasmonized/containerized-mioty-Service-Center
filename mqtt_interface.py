@@ -136,7 +136,7 @@ class MQTTClient:
             logger.info(f"👂 MQTT listening on register topic: {self.register_topic}")
             logger.info(f"👂 MQTT listening on command topic: {self.command_topic}")
             logger.info("👂 MQTT incoming message handler is now ACTIVE and listening...")
-            logger.info("   ✅ Legacy /register topic support enabled")
+            logger.info("   ✅ /register topic support enabled")
             logger.info("   ✅ Unified /cmd topic for all commands")
             logger.info("👂 MQTT incoming message handler is now ACTIVE and listening...")
         except Exception as sub_error:
