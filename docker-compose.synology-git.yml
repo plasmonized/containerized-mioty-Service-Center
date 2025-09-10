@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  bssci-service-center:
+    build: 
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - ENABLE_GIT=true
+    container_name: bssci-service-center
+    init: true
+    ports:
+      - "16019:16018"  # TLS Server port
+      - "5056:5000"    # Web UI port
+    volumes:
+      # Use Synology-compatible volume mounts
+      - ./certs:/app/certs:ro
+      - ./logs:/app/logs:rw
+      # Copy config files to container-writable locations
+      - ./endpoints.json:/tmp/host_endpoints.json:ro
+      - ./bssci_config.py:/tmp/host_bssci_config.py:ro
+      - ./.env:/tmp/host_.env:ro
+      # GIT REPOSITORY VOLUME - SYNOLOGY COMPATIBLE
+      - .:/app/repo:rw
+      - ./.git:/app/repo/.git:rw
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+      - SYNOLOGY_DOCKER=1
+      - PUID=1000
+      - PGID=1000
+      # GIT CONFIGURATION FOR SYNOLOGY
+      - GIT_CONFIG_GLOBAL=/app/.gitconfig
+      - GIT_AUTHOR_NAME=${GIT_AUTHOR_NAME:-BSSCI Service}
+      - GIT_AUTHOR_EMAIL=${GIT_AUTHOR_EMAIL:-bssci@synology.local}
+      - GIT_COMMITTER_NAME=${GIT_COMMITTER_NAME:-BSSCI Service}
+      - GIT_COMMITTER_EMAIL=${GIT_COMMITTER_EMAIL:-bssci@synology.local}
+      # Synology-specific environment
+      - SYNOLOGY_GIT_FIX=1
+    networks:
+      - bssci-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    # Run as root initially to handle file setup, then drop to PUID:PGID
+    user: "0:0"
+    # Enhanced capabilities for Synology permission handling
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - SETUID
+      - SETGID
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s1 = socket.create_connection(('localhost', 16018), timeout=5); s2 = socket.create_connection(('localhost', 5000), timeout=5); s1.close(); s2.close()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  bssci-network:
+    driver: bridge
