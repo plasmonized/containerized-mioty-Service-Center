@@ -499,10 +499,10 @@ def update_config():
         if data is None:
             return jsonify({'success': False, 'message': 'No JSON data provided'}), 400
         
-        # Convert hours to seconds for timeout values (with type safety)
-        auto_detach_timeout = int(data.get('AUTO_DETACH_TIMEOUT', 72)) * 3600
-        auto_detach_warning_timeout = int(data.get('AUTO_DETACH_WARNING_TIMEOUT', 36)) * 3600
-        auto_detach_check_interval = int(data.get('AUTO_DETACH_CHECK_INTERVAL', 1)) * 3600
+        # Values are already in seconds from HTML form (no conversion needed)
+        auto_detach_timeout = int(data.get('AUTO_DETACH_TIMEOUT', 21600))
+        auto_detach_warning_timeout = int(data.get('AUTO_DETACH_WARNING_TIMEOUT', 10800))
+        auto_detach_check_interval = int(data.get('AUTO_DETACH_CHECK_INTERVAL', 3600))
         
         # Update the .env file - this is the primary configuration source (with type safety)
         env_content = f"""# TLS Server Configuration
