@@ -593,6 +593,41 @@ class TLSServer:
             logger.error(f"   Full traceback: {traceback.format_exc()}")
             return 0
 
+    def attach_single_sensor_sync(self, sensor_data: dict) -> int:
+        """Synchronous wrapper for attaching a single sensor to all connected base stations"""
+        try:
+            logger.info(f"🔗 SYNC ATTACHING SINGLE SENSOR {sensor_data.get('eui', 'unknown')}")
+            
+            if not self.connected_base_stations:
+                logger.warning("   ⚠️  No base stations connected")
+                return 0
+            
+            logger.info(f"   Target base stations: {len(self.connected_base_stations)}")
+            
+            # Create new event loop for sync call
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            try:
+                # Send attach request to all connected base stations
+                for writer in self.connected_base_stations:
+                    bs_eui = self.connected_base_stations[writer]
+                    logger.info(f"   📤 Attaching sensor {sensor_data['eui']} to base station: {bs_eui}")
+                    loop.run_until_complete(self.send_attach_request(writer, sensor_data))
+                
+                logger.info(f"✅ SYNC SINGLE SENSOR ATTACH completed for {sensor_data['eui']}")
+                return len(self.connected_base_stations)
+                
+            finally:
+                loop.close()
+                
+        except Exception as e:
+            logger.error(f"❌ Error in sync single sensor attach: {e}")
+            import traceback
+            logger.error(f"   Full traceback: {traceback.format_exc()}")
+            return 0
+
     def detach_all_sensors_sync(self) -> int:
         """Synchronous wrapper for detaching all sensors from all base stations"""
         try:

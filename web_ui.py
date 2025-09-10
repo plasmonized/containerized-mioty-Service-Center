@@ -351,6 +351,45 @@ def delete_sensor(eui):
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
+@app.route('/api/sensors/<eui>/attach', methods=['POST'])
+def attach_sensor(eui):
+    """Attach a specific sensor to all connected base stations"""
+    try:
+        global tls_server_instance
+        tls_server = tls_server_instance
+        
+        if not tls_server:
+            return jsonify({'success': False, 'message': 'TLS server not available'})
+            
+        if not hasattr(tls_server, 'connected_base_stations') or not tls_server.connected_base_stations:
+            return jsonify({'success': False, 'message': 'No base stations connected'})
+            
+        # Find sensor in config
+        try:
+            with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
+                sensors = json.load(f)
+        except:
+            sensors = []
+            
+        sensor_data = None
+        for sensor in sensors:
+            if sensor.get('eui', '').upper() == eui.upper():
+                sensor_data = sensor
+                break
+                
+        if not sensor_data:
+            return jsonify({'success': False, 'message': f'Sensor {eui} not found in configuration'})
+            
+        # Send attach request to all connected base stations
+        if hasattr(tls_server, 'attach_single_sensor_sync'):
+            bs_count = tls_server.attach_single_sensor_sync(sensor_data)
+            return jsonify({'success': True, 'message': f'Attach request sent for sensor {eui} to {bs_count} base stations'})
+        else:
+            return jsonify({'success': False, 'message': 'Individual attach function not available'})
+            
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
 @app.route('/api/sensors/<eui>/detach', methods=['POST'])
 def detach_sensor(eui):
     """Detach a specific sensor from all base stations"""

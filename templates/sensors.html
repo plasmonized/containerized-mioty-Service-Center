@@ -158,15 +158,20 @@ function loadSensors() {
                             <br><small><strong>Updated:</strong> ${new Date(sensor.preferredDownlinkPath.lastUpdated).toLocaleString()}</small>` : 
                             '<span class="text-muted">No data received</span>'}</td>
                     <td>
-                        <button class="btn btn-sm btn-primary me-1" onclick="editSensor('${sensor.eui}')" style="background-color: #ff8c00; border-color: #ff8c00;">
-                            Edit
-                        </button>
-                        <button class="btn btn-sm btn-warning me-1" onclick="detachSensor('${sensor.eui}')" title="Detach from all base stations">
-                            Detach
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteSensor('${sensor.eui}')">
-                            Delete
-                        </button>
+                        <div class="btn-group" role="group">
+                            <button class="btn btn-sm btn-success" onclick="attachSensor('${sensor.eui}')" title="Attach to all base stations">
+                                <i class="fas fa-link"></i> Attach
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="editSensor('${sensor.eui}')" title="Edit sensor">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="detachSensor('${sensor.eui}')" title="Detach from all base stations">
+                                <i class="fas fa-unlink"></i> Detach
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteSensor('${sensor.eui}')" title="Delete sensor">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `).join('');
