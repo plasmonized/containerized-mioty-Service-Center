@@ -52,5 +52,11 @@
         "nwKey": "00112233445566778899AABBCCDDEEFF",
         "shortAddr": "DFT1",
         "bidi": false
+    },
+    {
+        "eui": "FINAL_VERIFICATION_TEST",
+        "nwKey": "00112233445566778899AABBCCDDEEFF",
+        "shortAddr": "FVT1",
+        "bidi": false
     }
 ]
