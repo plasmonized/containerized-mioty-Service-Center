@@ -385,17 +385,6 @@ mosquitto_pub -h broker -t "mioty/ep/FCA84A0300001234/register" \
   -m '{"nwKey": "0011223344556677889AABBCCDDEEFF00", "shortAddr": "1234", "bidi": false}'
 ```
 
-#### Simplified Architecture
-
-**Before (Multiple Patterns):**
-- ❌ `{BASE_TOPIC}/ep/{EUI}/cmd` (standard)
-- ❌ `EP/{EUI}/cmd/` (remote)
-- ❌ `/bssci/ep/eui/register` (deprecated)
-
-**Now (Unified Pattern):**
-- ✅ `{BASE_TOPIC}/ep/{EUI}/register` (for registration)
-- ✅ `{BASE_TOPIC}/ep/{EUI}/cmd` (for all commands)
-- ✅ **No confusion** - one clear pattern per operation type
 
 #### Command Responses
 
