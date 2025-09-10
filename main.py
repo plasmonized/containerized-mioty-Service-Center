@@ -66,10 +66,20 @@ async def main() -> None:
     # Create TLS server instance
     tls_server_instance = TLSServer(SENSOR_CONFIG_FILE, mqtt_out_queue, mqtt_in_queue)
 
-    # Make it available to web_main
+    # Make it available to web_main and start web UI
     try:
         import web_main
         web_main.set_tls_server(tls_server_instance)
+        
+        # Start web UI in separate thread
+        import threading
+        web_thread = threading.Thread(target=web_main.run_web_ui, daemon=True)
+        web_thread.start()
+        logger.info("🌐 Web UI started on port 5000")
+        
+        # Give web UI time to start
+        import time
+        time.sleep(1)
     except ImportError:
         pass  # web_main not available in non-web mode
 
