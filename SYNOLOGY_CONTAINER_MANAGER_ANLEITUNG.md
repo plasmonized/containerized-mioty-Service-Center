@@ -16,10 +16,10 @@
    Füge diese Zeilen zu deiner `.env` Datei hinzu:
    ```
    # Git Configuration for Synology
-   GIT_AUTHOR_NAME=BSSCI Synology Service
-   GIT_AUTHOR_EMAIL=bssci@synology.local
-   GIT_COMMITTER_NAME=BSSCI Synology Service
-   GIT_COMMITTER_EMAIL=bssci@synology.local
+   GIT_AUTHOR_NAME=plasmonized
+   GIT_AUTHOR_EMAIL=58008926+plasmonized@users.noreply.github.com
+   GIT_COMMITTER_NAME=plasmonized
+   GIT_COMMITTER_EMAIL=58008926+plasmonized@users.noreply.github.com
    ```
 
 ### Schritt 2: Container Manager
