@@ -474,9 +474,10 @@ def config():
             'STATUS_INTERVAL': getattr(bssci_config, 'STATUS_INTERVAL', 30),
             'DEDUPLICATION_DELAY': getattr(bssci_config, 'DEDUPLICATION_DELAY', 2.0),
             'AUTO_DETACH_ENABLED': getattr(bssci_config, 'AUTO_DETACH_ENABLED', True),
-            'AUTO_DETACH_TIMEOUT': getattr(bssci_config, 'AUTO_DETACH_TIMEOUT', 259200),
-            'AUTO_DETACH_WARNING_TIMEOUT': getattr(bssci_config, 'AUTO_DETACH_WARNING_TIMEOUT', 129600),
-            'AUTO_DETACH_CHECK_INTERVAL': getattr(bssci_config, 'AUTO_DETACH_CHECK_INTERVAL', 3600)
+            # Convert seconds to hours for display in web UI
+            'AUTO_DETACH_TIMEOUT': getattr(bssci_config, 'AUTO_DETACH_TIMEOUT', 259200) // 3600,
+            'AUTO_DETACH_WARNING_TIMEOUT': getattr(bssci_config, 'AUTO_DETACH_WARNING_TIMEOUT', 129600) // 3600,
+            'AUTO_DETACH_CHECK_INTERVAL': getattr(bssci_config, 'AUTO_DETACH_CHECK_INTERVAL', 3600) // 3600
         }
         return render_template('config.html', config=config_data)
     except Exception as e:
@@ -493,9 +494,10 @@ def config():
             'STATUS_INTERVAL': 30,
             'DEDUPLICATION_DELAY': 2.0,
             'AUTO_DETACH_ENABLED': True,
-            'AUTO_DETACH_TIMEOUT': 259200,
-            'AUTO_DETACH_WARNING_TIMEOUT': 129600,
-            'AUTO_DETACH_CHECK_INTERVAL': 3600
+            # Default values in hours for web UI display
+            'AUTO_DETACH_TIMEOUT': 72,  # 72 hours
+            'AUTO_DETACH_WARNING_TIMEOUT': 36,  # 36 hours
+            'AUTO_DETACH_CHECK_INTERVAL': 1  # 1 hour
         }
         return render_template('config.html', config=default_config)
 
