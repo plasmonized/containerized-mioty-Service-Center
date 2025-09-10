@@ -143,9 +143,11 @@ function loadSensors() {
                     <td>
                         ${(sensor.registered || sensor.preferredDownlinkPath || sensor.last_seen_timestamp > 0) ? 
                             `<span class="badge bg-success">Registered</span>
-                            <br><small>Base Stations (${sensor.total_registrations || (sensor.base_stations ? sensor.base_stations.length : 0)}):</small>
-                            <br><small>${sensor.base_stations && sensor.base_stations.length > 0 ? sensor.base_stations.join(', ') : 
-                                (sensor.preferredDownlinkPath ? sensor.preferredDownlinkPath.baseStation : 'Active')}</small>` : 
+                            <br><small><strong>Registered on:</strong> ${sensor.total_registrations || (sensor.base_stations ? sensor.base_stations.length : 0)} of ${sensor.total_available_bases || 3} base stations</small>
+                            <br><small><strong>Base Stations:</strong> ${sensor.base_stations && sensor.base_stations.length > 0 ? sensor.base_stations.join(', ') : 
+                                (sensor.preferredDownlinkPath ? sensor.preferredDownlinkPath.baseStation : 'Active')}</small>
+                            ${sensor.missing_registrations && sensor.missing_registrations.length > 0 ? 
+                                `<br><small class="text-warning"><strong>Missing on:</strong> ${sensor.missing_registrations.join(', ')}</small>` : ''}` : 
                             '<span class="badge bg-warning">Not Registered</span>'}</td>
                     <td>${getActivityStatusHtml(sensor)}</td>
                     <td>${sensor.preferredDownlinkPath ? 
@@ -155,15 +157,20 @@ function loadSensors() {
                             <br><small><strong>Updated:</strong> ${new Date(sensor.preferredDownlinkPath.lastUpdated).toLocaleString()}</small>` : 
                             '<span class="text-muted">No data received</span>'}</td>
                     <td>
-                        <button class="btn btn-sm btn-primary me-1" onclick="editSensor('${sensor.eui}')" style="background-color: #ff8c00; border-color: #ff8c00;">
-                            Edit
-                        </button>
-                        <button class="btn btn-sm btn-warning me-1" onclick="detachSensor('${sensor.eui}')" title="Detach from all base stations">
-                            Detach
-                        </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteSensor('${sensor.eui}')">
-                            Delete
-                        </button>
+                        <div class="btn-group" role="group" aria-label="Sensor actions">
+                            <button class="btn btn-sm btn-success" onclick="attachSensor('${sensor.eui}')" title="Attach to base stations" style="min-width: 65px;">
+                                Attach
+                            </button>
+                            <button class="btn btn-sm btn-primary" onclick="editSensor('${sensor.eui}')" style="background-color: #ff8c00; border-color: #ff8c00; min-width: 65px;">
+                                Edit
+                            </button>
+                            <button class="btn btn-sm btn-warning" onclick="detachSensor('${sensor.eui}')" title="Detach from all base stations" style="min-width: 65px;">
+                                Detach
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteSensor('${sensor.eui}')" style="min-width: 65px;">
+                                Delete
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `).join('');
@@ -295,6 +302,26 @@ function attachAllSensors() {
         })
         .catch(error => {
             showAlert('danger', 'Error attaching sensors: ' + error.message);
+        });
+    }
+}
+
+function attachSensor(eui) {
+    if (confirm(`Are you sure you want to attach sensor ${eui} to all base stations?`)) {
+        fetch(`/api/sensors/${eui}/attach`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert('success', data.message);
+                loadSensors();
+            } else {
+                showAlert('danger', data.message);
+            }
+        })
+        .catch(error => {
+            showAlert('danger', 'Error attaching sensor: ' + error.message);
         });
     }
 }
