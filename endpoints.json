@@ -46,5 +46,11 @@
         "nwKey": "00112233445566778899AABBCCDDEEFF",
         "shortAddr": "T442",
         "bidi": false
+    },
+    {
+        "eui": "DOCKER_FIX_TEST",
+        "nwKey": "00112233445566778899AABBCCDDEEFF",
+        "shortAddr": "DFT1",
+        "bidi": false
     }
 ]

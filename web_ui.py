@@ -246,16 +246,31 @@ def add_sensor():
             # Add new sensor
             sensors.append(data)
 
-        # Save to file with atomic write to prevent race conditions
-        import tempfile
+        # Save with Docker-compatible write (no temp files needed)
         import os
-        import time
-        # Use timestamp for unique temp file names to avoid collisions
-        temp_file = bssci_config.SENSOR_CONFIG_FILE + f'.tmp.{int(time.time()*1000000)}'
-        with open(temp_file, 'w') as f:
-            json.dump(sensors, f, indent=4)
-        # Atomic rename (prevents corruption from concurrent writes)  
-        os.replace(temp_file, bssci_config.SENSOR_CONFIG_FILE)
+        
+        # Backup current content (in-memory protection)
+        backup_content = None
+        if os.path.exists(bssci_config.SENSOR_CONFIG_FILE):
+            try:
+                with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
+                    backup_content = f.read()
+            except Exception:
+                pass  # No backup available
+        
+        # Direct write (Docker-compatible)
+        try:
+            with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
+                json.dump(sensors, f, indent=4)
+        except Exception as write_error:
+            # Restore backup if write failed
+            if backup_content is not None:
+                try:
+                    with open(bssci_config.SENSOR_CONFIG_FILE, 'w') as f:
+                        f.write(backup_content)
+                except Exception:
+                    pass  # Best effort
+            raise write_error
         
         # Step 2: Notify TLS server to reload config and send attach requests
         global tls_server_instance

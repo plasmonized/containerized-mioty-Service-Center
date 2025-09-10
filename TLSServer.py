@@ -1538,18 +1538,31 @@ class TLSServer:
                 logger.info(f"   SNR: {snr:.2f} dB")
                 logger.info(f"   Total messages: {sensor['preferredDownlinkPath']['messageCount']}")
 
-                # Save configuration with atomic write
+                # Save configuration (Docker-compatible)
                 try:
-                    import tempfile
                     import os
-                    temp_file = self.sensor_config_file + '.tmp'
-                    with open(temp_file, "w") as f:
+                    # Backup current content (in-memory protection)
+                    backup_content = None
+                    if os.path.exists(self.sensor_config_file):
+                        try:
+                            with open(self.sensor_config_file, 'r') as f:
+                                backup_content = f.read()
+                        except Exception:
+                            pass
+                    
+                    # Direct write (no temp files)
+                    with open(self.sensor_config_file, "w") as f:
                         json.dump(self.sensor_config, f, indent=4)
-                    # Atomic rename prevents race condition corruption
-                    os.replace(temp_file, self.sensor_config_file) 
                     logger.debug(f"✅ Preferred downlink path saved successfully")
                 except Exception as e:
                     logger.error(f"❌ Failed to save preferred downlink path: {e}")
+                    # Restore backup if needed
+                    if backup_content is not None:
+                        try:
+                            with open(self.sensor_config_file, 'w') as f:
+                                f.write(backup_content)
+                        except Exception:
+                            pass
                 break
         else:
             logger.warning(f"⚠️  Sensor {eui} not found in configuration for preferred path update")
@@ -1575,21 +1588,37 @@ class TLSServer:
             self.sensor_config.append(new_sensor)
             logger.info(f"Added new endpoint configuration for {msg['eui']}")
 
-        # Save updated configuration to file with atomic write
+        # Save updated configuration (Docker-compatible)
         try:
             logger.info(f"💾 SAVING configuration to {self.sensor_config_file}")
-            import tempfile
             import os
-            temp_file = self.sensor_config_file + '.tmp'
-            with open(temp_file, "w") as f:
+            
+            # Backup current content (in-memory protection)
+            backup_content = None
+            if os.path.exists(self.sensor_config_file):
+                try:
+                    with open(self.sensor_config_file, 'r') as f:
+                        backup_content = f.read()
+                except Exception:
+                    pass
+            
+            # Direct write (no temp files needed)
+            with open(self.sensor_config_file, "w") as f:
                 json.dump(self.sensor_config, f, indent=4)
-            # Atomic rename prevents corruption from concurrent writes
-            os.replace(temp_file, self.sensor_config_file)
             logger.info(f"✅ Configuration saved to {self.sensor_config_file}")
         except Exception as e:
             logger.error(f"❌ Failed to save configuration: {e}")
             
-            # Try emergency save
+            # Restore backup if write failed
+            if backup_content is not None:
+                try:
+                    with open(self.sensor_config_file, 'w') as f:
+                        f.write(backup_content)
+                    logger.error(f"   Backup restored after write failure")
+                except Exception:
+                    logger.error(f"   Backup restore also failed!")
+                    
+            # Try emergency save as last resort
             try:
                 alt_file = f"{self.sensor_config_file}.emergency"
                 with open(alt_file, "w") as f:
