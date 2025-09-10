@@ -259,10 +259,16 @@ def add_sensor():
                         attached_count = tls_server.attach_sensor_sync(data['eui'])
                         if attached_count > 0:
                             print(f"Successfully sent attach requests for {data['eui']} to {attached_count} base stations")
+                            return jsonify({'success': True, 'message': f'Sensor saved and attach requests sent to {attached_count} base stations'})
                         else:
                             print(f"Failed to send attach requests for {data['eui']}")
+                            return jsonify({'success': True, 'message': 'Sensor saved but failed to send attach requests'})
+                    else:
+                        return jsonify({'success': True, 'message': 'Sensor saved but attach function not available'})
+                else:
+                    return jsonify({'success': True, 'message': 'Sensor saved (no base stations connected for attach)'})
                             
-                return jsonify({'success': True, 'message': 'Sensor saved and attach requests sent to base stations'})
+                return jsonify({'success': True, 'message': 'Sensor saved and processed'})
             except Exception as e:
                 print(f"Error notifying TLS server: {e}")
                 return jsonify({'success': True, 'message': 'Sensor saved but failed to notify TLS server'})
