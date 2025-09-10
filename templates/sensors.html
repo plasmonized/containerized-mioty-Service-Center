@@ -7,19 +7,25 @@
 <div id="alertContainer" class="mb-3"></div>
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h1>Sensor Management</h1>
-    <div>
-        <button class="btn me-2" onclick="reloadSensors()" title="Reload sensor configuration" style="background-color: #6c757d; color: white; border-color: #6c757d;">
-            Reload Config
-        </button>
-        <button class="btn btn-success me-2" onclick="attachAllSensors()" title="Attach all sensors to base stations">
-            Attach All
-        </button>
-        <button class="btn btn-warning me-2" onclick="detachAllSensors()" title="Detach all sensors from base stations">
-            Detach All
-        </button>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sensorModal" onclick="openSensorModal()" style="background-color: #ff8c00; border-color: #ff8c00;">
-            Add New Sensor
-        </button>
+    <div class="btn-toolbar" role="toolbar">
+        <div class="btn-group me-2" role="group">
+            <button class="btn btn-secondary" onclick="reloadSensors()" title="Reload sensor configuration">
+                <i class="fas fa-sync-alt"></i> Reload Config
+            </button>
+        </div>
+        <div class="btn-group me-2" role="group">
+            <button class="btn btn-success" onclick="attachAllSensors()" title="Attach all sensors to base stations">
+                <i class="fas fa-link"></i> Attach All
+            </button>
+            <button class="btn btn-warning" onclick="detachAllSensors()" title="Detach all sensors from base stations">
+                <i class="fas fa-unlink"></i> Detach All
+            </button>
+        </div>
+        <div class="btn-group" role="group">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sensorModal" onclick="openSensorModal()" style="background-color: #ff8c00; border-color: #ff8c00;">
+                <i class="fas fa-plus"></i> Add New Sensor
+            </button>
+        </div>
     </div>
 </div>
 
@@ -231,6 +237,26 @@ function saveSensor() {
         }
     });
 }
+
+function attachSensor(eui) {
+        if (confirm(`Are you sure you want to attach sensor ${eui} to all connected base stations?`)) {
+            fetch(`/api/sensors/${eui}/attach`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showAlert('success', data.message);
+                    loadSensors();
+                } else {
+                    showAlert('danger', data.message);
+                }
+            })
+            .catch(error => {
+                showAlert('danger', 'Error attaching sensor: ' + error.message);
+            });
+        }
+    }
 
 function detachSensor(eui) {
         if (confirm(`Are you sure you want to detach sensor ${eui} from all base stations?`)) {
