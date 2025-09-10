@@ -378,7 +378,9 @@ class TLSServer:
 
         try:
             # Ensure EUI is properly formatted (16 hex characters)
-            clean_eui = sensor_eui.upper().replace(":", "").replace("-", "")
+            # Convert to string if needed (handles any data type)
+            eui_str = str(sensor_eui).strip()
+            clean_eui = eui_str.upper().replace(":", "").replace("-", "")
             if len(clean_eui) != 16:
                 logger.error(f"❌ Invalid EUI format: {sensor_eui} (should be 16 hex characters)")
                 return False
@@ -397,8 +399,8 @@ class TLSServer:
             await writer.drain()
             self.opID -= 1
 
-            # Remove from registered sensors
-            eui_key = sensor_eui.upper()
+            # Remove from registered sensors  
+            eui_key = str(sensor_eui).upper()
             if eui_key in self.registered_sensors:
                 # Remove this base station from the sensor's list
                 if 'base_stations' in self.registered_sensors[eui_key]:
@@ -503,68 +505,6 @@ class TLSServer:
         logger.info(f"   Configurations removed: {old_count}")
         logger.info(f"   Registrations removed: {old_registered}")
 
-    def detach_sensor_sync(self, sensor_eui: str) -> bool:
-        """Synchronous wrapper for detaching a sensor from all connected base stations"""
-        try:
-            logger.info(f"🔌 SYNC DETACHING SENSOR {sensor_eui} from ALL base stations")
-            logger.info(f"   Connected base stations: {len(self.connected_base_stations)}")
-
-            # Always start with local cleanup
-            eui_key = sensor_eui.upper()
-            success_count = 0
-            total_count = len(self.connected_base_stations)
-            
-            # Remove from local registry first
-            if eui_key in self.registered_sensors:
-                self.registered_sensors[eui_key]['registered'] = False
-                self.registered_sensors[eui_key]['base_stations'] = []
-                logger.info(f"   ✅ Sensor {sensor_eui} marked as detached in local registry")
-            
-            # Remove from sensor config file 
-            config_success = self._remove_sensor_from_config(sensor_eui)
-            if config_success:
-                logger.info(f"   ✅ Sensor {sensor_eui} removed from configuration file")
-                success_count = 1  # Consider successful if local cleanup worked
-            
-            # Try to send BSSCI detach commands if base stations are connected
-            if total_count > 0:
-                try:
-                    import asyncio
-                    
-                    # Try different approaches to handle event loop
-                    try:
-                        # Check if event loop exists
-                        try:
-                            loop = asyncio.get_running_loop()
-                            # Event loop exists - schedule as background task
-                            task = loop.create_task(self.detach_sensor(sensor_eui))
-                            logger.info(f"   📤 BSSCI detach commands scheduled for {total_count} base stations")
-                            
-                        except RuntimeError:
-                            # No event loop - we're in sync context
-                            logger.info(f"   🔄 No event loop detected - running detach in new loop")
-                            # Create new event loop for this operation
-                            asyncio.run(self.detach_sensor(sensor_eui))
-                            logger.info(f"   📤 BSSCI detach commands sent to {total_count} base stations")
-                            
-                    except Exception as loop_error:
-                        logger.warning(f"   ⚠️  Could not send BSSCI detach commands: {loop_error}")
-                        # Local cleanup already done, so still successful
-                        
-                except ImportError:
-                    logger.warning(f"   ⚠️  Asyncio not available for BSSCI commands")
-            else:
-                logger.info(f"   ℹ️  No base stations connected - local detach only")
-
-            logger.info(f"✅ SYNC SENSOR DETACH completed for {sensor_eui}")
-            logger.info(f"   Local cleanup: {'✅ Success' if config_success else '❌ Failed'}")
-            logger.info(f"   BSSCI commands: {'📤 Sent' if total_count > 0 else 'N/A (no base stations)'}")
-            
-            return config_success  # Success if we could at least update local config
-
-        except Exception as e:
-            logger.error(f"❌ Error in sync detach for {sensor_eui}: {e}")
-            return False
 
     def _remove_sensor_from_config(self, sensor_eui: str) -> bool:
         """Remove sensor from configuration file"""
@@ -1216,7 +1156,11 @@ class TLSServer:
         except ConnectionResetError:
             logger.warning(f"🔌 Connection from {addr} was reset by peer")
         except ssl.SSLError as e:
-            logger.error(f"❌ SSL/TLS error from {addr}: {e}")
+            error_msg = str(e)
+            if "EOF occurred in violation of protocol" in error_msg:
+                logger.warning(f"⚠️  SSL handshake interrupted from {addr} (Base station disconnected during handshake)")
+            else:
+                logger.error(f"❌ SSL/TLS error from {addr}: {e}")
         except Exception as e:
             logger.error(f"❌ Unexpected error handling connection from {addr}: {e}")
         finally:
