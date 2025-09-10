@@ -545,9 +545,7 @@ WEB_DEBUG=false
 # Auto-detach Configuration
 AUTO_DETACH_ENABLED={str(data.get('AUTO_DETACH_ENABLED', True)).lower()}
 AUTO_DETACH_TIMEOUT={auto_detach_timeout}
-AUTO_DETACH_HOURS={auto_detach_timeout // 3600}
 AUTO_DETACH_WARNING_TIMEOUT={auto_detach_warning_timeout}
-AUTO_DETACH_WARNING_HOURS={auto_detach_warning_timeout // 3600}
 AUTO_DETACH_CHECK_INTERVAL={auto_detach_check_interval}
 
 # Logging Configuration
