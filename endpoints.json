@@ -19,9 +19,9 @@
     },
     {
         "eui": "FCA84A0300001222",
-        "nwKey": "5B30668392466C17481B1506A4626B30",
-        "shortAddr": "442A",
-        "bidi": false
+        "nwKey": "BBE81045093AB863D207CBD4311357D2",
+        "shortAddr": "1222",
+        "bidi": true
     },
     {
         "eui": "TEST_BLOCK_CHECK",
