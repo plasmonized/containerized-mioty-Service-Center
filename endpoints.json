@@ -28,5 +28,11 @@
         "nwKey": "00112233445566778899AABBCCDDEE04",
         "shortAddr": "1237",
         "bidi": false
+    },
+    {
+        "eui": "FCA84A0300001222",
+        "nwKey": "67069B9E8703579E17510293C6444007",
+        "shortAddr": "1222",
+        "bidi": true
     }
 ]
