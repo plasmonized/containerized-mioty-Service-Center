@@ -254,36 +254,13 @@ def add_sensor():
                 if hasattr(tls_server, 'connected_base_stations') and tls_server.connected_base_stations:
                     print(f"Triggering attach for new sensor {data['eui']} to {len(tls_server.connected_base_stations)} base stations")
                     
-                    # Find the sensor config for attach request
-                    for sensor in tls_server.sensor_config:
-                        if sensor['eui'].upper() == data['eui'].upper():
-                            # Create an asyncio task to send attach requests
-                            import asyncio
-                            import threading
-                            
-                            def send_attaches():
-                                try:
-                                    # Create new event loop for this thread
-                                    loop = asyncio.new_event_loop()
-                                    asyncio.set_event_loop(loop)
-                                    
-                                    async def attach_to_bases():
-                                        for writer in list(tls_server.connected_base_stations.keys()):
-                                            try:
-                                                await tls_server.send_attach_request(writer, sensor)
-                                                print(f"Attach request sent for {data['eui']}")
-                                            except Exception as e:
-                                                print(f"Failed to send attach for {data['eui']}: {e}")
-                                    
-                                    # Run the attach requests
-                                    loop.run_until_complete(attach_to_bases())
-                                    loop.close()
-                                except Exception as e:
-                                    print(f"Error in attach thread: {e}")
-                            
-                            # Run in background thread
-                            threading.Thread(target=send_attaches, daemon=True).start()
-                            break
+                    # Use simple synchronous method to send attach requests
+                    if hasattr(tls_server, 'attach_sensor_sync'):
+                        attached_count = tls_server.attach_sensor_sync(data['eui'])
+                        if attached_count > 0:
+                            print(f"Successfully sent attach requests for {data['eui']} to {attached_count} base stations")
+                        else:
+                            print(f"Failed to send attach requests for {data['eui']}")
                             
                 return jsonify({'success': True, 'message': 'Sensor saved and attach requests sent to base stations'})
             except Exception as e:
@@ -336,6 +313,9 @@ def attach_all_sensors():
         if not tls_server:
             return jsonify({'success': False, 'message': 'TLS server not available'})
         
+        if not hasattr(tls_server, 'connected_base_stations') or not tls_server.connected_base_stations:
+            return jsonify({'success': False, 'message': 'No base stations connected'})
+        
         # Get all sensors from config file
         try:
             with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
@@ -349,9 +329,14 @@ def attach_all_sensors():
         # Force reload sensor config to ensure all sensors are loaded
         tls_server.reload_sensor_config()
         
-        attached_count = len(sensors)
-        message = f'All sensors ready for attachment. {attached_count} sensors loaded and will be attached when base stations register them.'
-        return jsonify({'success': True, 'message': message})
+        # Send attach requests for all sensors to all connected base stations
+        if hasattr(tls_server, 'attach_all_sensors_sync'):
+            attached_count = tls_server.attach_all_sensors_sync()
+            bs_count = len(tls_server.connected_base_stations)
+            message = f'Sent attach requests for {attached_count} sensors to {bs_count} base stations'
+            return jsonify({'success': True, 'message': message})
+        else:
+            return jsonify({'success': False, 'message': 'Attach all function not available in TLS server'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 

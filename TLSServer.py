@@ -539,6 +539,111 @@ class TLSServer:
             logger.error(f"❌ Error in sync detach all: {e}")
             return 0
 
+    def attach_sensor_sync(self, sensor_eui: str) -> int:
+        """Synchronous wrapper for attaching a sensor to all connected base stations"""
+        try:
+            logger.info(f"🔗 SYNC ATTACHING SENSOR {sensor_eui} to ALL base stations")
+            
+            if not self.connected_base_stations:
+                logger.warning("   ⚠️  No base stations connected")
+                return 0
+            
+            # Find sensor in configuration
+            sensor_config = None
+            for sensor in self.sensor_config:
+                if sensor['eui'].upper() == sensor_eui.upper():
+                    sensor_config = sensor
+                    break
+            
+            if not sensor_config:
+                logger.error(f"   ❌ Sensor {sensor_eui} not found in configuration")
+                return 0
+            
+            logger.info(f"   Found sensor config: {sensor_config['eui']}")
+            logger.info(f"   Target base stations: {len(self.connected_base_stations)}")
+            
+            # Create new event loop for sync call
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            success_count = 0
+            try:
+                async def send_attaches():
+                    nonlocal success_count
+                    for writer in list(self.connected_base_stations.keys()):
+                        try:
+                            await self.send_attach_request(writer, sensor_config)
+                            success_count += 1
+                            logger.info(f"   ✅ Attach request sent to {self.connected_base_stations[writer]}")
+                        except Exception as e:
+                            logger.error(f"   ❌ Failed to send attach to {self.connected_base_stations.get(writer, 'unknown')}: {e}")
+                
+                loop.run_until_complete(send_attaches())
+            finally:
+                loop.close()
+            
+            logger.info(f"✅ SYNC SENSOR ATTACH completed for {sensor_eui}")
+            logger.info(f"   Successful attachments: {success_count}/{len(self.connected_base_stations)} base stations")
+            
+            return success_count
+            
+        except Exception as e:
+            logger.error(f"❌ Error in sync attach for {sensor_eui}: {e}")
+            return 0
+    
+    def attach_all_sensors_sync(self) -> int:
+        """Synchronous wrapper for attaching all sensors to all connected base stations"""
+        try:
+            logger.info(f"🔗 SYNC ATTACHING ALL SENSORS to all base stations")
+            
+            if not self.connected_base_stations:
+                logger.warning("   ⚠️  No base stations connected")
+                return 0
+            
+            if not self.sensor_config:
+                logger.warning("   ⚠️  No sensors configured")
+                return 0
+            
+            logger.info(f"   Total sensors to attach: {len(self.sensor_config)}")
+            logger.info(f"   Target base stations: {len(self.connected_base_stations)}")
+            
+            # Create new event loop for sync call
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            total_attachments = 0
+            try:
+                async def send_all_attaches():
+                    nonlocal total_attachments
+                    for sensor in self.sensor_config:
+                        for writer in list(self.connected_base_stations.keys()):
+                            try:
+                                await self.send_attach_request(writer, sensor)
+                                total_attachments += 1
+                                logger.info(f"   ✅ Attach request sent for {sensor['eui']} to {self.connected_base_stations[writer]}")
+                                # Small delay between requests
+                                await asyncio.sleep(0.1)
+                            except Exception as e:
+                                logger.error(f"   ❌ Failed to send attach for {sensor['eui']} to {self.connected_base_stations.get(writer, 'unknown')}: {e}")
+                
+                loop.run_until_complete(send_all_attaches())
+            finally:
+                loop.close()
+            
+            expected_total = len(self.sensor_config) * len(self.connected_base_stations)
+            logger.info(f"✅ SYNC BULK ATTACH completed")
+            logger.info(f"   Successful attachments: {total_attachments}/{expected_total} total requests")
+            logger.info(f"   Sensors processed: {len(self.sensor_config)}")
+            logger.info(f"   Base stations: {len(self.connected_base_stations)}")
+            
+            return total_attachments
+            
+        except Exception as e:
+            logger.error(f"❌ Error in sync attach all: {e}")
+            return 0
+
     async def send_status_requests(self) -> None:
         logger.info(f"📊 STATUS REQUEST TASK STARTED")
         logger.info(f"   Status request interval: {bssci_config.STATUS_INTERVAL} seconds")
