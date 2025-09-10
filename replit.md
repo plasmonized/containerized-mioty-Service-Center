@@ -8,6 +8,21 @@ The BSSCI Service Center is a comprehensive IoT device management system that pr
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes (September 2025)
+
+**System Status**: All critical functionality has been successfully restored and enhanced.
+
+**Major Improvements Completed**:
+- Fixed critical sensor attachment regression by porting missing functionality from release branch
+- Implemented missing `attach_all_sensors_sync` and `attach_single_sensor_sync` methods in TLSServer.py
+- Enhanced web UI with individual attach buttons for each sensor (🔗 Attach, ✏️ Edit, 🔌 Detach, 🗑️ Delete)
+- Improved button layout with Bootstrap button groups and FontAwesome icons for professional appearance
+- Added new API endpoint `/api/sensors/{eui}/attach` for individual sensor attachment operations
+- Resolved auto-detach configuration bugs (now correctly displays 72h, 36h, 1h instead of 0,0,0)
+- Enhanced user experience with confirmation dialogs and better error messaging
+
+**System Components Working**: TLS Server, MQTT Interface, Web UI - all sensor attachment functionality restored and enhanced.
+
 ## System Architecture
 
 ### Core Components

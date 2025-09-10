@@ -5,19 +5,38 @@
 
 The BSSCI Service Center is a comprehensive IoT device management system that provides secure communication between mioty sensors, base stations, and MQTT brokers. It implements the BSSCI (Base Station Service Center Interface) protocol with advanced features for sensor lifecycle management, automatic detachment, and real-time monitoring.
 
+## 🆕 Recent Improvements (September 2025)
+
+### Enhanced Sensor Management Interface
+- **Individual Sensor Attachment**: Each sensor now has its own dedicated "Attach" button for immediate deployment
+- **Professional Button Layout**: Organized button groups with Bootstrap styling and FontAwesome icons
+- **Improved User Experience**: Confirmation dialogs for critical operations with clear success/error messaging
+- **Bulk Operation Improvements**: Reorganized management buttons (Reload Config, Attach All, Detach All)
+
+### API Enhancements
+- **New Endpoint**: `/api/sensors/{eui}/attach` for individual sensor attachment
+- **Improved Error Handling**: Better validation and more informative response messages
+- **Enhanced Backend Functions**: New synchronous wrapper functions for stable sensor operations
+
+### System Stability
+- **Resolved Critical Bugs**: Fixed sensor attachment regression that prevented "Attach All" functionality
+- **Auto-Detach Corrections**: Resolved configuration display and conversion issues
+- **Service Reliability**: Improved MQTT connection stability and error recovery
+
 ## Table of Contents
 
-1. [System Architecture](#system-architecture)
-2. [Core Features](#core-features)
-3. [Installation & Setup](#installation--setup)
-4. [Configuration](#configuration)
-5. [Sensor Management](#sensor-management)
-6. [Auto-Detach System](#auto-detach-system)
-7. [MQTT Integration](#mqtt-integration)
-8. [Web Interface](#web-interface)
-9. [API Reference](#api-reference)
-10. [Troubleshooting](#troubleshooting)
-11. [Advanced Features](#advanced-features)
+1. [Recent Improvements](#recent-improvements-september-2025)
+2. [System Architecture](#system-architecture)
+3. [Core Features](#core-features)
+4. [Installation & Setup](#installation--setup)
+5. [Configuration](#configuration)
+6. [Sensor Management](#sensor-management)
+7. [Auto-Detach System](#auto-detach-system)
+8. [MQTT Integration](#mqtt-integration)
+9. [Web Interface](#web-interface)
+10. [API Reference](#api-reference)
+11. [Troubleshooting](#troubleshooting)
+12. [Advanced Features](#advanced-features)
 
 ## System Architecture
 
@@ -47,13 +66,23 @@ The BSSCI Service Center is a comprehensive IoT device management system that pr
 
 ## Core Features
 
-### Sensor Lifecycle Management
+### Enhanced Sensor Lifecycle Management
 
 - **Automatic Registration**: Sensors are automatically registered when base stations connect
-- **Manual Detachment**: Individual sensor detachment via web UI
-- **Bulk Operations**: Clear all sensors with automatic detachment
-- **Remote Commands**: MQTT-based sensor control (attach, detach, status)
-- **Auto-Detach**: Automatic removal of inactive sensors after configurable timeout
+- **Individual Sensor Attachment**: Dedicated attach button for each sensor with immediate deployment
+- **Manual Detachment**: Individual sensor detachment via web UI with confirmation dialogs
+- **Bulk Operations**: Professional grouped buttons for attach all, detach all, and configuration reload
+- **Remote Commands**: MQTT-based sensor control (attach, detach, status, register)
+- **Auto-Detach**: Automatic removal of inactive sensors after configurable timeout with warning system
+
+### Professional User Interface
+
+- **Bootstrap-Based Design**: Modern, responsive web interface with professional styling
+- **Iconographic Actions**: Visual action buttons with FontAwesome icons for better usability
+- **Grouped Controls**: Organized button groups for bulk operations and individual sensor management
+- **Real-Time Status**: Live updates of sensor status, registration state, and activity monitoring
+- **Confirmation Dialogs**: Safety prompts for critical operations (attach, detach, delete)
+- **Status Indicators**: Color-coded badges showing sensor states (active, warning, auto-detached)
 
 ### Real-Time Monitoring
 
@@ -454,7 +483,15 @@ The main dashboard provides real-time system status:
 - **Registration Info**: Shows which base stations each sensor is connected to
 - **Activity Tracking**: Hours since last communication
 - **Signal Quality**: Preferred downlink path with SNR information
-- **Action Buttons**: Detach individual sensors or bulk operations
+- **Individual Action Buttons**: Complete sensor management per sensor
+  - **🔗 Attach**: Attach individual sensor to all connected base stations
+  - **✏️ Edit**: Modify sensor configuration (EUI, network key, short address, bidirectional)
+  - **🔌 Detach**: Detach sensor from all base stations
+  - **🗑️ Delete**: Remove sensor from configuration
+- **Bulk Operations**: Grouped management buttons with professional icons
+  - **🔄 Reload Config**: Refresh sensor configuration from file
+  - **🔗 Attach All**: Attach all configured sensors to connected base stations
+  - **🔌 Detach All**: Detach all sensors from base stations
 
 #### Sensor Details
 - **Configuration**: EUI, network key, short address, bidirectional setting
@@ -492,6 +529,39 @@ The main dashboard provides real-time system status:
 ## API Reference
 
 ### Sensor Operations
+
+#### Individual Sensor Attachment
+**POST** `/api/sensors/{eui}/attach`
+- Attach a specific sensor to all connected base stations
+- Automatically finds sensor in configuration and sends attach requests
+- Returns success confirmation and number of base stations targeted
+
+**Example Response:**
+```json
+{
+  "success": true,
+  "message": "Attach request sent for sensor FCA84A0300001234 to 2 base stations"
+}
+```
+
+#### Individual Sensor Detachment  
+**POST** `/api/sensors/{eui}/detach`
+- Detach a specific sensor from all base stations
+- Removes sensor registration from all connected base stations
+- Returns confirmation of detachment operation
+
+#### Bulk Sensor Management
+**POST** `/api/sensors/attach-all`
+- Attach all configured sensors to all connected base stations
+- Checks for base station connectivity before attempting attachment
+- Returns count of sensors attached and base stations targeted
+
+**POST** `/api/sensors/detach-all`
+- Detach all registered sensors from all base stations
+- Processes all currently registered sensors
+- Returns count of successfully detached sensors
+
+### Sensor Operations (Legacy)
 
 #### Get All Sensors
 ```http
