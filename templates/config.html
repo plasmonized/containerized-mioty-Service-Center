@@ -72,19 +72,19 @@
 
                     <div class="mb-3">
                         <label for="AUTO_DETACH_TIMEOUT" class="form-label">Auto-Detach Timeout (hours)</label>
-                        <input type="number" class="form-control" id="AUTO_DETACH_TIMEOUT" value="{{ config.AUTO_DETACH_TIMEOUT // 3600 }}" min="1">
+                        <input type="number" class="form-control" id="AUTO_DETACH_TIMEOUT" value="{{ config.AUTO_DETACH_TIMEOUT }}" min="1">
                         <div class="form-text">Hours of inactivity before auto-detach (default: 72 hours)</div>
                     </div>
 
                     <div class="mb-3">
                         <label for="AUTO_DETACH_WARNING_TIMEOUT" class="form-label">Warning Timeout (hours)</label>
-                        <input type="number" class="form-control" id="AUTO_DETACH_WARNING_TIMEOUT" value="{{ config.AUTO_DETACH_WARNING_TIMEOUT // 3600 }}" min="1">
+                        <input type="number" class="form-control" id="AUTO_DETACH_WARNING_TIMEOUT" value="{{ config.AUTO_DETACH_WARNING_TIMEOUT }}" min="1">
                         <div class="form-text">Hours of inactivity before warning (default: 36 hours)</div>
                     </div>
 
                     <div class="mb-3">
                         <label for="AUTO_DETACH_CHECK_INTERVAL" class="form-label">Check Interval (hours)</label>
-                        <input type="number" class="form-control" id="AUTO_DETACH_CHECK_INTERVAL" value="{{ config.AUTO_DETACH_CHECK_INTERVAL // 3600 }}" min="1">
+                        <input type="number" class="form-control" id="AUTO_DETACH_CHECK_INTERVAL" value="{{ config.AUTO_DETACH_CHECK_INTERVAL }}" min="1">
                         <div class="form-text">How often to check for inactive sensors (default: 1 hour)</div>
                     </div>
                 </div>
