@@ -1747,15 +1747,47 @@ class TLSServer:
                 logger.info(f"✅ Sensor {eui} detached via thread-safe method")
                 return result
             except RuntimeError:
-                # No running loop - fallback behavior
-                logger.warning(f"⚠️  No running event loop - cannot detach sensor {eui} immediately")
-                return False  # Indicate async processing needed
+                # No running loop - try alternative approach  
+                logger.info(f"🔄 No event loop available - trying direct detach for {eui}")
+                try:
+                    # Create new event loop for this operation
+                    result = asyncio.run(self.detach_sensor(eui))
+                    logger.info(f"✅ Sensor {eui} detached via new event loop")
+                    return result
+                except Exception as fallback_error:
+                    logger.warning(f"⚠️  Direct detach failed for {eui}: {fallback_error}")
+                    # At least try local cleanup
+                    return self._perform_local_detach_only(eui)
             except Exception as e:
                 logger.error(f"Thread-safe detach failed for {eui}: {e}")
                 return False
                 
         except Exception as e:
             logger.error(f"Sync detach failed for {eui}: {e}")
+            return False
+
+    def _perform_local_detach_only(self, eui: str) -> bool:
+        """Perform local detach when async detach is not possible"""
+        try:
+            logger.info(f"🔧 Performing LOCAL-ONLY detach for {eui}")
+            
+            # Remove from local registry
+            eui_key = eui.upper()
+            if eui_key in self.registered_sensors:
+                self.registered_sensors[eui_key]['registered'] = False
+                self.registered_sensors[eui_key]['base_stations'] = []
+                logger.info(f"   ✅ Removed {eui} from local registry")
+            
+            # Remove from config file
+            config_success = self._remove_sensor_from_config(eui)
+            if config_success:
+                logger.info(f"   ✅ Removed {eui} from configuration file")
+                
+            logger.info(f"✅ Local detach completed for {eui}")
+            return config_success
+            
+        except Exception as e:
+            logger.error(f"❌ Local detach failed for {eui}: {e}")
             return False
             
     def add_sensor_via_ui(self, sensor_data: dict) -> bool:
