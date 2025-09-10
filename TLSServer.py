@@ -549,6 +549,50 @@ class TLSServer:
             logger.error(f"   ❌ Failed to remove {sensor_eui} from config: {e}")
             return False
 
+    def attach_all_sensors_sync(self) -> int:
+        """Synchronous wrapper for attaching all sensors to all connected base stations"""
+        try:
+            logger.info(f"🔗 SYNC ATTACHING ALL SENSORS to all base stations")
+            
+            if not self.connected_base_stations:
+                logger.warning("   ⚠️  No base stations connected")
+                return 0
+            
+            if not self.sensor_config:
+                logger.warning("   ⚠️  No sensors configured")
+                return 0
+            
+            logger.info(f"   Total sensors to attach: {len(self.sensor_config)}")
+            logger.info(f"   Target base stations: {len(self.connected_base_stations)}")
+            
+            # Create new event loop for sync call
+            import asyncio
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            
+            try:
+                # Run attach for all base stations
+                total_attached = 0
+                for writer in self.connected_base_stations:
+                    bs_eui = self.connected_base_stations[writer]
+                    logger.info(f"   📤 Attaching to base station: {bs_eui}")
+                    loop.run_until_complete(self.attach_file(writer))
+                    total_attached += len(self.sensor_config)
+                
+                logger.info(f"✅ SYNC BULK ATTACH completed")
+                logger.info(f"   Attach requests sent: {total_attached} total")
+                
+                return len(self.sensor_config)
+                
+            finally:
+                loop.close()
+                
+        except Exception as e:
+            logger.error(f"❌ Error in sync attach all: {e}")
+            import traceback
+            logger.error(f"   Full traceback: {traceback.format_exc()}")
+            return 0
+
     def detach_all_sensors_sync(self) -> int:
         """Synchronous wrapper for detaching all sensors from all base stations"""
         try:

@@ -375,6 +375,9 @@ def attach_all_sensors():
         if not tls_server:
             return jsonify({'success': False, 'message': 'TLS server not available'})
         
+        if not hasattr(tls_server, 'connected_base_stations') or not tls_server.connected_base_stations:
+            return jsonify({'success': False, 'message': 'No base stations connected'})
+        
         # Get all sensors from config file
         try:
             with open(bssci_config.SENSOR_CONFIG_FILE, 'r') as f:
@@ -388,9 +391,14 @@ def attach_all_sensors():
         # Force reload sensor config to ensure all sensors are loaded
         tls_server.reload_sensor_config()
         
-        attached_count = len(sensors)
-        message = f'All sensors ready for attachment. {attached_count} sensors loaded and will be attached when base stations register them.'
-        return jsonify({'success': True, 'message': message})
+        # Send attach requests for all sensors to all connected base stations
+        if hasattr(tls_server, 'attach_all_sensors_sync'):
+            attached_count = tls_server.attach_all_sensors_sync()
+            bs_count = len(tls_server.connected_base_stations)
+            message = f'Sent attach requests for {attached_count} sensors to {bs_count} base stations'
+            return jsonify({'success': True, 'message': message})
+        else:
+            return jsonify({'success': False, 'message': 'Attach all function not available in TLS server'})
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
