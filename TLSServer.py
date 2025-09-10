@@ -693,7 +693,17 @@ class TLSServer:
                 logger.error(f"   ❌ No SSL object found - connection may not be encrypted")
 
         except Exception as e:
-            logger.error(f"   ❌ SSL connection error from {addr}: {e}")
+            # Better SSL error handling with specific error types
+            error_msg = str(e)
+            if "EOF occurred in violation of protocol" in error_msg:
+                logger.warning(f"   ⚠️  SSL handshake interrupted from {addr} (Base station may have disconnected during handshake)")
+            elif "certificate" in error_msg.lower():
+                logger.error(f"   ❌ SSL certificate error from {addr}: {e}")
+            elif "handshake" in error_msg.lower():
+                logger.warning(f"   ⚠️  SSL handshake failed from {addr}: {e}")
+            else:
+                logger.error(f"   ❌ SSL connection error from {addr}: {e}")
+            
             try:
                 writer.close()
                 await writer.wait_closed()
@@ -733,7 +743,10 @@ class TLSServer:
                             IDENTIFIER + len(msg).to_bytes(4, byteorder="little") + msg
                         )
                         await writer.drain()
-                        bs_eui = int(message["bsEui"]).to_bytes(8, byteorder="big").hex().upper()
+                        if 'bsEui' in message:
+                            bs_eui = int(message["bsEui"]).to_bytes(8, byteorder="big").hex().upper()
+                        else:
+                            bs_eui = f"UNKNOWN_{addr[0].replace('.', '')}"
                         self.connecting_base_stations[writer] = bs_eui
                         logger.info(f"📤 BSSCI CONNECTION RESPONSE sent to base station {bs_eui}")
                         logger.info(f"   Base station {bs_eui} is now in connecting state")
