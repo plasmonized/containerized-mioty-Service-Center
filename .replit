@@ -57,12 +57,15 @@ args = "python simple_main.py"
 
 [[workflows.workflow]]
 name = "BSSCI Service"
-author = 45640243
+author = "agent"
 mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python web_main.py"
+args = "python main.py"
+
+[workflows.workflow.metadata]
+outputType = "console"
 
 [[workflows.workflow]]
 name = "BSSCI Service"
