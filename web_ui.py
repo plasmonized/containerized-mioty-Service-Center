@@ -454,52 +454,41 @@ def reload_sensors():
 
 @app.route('/config')
 def config():
-    try:
-        # Force reload the config module to get latest values
-        import importlib
-        import sys
-        if 'bssci_config' in sys.modules:
-            importlib.reload(sys.modules['bssci_config'])
-        
-        import bssci_config
-        
-        config_data = {
-            'LISTEN_HOST': getattr(bssci_config, 'LISTEN_HOST', '0.0.0.0'),
-            'LISTEN_PORT': getattr(bssci_config, 'LISTEN_PORT', 16018),
-            'MQTT_BROKER': getattr(bssci_config, 'MQTT_BROKER', 'localhost'),
-            'MQTT_PORT': getattr(bssci_config, 'MQTT_PORT', 1883),
-            'MQTT_USERNAME': getattr(bssci_config, 'MQTT_USERNAME', ''),
-            'MQTT_PASSWORD': getattr(bssci_config, 'MQTT_PASSWORD', ''),
-            'BASE_TOPIC': getattr(bssci_config, 'BASE_TOPIC', 'bssci/'),
-            'STATUS_INTERVAL': getattr(bssci_config, 'STATUS_INTERVAL', 30),
-            'DEDUPLICATION_DELAY': getattr(bssci_config, 'DEDUPLICATION_DELAY', 2.0),
-            'AUTO_DETACH_ENABLED': getattr(bssci_config, 'AUTO_DETACH_ENABLED', True),
-            # Convert seconds to hours for display in web UI
-            'AUTO_DETACH_TIMEOUT': getattr(bssci_config, 'AUTO_DETACH_TIMEOUT', 259200) // 3600,
-            'AUTO_DETACH_WARNING_TIMEOUT': getattr(bssci_config, 'AUTO_DETACH_WARNING_TIMEOUT', 129600) // 3600,
-            'AUTO_DETACH_CHECK_INTERVAL': getattr(bssci_config, 'AUTO_DETACH_CHECK_INTERVAL', 3600) // 3600
-        }
-        return render_template('config.html', config=config_data)
-    except Exception as e:
-        print(f"Error loading config page: {e}")
-        # Return default config if there's an error
-        default_config = {
-            'LISTEN_HOST': '0.0.0.0',
-            'LISTEN_PORT': 16018,
-            'MQTT_BROKER': 'localhost',
-            'MQTT_PORT': 1883,
-            'MQTT_USERNAME': '',
-            'MQTT_PASSWORD': '',
-            'BASE_TOPIC': 'bssci/',
-            'STATUS_INTERVAL': 30,
-            'DEDUPLICATION_DELAY': 2.0,
-            'AUTO_DETACH_ENABLED': True,
-            # Default values in hours for web UI display
-            'AUTO_DETACH_TIMEOUT': 72,  # 72 hours
-            'AUTO_DETACH_WARNING_TIMEOUT': 36,  # 36 hours
-            'AUTO_DETACH_CHECK_INTERVAL': 1  # 1 hour
-        }
-        return render_template('config.html', config=default_config)
+    # Load configuration values directly from .env to ensure consistency
+    import os
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    # Get timeout values in seconds from .env
+    auto_detach_timeout = int(os.getenv('AUTO_DETACH_TIMEOUT', '21600'))
+    auto_detach_warning_timeout = int(os.getenv('AUTO_DETACH_WARNING_TIMEOUT', '10800'))
+    auto_detach_check_interval = int(os.getenv('AUTO_DETACH_CHECK_INTERVAL', '3600'))
+    
+    # Convert to hours for UI display
+    timeout_hours = auto_detach_timeout // 3600
+    warning_hours = auto_detach_warning_timeout // 3600
+    interval_hours = auto_detach_check_interval // 3600
+    
+    print(f"CONFIG: Loading .env values - timeout: {auto_detach_timeout}s ({timeout_hours}h), warning: {auto_detach_warning_timeout}s ({warning_hours}h), interval: {auto_detach_check_interval}s ({interval_hours}h)")
+    
+    config_data = {
+        'LISTEN_HOST': os.getenv('LISTEN_HOST', '0.0.0.0'),
+        'LISTEN_PORT': int(os.getenv('LISTEN_PORT', '16018')),
+        'MQTT_BROKER': os.getenv('MQTT_BROKER', 'localhost'),
+        'MQTT_PORT': int(os.getenv('MQTT_PORT', '1883')),
+        'MQTT_USERNAME': os.getenv('MQTT_USERNAME', ''),
+        'MQTT_PASSWORD': os.getenv('MQTT_PASSWORD', ''),
+        'BASE_TOPIC': os.getenv('BASE_TOPIC', 'bssci/'),
+        'STATUS_INTERVAL': int(os.getenv('STATUS_INTERVAL', '30')),
+        'DEDUPLICATION_DELAY': float(os.getenv('DEDUPLICATION_DELAY', '2.0')),
+        'AUTO_DETACH_ENABLED': os.getenv('AUTO_DETACH_ENABLED', 'true').lower() == 'true',
+        # Display values in hours
+        'AUTO_DETACH_TIMEOUT': timeout_hours,
+        'AUTO_DETACH_WARNING_TIMEOUT': warning_hours,
+        'AUTO_DETACH_CHECK_INTERVAL': interval_hours
+    }
+    
+    return render_template('config.html', config=config_data)
 
 @app.route('/api/config', methods=['POST'])
 def update_config():
