@@ -711,6 +711,19 @@ class TLSServer:
 
                     elif msg_type == "ping":
                         logger.debug(f"Ping request received from {addr}")
+                        
+                        # Auto-register base station if it's pinging but not formally connected
+                        if writer not in self.connected_base_stations:
+                            try:
+                                # Extract EUI from ping message if available
+                                if 'bsEui' in message:
+                                    bs_eui = int(message["bsEui"]).to_bytes(8, byteorder="big").hex().upper()
+                                    self.connected_base_stations[writer] = bs_eui
+                                    logger.info(f"🔧 AUTO-REGISTERED base station {bs_eui} from ping")
+                                    logger.info(f"   Total connected after auto-register: {len(self.connected_base_stations)}")
+                            except Exception as e:
+                                logger.debug(f"Could not auto-register from ping: {e}")
+                        
                         msg_pack = encode_message(
                             messages.build_ping_response(message.get("opId", ""))
                         )
@@ -725,7 +738,26 @@ class TLSServer:
                         logger.debug(f"Ping complete received from {addr}")
 
                     elif msg_type == "statusRsp":
-                        bs_eui = self.connected_base_stations[writer]
+                        # Safe retrieval of base station EUI with fallback
+                        if writer in self.connected_base_stations:
+                            bs_eui = self.connected_base_stations[writer]
+                        else:
+                            # Auto-register base station from statusRsp if not formally connected
+                            try:
+                                # Extract EUI from message or derive from connection
+                                if 'bsEui' in message:
+                                    bs_eui = int(message["bsEui"]).to_bytes(8, byteorder="big").hex().upper()
+                                else:
+                                    # Fallback: use connection info
+                                    bs_eui = f"AUTO_{addr[0].replace('.', '')}"
+                                
+                                # Auto-register this active base station
+                                self.connected_base_stations[writer] = bs_eui
+                                logger.warning(f"🔧 AUTO-REGISTERED base station {bs_eui} from statusRsp")
+                                logger.info(f"   Total connected after auto-register: {len(self.connected_base_stations)}")
+                            except Exception as e:
+                                logger.error(f"❌ Failed to auto-register base station: {e}")
+                                continue  # Skip this message
                         op_id = message.get("opId", "unknown")
 
                         logger.info(f"📊 BASE STATION STATUS RESPONSE received from {bs_eui}")
