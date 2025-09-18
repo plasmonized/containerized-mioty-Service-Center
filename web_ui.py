@@ -506,10 +506,10 @@ def update_config():
     try:
         data = request.json
         
-        # Convert hours to seconds for timeout values
-        auto_detach_timeout = int(data.get('AUTO_DETACH_TIMEOUT', 72)) * 3600
-        auto_detach_warning_timeout = int(data.get('AUTO_DETACH_WARNING_TIMEOUT', 36)) * 3600
-        auto_detach_check_interval = int(data.get('AUTO_DETACH_CHECK_INTERVAL', 1)) * 3600
+        # Values are already in seconds from HTML form (no conversion needed)
+        auto_detach_timeout = int(data.get('AUTO_DETACH_TIMEOUT', 259200))
+        auto_detach_warning_timeout = int(data.get('AUTO_DETACH_WARNING_TIMEOUT', 129600))
+        auto_detach_check_interval = int(data.get('AUTO_DETACH_CHECK_INTERVAL', 3600))
         
         # Update the .env file - this is the primary configuration source
         env_content = f"""# TLS Server Configuration
