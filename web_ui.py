@@ -1418,19 +1418,22 @@ def restart_service():
             # Check if we're running in Docker
             is_docker = os.path.exists('/.dockerenv') or os.getenv('CONTAINER') == '1'
             
-            if is_docker:
-                # In Docker, we need to restart the entire container to reload .env
-                logger.info("Docker environment detected - triggering container restart")
-                try:
-                    # Send SIGTERM to PID 1 (init process) to restart the container gracefully
-                    subprocess.run(['kill', '-TERM', '1'], check=False, timeout=5)
-                except Exception as e:
-                    logger.error(f"Container restart failed: {e}")
-                    # Fallback to process restart
-                    _restart_processes()
+            # Check environment type
+            is_replit = os.getenv('REPLIT_ENVIRONMENT') or os.getenv('REPL_SLUG')
+            
+            if is_replit:
+                # In Replit, workflows auto-restart when the process exits
+                logger.info("Replit environment detected - restarting via process exit")
+                _restart_processes()
+            elif is_docker:
+                # In Docker (including Synology), use process exit with Docker restart policy
+                # This avoids using kill/pkill commands that may not be available
+                logger.info("Docker environment detected - restarting via process exit")
+                logger.info("Docker restart policy will automatically restart the container")
+                _restart_processes()
             else:
-                # In regular environment, restart processes and reload environment
-                logger.info("Regular environment detected - restarting processes")
+                # In regular environment without Docker
+                logger.info("Regular environment detected - attempting process restart")
                 _restart_processes()
                 
         except Exception as e:
@@ -1439,22 +1442,31 @@ def restart_service():
             _restart_processes()
 
     def _restart_processes():
-        """Restart Python processes"""
+        """Restart Python processes (Docker-compatible version without kill/pkill)"""
         try:
-            # Kill existing processes
-            subprocess.run(['pkill', '-f', 'python.*web_main.py'], check=False, timeout=10)
-            subprocess.run(['pkill', '-f', 'python.*main.py'], check=False, timeout=10)
-            subprocess.run(['pkill', '-f', 'python.*sync_main.py'], check=False, timeout=10)
-
-            time.sleep(3)  # Wait for processes to terminate
-
-            # Reload environment and start the service again
-            subprocess.Popen(['python', 'web_main.py'],
-                           stdout=subprocess.DEVNULL,
-                           stderr=subprocess.DEVNULL,
-                           env=dict(os.environ))  # Pass current environment
+            logger.info("Initiating service restart for Docker environment...")
+            
+            # Give time for the response to be sent before restarting
+            time.sleep(2)
+            
+            # In Docker with restart policy, we can simply exit and let Docker restart us
+            # This works for Synology Docker and other containerized environments
+            logger.info("Exiting process - Docker will restart automatically")
+            
+            # Use os._exit to bypass cleanup handlers and exit immediately
+            import os
+            os._exit(0)
+            
         except Exception as e:
-            logger.error(f"Error restarting processes: {e}")
+            logger.error(f"Error during process exit: {e}")
+            # Fallback: try standard exit
+            try:
+                import sys
+                sys.exit(0)
+            except:
+                # Last resort: force exit
+                import os
+                os._exit(1)
 
     try:
         # Start restart in background thread
