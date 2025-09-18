@@ -506,15 +506,19 @@ def update_config():
     try:
         data = request.json
         
+        # Type safety: Validate request data
+        if data is None:
+            return jsonify({'success': False, 'message': 'No JSON data provided'}), 400
+        
         # Values are already in seconds from HTML form (no conversion needed)
         auto_detach_timeout = int(data.get('AUTO_DETACH_TIMEOUT', 259200))
         auto_detach_warning_timeout = int(data.get('AUTO_DETACH_WARNING_TIMEOUT', 129600))
         auto_detach_check_interval = int(data.get('AUTO_DETACH_CHECK_INTERVAL', 3600))
         
-        # Update the .env file - this is the primary configuration source
+        # Update the .env file - this is the primary configuration source (with type safety)
         env_content = f"""# TLS Server Configuration
-LISTEN_HOST={data['LISTEN_HOST']}
-LISTEN_PORT={data['LISTEN_PORT']}
+LISTEN_HOST={data.get('LISTEN_HOST', '0.0.0.0')}
+LISTEN_PORT={data.get('LISTEN_PORT', 16018)}
 
 # SSL/TLS Certificate Configuration
 CERT_FILE=certs/service_center_cert.pem
@@ -522,16 +526,16 @@ KEY_FILE=certs/service_center_key.pem
 CA_FILE=certs/ca_cert.pem
 
 # MQTT Configuration
-MQTT_BROKER={data['MQTT_BROKER']}
-MQTT_PORT={data['MQTT_PORT']}
-MQTT_USERNAME={data['MQTT_USERNAME']}
-MQTT_PASSWORD={data['MQTT_PASSWORD']}
-BASE_TOPIC={data['BASE_TOPIC']}
+MQTT_BROKER={data.get('MQTT_BROKER', 'localhost')}
+MQTT_PORT={data.get('MQTT_PORT', 1883)}
+MQTT_USERNAME={data.get('MQTT_USERNAME', '')}
+MQTT_PASSWORD={data.get('MQTT_PASSWORD', '')}
+BASE_TOPIC={data.get('BASE_TOPIC', 'bssci/')}
 
 # Application Configuration
 SENSOR_CONFIG_FILE=endpoints.json
-STATUS_INTERVAL={data['STATUS_INTERVAL']}
-DEDUPLICATION_DELAY={data['DEDUPLICATION_DELAY']}
+STATUS_INTERVAL={data.get('STATUS_INTERVAL', 30)}
+DEDUPLICATION_DELAY={data.get('DEDUPLICATION_DELAY', 2.0)}
 
 # Web Interface Configuration
 WEB_HOST=0.0.0.0
